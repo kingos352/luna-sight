@@ -1,0 +1,33 @@
+# LUNA SIGHT - ortak Python bagimliliklari (ilk taslak)
+#
+# Python surumu: 3.12+ (dogrulanan: 3.12.10). numpy, rasterio ve pyproj 3.12'den
+# eski surumleri desteklemez; bu nedenle alt sinir 3.12'dir.
+#
+# Kurulum (depo kokunde):
+#   python -m venv .venv
+#   .venv\Scripts\python.exe -m pip install -r requirements-dev.txt   (Windows)
+#   .venv/bin/python -m pip install -r requirements-dev.txt           (Linux/macOS)
+#
+# Surumler Windows 11 + Python 3.12.10 uzerinde kurulup `python -m pip check` ile
+# dogrulandi. Her paket icin Linux x86_64 (ubuntu-latest CI) ve Windows amd64
+# tekerlegi PyPI'da mevcuttur.
+
+# --- K1: JPL Horizons / efemeris ---
+requests==2.34.2
+
+# --- K2: LRO/LOLA arazi, raster hesaplari ve koordinat donusumu ---
+numpy==2.5.4
+rasterio==1.5.2
+pyproj==3.8.0
+
+# --- K3: gorunurluk ve zaman serileri ---
+pandas==3.1.1
+
+# --- K4: Streamlit arayuzu ve grafikler ---
+streamlit==1.67.0
+plotly==7.1.0
+
+# Henuz kurulmadi; ihtiyac ortaya cikinca bu dosyaya eklenecek:
+#   astroquery -> K1 Horizons istemcisini hazir kutuphaneyle kullanmak isterse
+#   astropy    -> K1 zaman/koordinat donusumu gerektirirse
+#   scipy      -> K3 secilen sayisal yontem icin zorunluysa

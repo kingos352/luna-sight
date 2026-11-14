@@ -1,0 +1,6 @@
+# LUNA SIGHT - gelistirme ve test bagimliliklari
+# Calisma zamani bagimliliklari icin requirements.txt kullanilir.
+-r requirements.txt
+
+pytest==9.2.0
+ruff==0.17.5
