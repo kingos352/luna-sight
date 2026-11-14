@@ -5,6 +5,14 @@ Girdi: K1 azimut/yükseklik serisi + K2 ufuk profili.
 kesintisiz pencereler ve özet istatistikler.
 """
 
+from luna_sight.visibility.analysis import (
+    BodyBreakdown,
+    breakdown,
+    joint_totals,
+    margin_shift,
+    sensitivity_rows,
+    span_hours,
+)
 from luna_sight.visibility.engine import (
     BODY_EARTH,
     BODY_JOINT,
@@ -46,6 +54,7 @@ __all__ = [
     "BODY_EARTH",
     "BODY_JOINT",
     "BODY_SUN",
+    "BodyBreakdown",
     "BodyState",
     "HorizonProfileLookup",
     "REASON_CLEAR",
@@ -61,14 +70,19 @@ __all__ = [
     "VISIBLE",
     "VisibilityConfig",
     "Window",
+    "breakdown",
     "build_windows",
     "classify",
     "evaluate",
     "evaluate_series",
+    "joint_totals",
     "load_series_csv",
+    "margin_shift",
     "parse_utc",
     "refine_crossing_time",
     "sample_from_row",
+    "sensitivity_rows",
+    "span_hours",
     "summarize_windows",
     "validate_series",
 ]
