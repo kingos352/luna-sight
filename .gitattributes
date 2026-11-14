@@ -1,0 +1,13 @@
+* text=auto eol=lf
+*.py text diff=python
+*.md text diff=markdown
+*.json text
+*.yaml text
+*.yml text
+*.csv text
+*.pdf binary
+
+# Git LFS is reserved for approved large deliverables only.
+*.mp4 filter=lfs diff=lfs merge=lfs -text
+*.mov filter=lfs diff=lfs merge=lfs -text
+

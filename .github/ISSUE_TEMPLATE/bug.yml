@@ -1,0 +1,28 @@
+name: Hata
+description: Tekrar üretilebilir teknik veya bilimsel hata
+title: "[BUG] "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: observed
+    attributes:
+      label: Gözlenen durum
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Beklenen durum
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Tekrar üretme adımları
+    validations:
+      required: true
+  - type: input
+    id: data
+    attributes:
+      label: Veri/sürüm kimliği
+

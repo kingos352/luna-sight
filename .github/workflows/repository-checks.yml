@@ -1,0 +1,36 @@
+name: Repository checks
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  structure:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check required collaboration files
+        shell: bash
+        run: |
+          test -f README.md
+          test -f CONTRIBUTING.md
+          test -f docs/DATA_CONTRACT.md
+          test -f docs/TEAM_PLAYBOOK.md
+          test -f data/manifest.csv
+      - name: Reject committed secrets and oversized files
+        shell: bash
+        run: |
+          if git ls-files | grep -E '(^|/)(\.env|secrets/)|\.(key|pem)$'; then
+            echo "Credential-like file detected"
+            exit 1
+          fi
+          python - <<'PY'
+          import os, subprocess, sys
+          files = subprocess.check_output(["git", "ls-files", "-z"]).decode().split("\0")
+          large = [(p, os.path.getsize(p)) for p in files if p and os.path.isfile(p) and os.path.getsize(p) > 20 * 1024 * 1024]
+          if large:
+              print("Files larger than 20 MB:", large)
+              sys.exit(1)
+          PY
+
