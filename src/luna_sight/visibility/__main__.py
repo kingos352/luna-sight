@@ -139,7 +139,15 @@ def _summary_payload(site: Site, results, frame, config) -> dict[str, object]:
     summary = summarize(frame)
     table_row = json.loads(summary.to_json(orient="index"))[site.site_id]
     quality = sorted({sample.sample.quality_flag for sample in results})
+    source_ids = sorted(
+        {sample.sample.source_id for sample in results if sample.sample.source_id}
+    )
     return {
+        # K4 ve eski tüketiciler için üst düzey uyumluluk alanları
+        "site_id": site.site_id,
+        "latitude_deg": site.latitude_deg,
+        "longitude_deg_east": site.longitude_deg_east,
+        "synthetic_test_fixture": quality == ["test_fixture"],
         "site": site.as_dict(),
         "config": config.as_dict(),
         "series": {
@@ -147,9 +155,7 @@ def _summary_payload(site: Site, results, frame, config) -> dict[str, object]:
             "start_utc": results[0].sample.timestamp_utc.isoformat(),
             "end_utc": results[-1].sample.timestamp_utc.isoformat(),
             "quality_flags": quality,
-            "source_ids": sorted(
-                {sample.sample.source_id for sample in results if sample.sample.source_id}
-            ),
+            "source_ids": source_ids,
         },
         "table": table_row,
         "bodies": {

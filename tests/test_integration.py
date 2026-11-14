@@ -45,12 +45,15 @@ class ValidEphemeris:
         )
 
 
-def test_site_accepts_k2_longitude_convention():
-    site = Site("Site01", -89.463163, 222.510447)
-    assert site.longitude_deg_east == pytest.approx(222.510447)
-    assert Site("Site01", -89.463163, 360.0).longitude_deg_east == 360.0
+def test_site_accepts_canonical_longitude_convention():
+    site = Site("Site01", -89.463163, -137.489553)
+    assert site.longitude_deg_east == pytest.approx(-137.489553)
+    assert Site("Site01", -89.463163, 180.0).longitude_deg_east == 180.0
+    assert Site("Site01", -89.463163, -180.0).longitude_deg_east == -180.0
     with pytest.raises(ValueError):
-        Site("Site01", -89.463163, 360.1)
+        Site("Site01", -89.463163, 180.1)
+    with pytest.raises(ValueError):
+        Site("Site01", -89.463163, 222.510447)
 
 
 def test_resolve_site_uses_k2_catalog():

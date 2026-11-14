@@ -101,7 +101,7 @@ def validate_table(frame: pd.DataFrame) -> pd.DataFrame:
 
     for column, lower, upper in (
         ("latitude_deg", -90.0, 90.0),
-        ("longitude_deg_east", -180.0, 360.0),
+        ("longitude_deg_east", -180.0, 180.0),
     ):
         values = pd.to_numeric(data[column], errors="coerce")
         outside = values.notna() & ((values < lower) | (values > upper))
