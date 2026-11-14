@@ -166,9 +166,7 @@ class SiteSpec:
 
     @property
     def coordinates(self) -> str:
-        return (
-            f"{self.latitude_deg:.2f}°, {self.longitude_deg_east:+.2f}° (doğu-pozitif)"
-        )
+        return f"{self.latitude_deg:.2f}°, {self.longitude_deg_east:+.2f}° (doğu-pozitif)"
 
     @property
     def label(self) -> str:
@@ -337,8 +335,7 @@ def _terrain_horizon_deg(azimuth_deg: np.ndarray, site: SiteSpec) -> np.ndarray:
     horizon = (
         site.horizon_base_deg
         + site.horizon_amp1_deg * np.cos(az - np.deg2rad(site.horizon_phase1_deg))
-        + site.horizon_amp2_deg
-        * np.cos(2.0 * (az - np.deg2rad(site.horizon_phase2_deg)))
+        + site.horizon_amp2_deg * np.cos(2.0 * (az - np.deg2rad(site.horizon_phase2_deg)))
     )
     return np.clip(horizon, 0.0, None)
 
@@ -370,9 +367,7 @@ def generate_synthetic_series(
     sun_az = np.mod(360.0 * (t_days / SOLAR_SYNODIC_DAYS) + 35.0, 360.0)
 
     # Dünya: librasyon kaynaklı küçük yükseklik salınımı, sabit azimut çevresi.
-    earth_alt = 6.5 * np.sin(
-        2.0 * np.pi * t_days / EARTH_LIBRATION_DAYS + site.earth_phase
-    )
+    earth_alt = 6.5 * np.sin(2.0 * np.pi * t_days / EARTH_LIBRATION_DAYS + site.earth_phase)
     earth_az = np.mod(
         site.earth_az_deg
         + 4.0 * np.sin(2.0 * np.pi * t_days / EARTH_LIBRATION_DAYS + site.earth_phase),
@@ -392,9 +387,7 @@ def generate_synthetic_series(
 
     start_ts = pd.Timestamp(start_utc)
     start_ts = (
-        start_ts.tz_localize("UTC")
-        if start_ts.tzinfo is None
-        else start_ts.tz_convert("UTC")
+        start_ts.tz_localize("UTC") if start_ts.tzinfo is None else start_ts.tz_convert("UTC")
     )
     timestamps = start_ts + pd.to_timedelta(t_hours, unit="h")
 
@@ -435,16 +428,13 @@ def normalize_contract_frame(frame: pd.DataFrame) -> pd.DataFrame:
     if not isinstance(frame, pd.DataFrame):
         raise TypeError("Görünürlük verisi pandas.DataFrame olmalıdır.")
 
-    missing = [
-        column for column in DATA_CONTRACT_COLUMNS if column not in frame.columns
-    ]
+    missing = [column for column in DATA_CONTRACT_COLUMNS if column not in frame.columns]
     if missing:
         raise ValueError("Veri sözleşmesinde eksik alan(lar): " + ", ".join(missing))
 
     normalized = frame.loc[
         :,
-        DATA_CONTRACT_COLUMNS
-        + [c for c in OPTIONAL_DIAGNOSTIC_COLUMNS if c in frame.columns],
+        DATA_CONTRACT_COLUMNS + [c for c in OPTIONAL_DIAGNOSTIC_COLUMNS if c in frame.columns],
     ].copy()
     normalized["timestamp_utc"] = pd.to_datetime(
         normalized["timestamp_utc"], utc=True, errors="raise"
@@ -454,11 +444,7 @@ def normalize_contract_frame(frame: pd.DataFrame) -> pd.DataFrame:
 
     for column in ("sun_visible", "earth_visible", "joint_visible"):
         normalized[column] = (
-            normalized[column]
-            .astype(str)
-            .str.strip()
-            .str.lower()
-            .replace({"nan": UNCERTAIN})
+            normalized[column].astype(str).str.strip().str.lower().replace({"nan": UNCERTAIN})
         )
 
     normalized = normalized.sort_values("timestamp_utc").reset_index(drop=True)
@@ -538,12 +524,8 @@ def _load_horizon_csv(path: Path) -> tuple[np.ndarray, np.ndarray] | None:
     """K2 ufuk profil CSV'sini (``azimuth_deg``, ``horizon_deg``) okur."""
     try:
         table = pd.read_csv(path)
-        azimuths = pd.to_numeric(table["azimuth_deg"], errors="coerce").to_numpy(
-            dtype=float
-        )
-        horizons = pd.to_numeric(table["horizon_deg"], errors="coerce").to_numpy(
-            dtype=float
-        )
+        azimuths = pd.to_numeric(table["azimuth_deg"], errors="coerce").to_numpy(dtype=float)
+        horizons = pd.to_numeric(table["horizon_deg"], errors="coerce").to_numpy(dtype=float)
     except Exception:  # noqa: BLE001 - bozuk/eksik profil dosyası
         return None
     if azimuths.size < 2 or not np.isfinite(azimuths).all():
@@ -655,9 +637,7 @@ def _evaluate_with_engine(frame: pd.DataFrame, site: SiteSpec) -> pd.DataFrame |
     evaluated = pd.DataFrame(rows)
     engine_info = {
         "engine": "K3:evaluate_series",
-        "engine_config": (
-            config.as_dict() if callable(getattr(config, "as_dict", None)) else {}
-        ),
+        "engine_config": (config.as_dict() if callable(getattr(config, "as_dict", None)) else {}),
         "horizon_profile": horizon_source,
     }
     evaluated["parameters"] = evaluated["parameters"].map(
@@ -687,16 +667,12 @@ def load_real_site_data(site_id: str) -> pd.DataFrame:
     except Exception as exc:  # bozuk dosya
         raise RealDataError(f"{path} okunamadı: {exc}") from exc
 
-    missing = [
-        column for column in DATA_CONTRACT_COLUMNS if column not in frame.columns
-    ]
+    missing = [column for column in DATA_CONTRACT_COLUMNS if column not in frame.columns]
     if missing:
         raise RealDataError(f"{path}: eksik sütunlar: {', '.join(missing)}")
 
     try:
-        frame["timestamp_utc"] = pd.to_datetime(
-            frame["timestamp_utc"], utc=True, errors="raise"
-        )
+        frame["timestamp_utc"] = pd.to_datetime(frame["timestamp_utc"], utc=True, errors="raise")
     except Exception as exc:  # bozuk zaman damgası
         raise RealDataError(f"{path}: zaman damgaları okunamadı: {exc}") from exc
 
@@ -736,17 +712,12 @@ def _slice_real_frame(
     truncated = requested_end > available_end
     end = min(requested_end, available_end)
 
-    window = frame.loc[
-        (frame["timestamp_utc"] >= start) & (frame["timestamp_utc"] <= end)
-    ].copy()
+    window = frame.loc[(frame["timestamp_utc"] >= start) & (frame["timestamp_utc"] <= end)].copy()
     if len(window) < 2:
-        raise RealDataError(
-            f"Seçilen pencere için yeterli gerçek örnek yok ({len(window)} satır)."
-        )
+        raise RealDataError(f"Seçilen pencere için yeterli gerçek örnek yok ({len(window)} satır).")
 
     offsets_min = (
-        (window["timestamp_utc"] - window["timestamp_utc"].iloc[0]).dt.total_seconds()
-        / 60.0
+        (window["timestamp_utc"] - window["timestamp_utc"].iloc[0]).dt.total_seconds() / 60.0
     ).to_numpy()
     nearest = np.round(offsets_min / step_minutes) * step_minutes
     keep = np.isclose(offsets_min, nearest, atol=2.5)
@@ -791,9 +762,7 @@ def load_site_series(
         except Exception as exc:  # noqa: BLE001 - her hata mock moda düşer
             reason = str(exc) or exc.__class__.__name__
             fallback_site = replace(site, **SYNTHETIC_FALLBACK_PARAMS)
-            frame = generate_synthetic_series(
-                fallback_site, start_utc, days, step_minutes
-            )
+            frame = generate_synthetic_series(fallback_site, start_utc, days, step_minutes)
             normalized = normalize_contract_frame(frame)
             normalized.attrs["data_source"] = SOURCE_MOCK
             normalized.attrs["fallback_reason"] = reason
@@ -826,6 +795,8 @@ class SiteMetrics:
     joint_hours: float
     longest_earth_window: float
     longest_joint_window: float
+    longest_earth_blackout: float
+    optimal_landing_time: str
     sun_share: float
     earth_share: float
     joint_uncertain_share: float
@@ -844,6 +815,21 @@ def _longest_run_hours(flags: pd.Series, step_hours: float) -> float:
     return float(lengths.max())
 
 
+def _find_optimal_landing_start(frame: pd.DataFrame, step_hours: float) -> str:
+    """En uzun kesintisiz ortak görünürlük (Güneş+Dünya) penceresinin başlangıç zamanını bulur."""
+    joint = frame["joint_visible"].eq(VISIBLE)
+    if joint.empty or not joint.any():
+        return "Pencere bulunamadı"
+    run_id = (joint != joint.shift()).cumsum()
+    lengths = joint.groupby(run_id).sum() * step_hours
+    best_run_id = lengths.idxmax()
+    if lengths[best_run_id] <= 0:
+        return "Pencere bulunamadı"
+    first_idx = frame[run_id == best_run_id].index[0]
+    ts = pd.to_datetime(frame.loc[first_idx, "timestamp_utc"])
+    return ts.strftime("%d %b %Y %H:%M UTC")
+
+
 def compute_metrics(frame: pd.DataFrame, step_minutes: int) -> SiteMetrics:
     """Veri sözleşmesine uygun çerçeveden görünürlük metriklerini üretir."""
     step_hours = step_minutes / 60.0
@@ -855,6 +841,11 @@ def compute_metrics(frame: pd.DataFrame, step_minutes: int) -> SiteMetrics:
     earth = frame["earth_visible"].eq(VISIBLE)
     joint = frame["joint_visible"].eq(VISIBLE)
     joint_uncertain = frame["joint_visible"].eq(UNCERTAIN)
+
+    # İletişimsizlik kesintisi (Blackout): Dünya'nın engellenmiş olduğu kesintisiz en uzun süre
+    earth_blocked = frame["earth_visible"].eq(BLOCKED)
+    longest_earth_blackout = _longest_run_hours(earth_blocked, step_hours)
+    optimal_landing = _find_optimal_landing_start(frame, step_hours)
 
     horizon = frame["terrain_horizon_sun_deg"]
     max_index = horizon.idxmax()
@@ -871,6 +862,8 @@ def compute_metrics(frame: pd.DataFrame, step_minutes: int) -> SiteMetrics:
         joint_hours=float(joint.sum() * step_hours),
         longest_earth_window=_longest_run_hours(earth, step_hours),
         longest_joint_window=_longest_run_hours(joint, step_hours),
+        longest_earth_blackout=longest_earth_blackout,
+        optimal_landing_time=optimal_landing,
         sun_share=float(sun.mean()),
         earth_share=float(earth.mean()),
         joint_uncertain_share=float(joint_uncertain.mean()),
@@ -970,8 +963,7 @@ def build_horizon_figure(
             text=["☀"],
             textfont={"size": 13, "color": "#0b1020"},
             hovertemplate=(
-                "Güneş<br>Azimut %{theta:.1f}°<br>Yükseklik %{customdata:.1f}°"
-                "<extra></extra>"
+                "Güneş<br>Azimut %{theta:.1f}°<br>Yükseklik %{customdata:.1f}°<extra></extra>"
             ),
             customdata=[current["sun_alt_deg"]],
         )
@@ -991,8 +983,7 @@ def build_horizon_figure(
             text=["◆"],
             textfont={"size": 12, "color": "#0b1020"},
             hovertemplate=(
-                "Dünya<br>Azimut %{theta:.1f}°<br>Yükseklik %{customdata:.1f}°"
-                "<extra></extra>"
+                "Dünya<br>Azimut %{theta:.1f}°<br>Yükseklik %{customdata:.1f}°<extra></extra>"
             ),
             customdata=[current["earth_alt_deg"]],
         )
@@ -1054,9 +1045,7 @@ def build_visibility_intervals(frame: pd.DataFrame, step_minutes: int) -> pd.Dat
     return pd.DataFrame(records)
 
 
-def build_timeline_figure(
-    frame: pd.DataFrame, step_minutes: int, title: str
-) -> go.Figure:
+def build_timeline_figure(frame: pd.DataFrame, step_minutes: int, title: str) -> go.Figure:
     """Görünür / engellenmiş aralıkları renkli zaman çizelgesi olarak çizer."""
     intervals = build_visibility_intervals(frame, step_minutes)
     figure = px.timeline(
@@ -1085,6 +1074,56 @@ def build_timeline_figure(
         xaxis={"title": None, "gridcolor": "rgba(154,164,191,0.2)"},
     )
     return figure
+
+
+def build_battery_figure(frame: pd.DataFrame, step_minutes: int, title: str) -> go.Figure:
+    """Güneşlenme durumuna göre iniş aracı batarya seviyesini (% SoC) simüle eder."""
+    step_hours = step_minutes / 60.0
+    charge_rate_per_hr = 4.0  # Güneş varken saatte +%4 şarj
+    discharge_rate_per_hr = 1.5  # Güneş yokken saatte -%1.5 tüketim
+
+    soc_values = []
+    current_soc = 90.0  # %90 başlangıç bataryası
+
+    for is_sun_vis in frame["sun_visible"].eq(VISIBLE):
+        if is_sun_vis:
+            current_soc = min(100.0, current_soc + charge_rate_per_hr * step_hours)
+        else:
+            current_soc = max(0.0, current_soc - discharge_rate_per_hr * step_hours)
+        soc_values.append(current_soc)
+
+    timestamps = pd.to_datetime(frame["timestamp_utc"])
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=timestamps,
+            y=soc_values,
+            mode="lines",
+            name="Batarya Seviyesi (% SoC)",
+            line={"color": "#3ddc97", "width": 2.5},
+            fill="tozeroy",
+            fillcolor="rgba(61, 220, 151, 0.12)",
+        )
+    )
+    # %20 Kritik rezerv çizgisi
+    fig.add_hline(
+        y=20,
+        line_dash="dot",
+        line_color="#ff5c5c",
+        annotation_text="Kritik Rezerv (%20)",
+        annotation_position="bottom right",
+    )
+    fig.update_layout(
+        title={"text": f"{title} · Batarya Enerji Simülasyonu", "font": {"size": 13}},
+        height=200,
+        margin={"l": 10, "r": 10, "t": 35, "b": 10},
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(20,26,46,0.5)",
+        font={"color": "#e8ecf8"},
+        yaxis={"title": "Şarj (%)", "range": [0, 105], "gridcolor": "rgba(154,164,191,0.2)"},
+        xaxis={"gridcolor": "rgba(154,164,191,0.2)"},
+    )
+    return fig
 
 
 # ---------------------------------------------------------------------------
@@ -1217,18 +1256,12 @@ def render_header(
     """Başlık ve durum rozetleri."""
     chips = []
     if source_mode == SOURCE_REAL:
-        chips.append(
-            '<span class="ls-chip ls-chip-ok">K2/K3 ekip çıktısı · outputs/</span>'
-        )
+        chips.append('<span class="ls-chip ls-chip-ok">K2/K3 ekip çıktısı · outputs/</span>')
     else:
-        chips.append(
-            '<span class="ls-chip ls-chip-warn">Çevrimdışı mock · test_fixture</span>'
-        )
+        chips.append('<span class="ls-chip ls-chip-warn">Çevrimdışı mock · test_fixture</span>')
     chips.append('<span class="ls-chip">JPL Horizons · K1</span>')
     if engine_active:
-        chips.append(
-            '<span class="ls-chip ls-chip-ok">Görünürlük motoru · K3 etkin</span>'
-        )
+        chips.append('<span class="ls-chip ls-chip-ok">Görünürlük motoru · K3 etkin</span>')
     else:
         chips.append('<span class="ls-chip">Görünürlük motoru · K3</span>')
     if fallback_reason:
@@ -1309,9 +1342,7 @@ def render_sidebar_controls() -> tuple[int, int, dt.datetime, str]:
         key="source_mode",
     )
     if source_mode == SOURCE_REAL:
-        st.sidebar.caption(
-            f"Kaynak: `{OUTPUT_K3_DIR.as_posix()}/<Site>_visibility.csv`"
-        )
+        st.sidebar.caption(f"Kaynak: `{OUTPUT_K3_DIR.as_posix()}/<Site>_visibility.csv`")
         if not REAL_AVAILABLE:
             st.sidebar.warning("Gerçek çıktı bulunamadı; mock moda düşülecek.")
     else:
@@ -1401,9 +1432,7 @@ def render_sidebar_controls() -> tuple[int, int, dt.datetime, str]:
         ),
         unsafe_allow_html=True,
     )
-    st.sidebar.caption(
-        "Veri sözleşmesi: `docs/DATA_CONTRACT.md` (UTC, doğu-pozitif, 3 durum)"
-    )
+    st.sidebar.caption("Veri sözleşmesi: `docs/DATA_CONTRACT.md` (UTC, doğu-pozitif, 3 durum)")
 
     with st.sidebar.expander("Yöntem ve sınırlar"):
         st.markdown(
@@ -1428,17 +1457,13 @@ def render_site_panel(
 ) -> None:
     """Tek bir bölgenin metrik ve engel özetini sütuna çizer."""
     with column:
-        source_note = (
-            "K2/LOLA ufuk profili" if spec.origin == "real" else "yaklaşık · mock"
-        )
+        source_note = "K2/LOLA ufuk profili" if spec.origin == "real" else "yaklaşık · mock"
         st.caption(f"Koordinat: {spec.coordinates} · {source_note}")
 
         sun_delta = metrics.sun_hours - compare.sun_hours
         earth_delta = metrics.earth_hours - compare.earth_hours
         joint_delta = metrics.joint_hours - compare.joint_hours
-        joint_longest_delta = (
-            metrics.longest_joint_window - compare.longest_joint_window
-        )
+        joint_longest_delta = metrics.longest_joint_window - compare.longest_joint_window
 
         first, second = st.columns(2)
         first.metric(
@@ -1471,8 +1496,9 @@ def render_site_panel(
             border=True,
         )
 
-        # Artemis operasyonu için kritik: kesintisiz şarj + haberleşme penceresi.
-        st.metric(
+        # Artemis operasyonu için kritik: kesintisiz şarj + haberleşme penceresi ve blackout riski.
+        fifth, sixth = st.columns(2)
+        fifth.metric(
             "En Uzun Kesintisiz İletişim (Güneş+Dünya)",
             f"{metrics.longest_joint_window:.1f} sa",
             f"{joint_longest_delta:+.1f} sa",
@@ -1482,9 +1508,21 @@ def render_site_panel(
             ),
             border=True,
         )
-        st.caption(
-            "Kritik karar metriği: kesintisiz ortak görünürlük, görev boyunca "
-            "enerji ve iletişimin aynı anda sağlandığı en uzun aralıktır."
+        blackout_delta = metrics.longest_earth_blackout - compare.longest_earth_blackout
+        sixth.metric(
+            "Maksimum İletişimsizlik",
+            f"{metrics.longest_earth_blackout:.1f} sa",
+            f"{blackout_delta:+.1f} sa",
+            delta_color="inverse",
+            help="Dünya ile görüş hattının kesintisiz koptuğu en uzun kör nokta süresi.",
+            border=True,
+        )
+
+        best_dur = metrics.longest_joint_window
+        st.info(
+            f"🎯 **Taktik İniş Önerisi:** {metrics.optimal_landing_time}\n\n"
+            f"*(En uzun pencere: {best_dur:.1f} sa kesintisiz güç ve iletişim)*",
+            icon="🚀",
         )
 
         with st.expander("Topoğrafik engel özeti", expanded=True):
@@ -1503,17 +1541,13 @@ def render_site_panel(
             )
 
 
-def render_source_cards(
-    spec_a: SiteSpec, spec_b: SiteSpec, frame_a: pd.DataFrame
-) -> None:
+def render_source_cards(spec_a: SiteSpec, spec_b: SiteSpec, frame_a: pd.DataFrame) -> None:
     """K1/K2/K3 kaynaklarını, dosya yollarını ve sözleşme durumunu gösterir."""
     k1_ready = _module_implemented("luna_sight.ephemeris")
     k2_ready = spec_a.horizon_csv is not None and spec_a.horizon_csv.is_file()
     k3_path = OUTPUT_K3_DIR / f"{spec_a.site_id}_visibility.csv"
     k3_ready = k3_path.is_file()
-    contract_missing = [
-        column for column in DATA_CONTRACT_COLUMNS if column not in frame_a.columns
-    ]
+    contract_missing = [column for column in DATA_CONTRACT_COLUMNS if column not in frame_a.columns]
 
     st.markdown("**Entegrasyon durumu**")
     st.markdown(_integration_badges_html(), unsafe_allow_html=True)
@@ -1652,9 +1686,7 @@ def main() -> None:
         )
 
     # --- Adım 1: A/B aday bölge seçimi -----------------------------------
-    st.markdown(
-        "<div class='ls-step'>1 · Aday bölge seçimi</div>", unsafe_allow_html=True
-    )
+    st.markdown("<div class='ls-step'>1 · Aday bölge seçimi</div>", unsafe_allow_html=True)
     column_a, column_b = st.columns(2, gap="large")
 
     options = list(catalog)
@@ -1791,9 +1823,19 @@ def main() -> None:
                     frame_a, step_minutes, f"Bölge A · {catalog[selected_a].label}"
                 )
             )
+            st.plotly_chart(
+                build_battery_figure(
+                    frame_a, step_minutes, f"Bölge A · {catalog[selected_a].label}"
+                )
+            )
         with right:
             st.plotly_chart(
                 build_timeline_figure(
+                    frame_b, step_minutes, f"Bölge B · {catalog[selected_b].label}"
+                )
+            )
+            st.plotly_chart(
+                build_battery_figure(
                     frame_b, step_minutes, f"Bölge B · {catalog[selected_b].label}"
                 )
             )
