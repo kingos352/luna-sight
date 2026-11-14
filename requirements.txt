@@ -27,7 +27,7 @@ plotly==7.1.0
 # docs/DATA_CONTRACT.md zorunlu alanlarını, enum değerlerini ve açı
 # aralıklarını kodda zorlamak için. K1-K3-K4 modül sınırında tek
 # doğrulama kapısı. Reddedilirse bu satır ve ADR-006 geri alınır.
-pandera[pandas]==0.36.0
+# pandera[pandas]==0.36.0
 
 # İhtiyaç doğduğunda açılacak adaylar.
 # Açmadan önce docs/DECISIONS.md içine karar satırı ekleyin.
