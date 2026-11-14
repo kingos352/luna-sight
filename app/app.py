@@ -414,7 +414,7 @@ def generate_synthetic_series(
             "earth_visible": np.where(earth_visible, VISIBLE, BLOCKED),
             "joint_visible": np.where(joint_visible, VISIBLE, BLOCKED),
             "quality_flag": "test_fixture",
-            "source_id": "SYNTHETIC-ANALYTIC",
+            "source_id": "synthetic-analytic",
             "source_version": "v0",
             "model_id": f"lunar-analytic-{site.site_id.lower()}",
             "parameters": json.dumps(
