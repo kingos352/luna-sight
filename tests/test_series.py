@@ -47,7 +47,7 @@ def test_timeseries_matches_data_contract(site: Site) -> None:
     assert (frame["site_id"] == "shackleton_rim_a").all()
     assert (frame["longitude_deg_east"] == 0.0).all()
     assert (frame["quality_flag"] == "valid").all()
-    assert (frame["source_id"] == "jpl_horizons").all()
+    assert (frame["source_id"] == "jpl-horizons").all()
     assert (frame["model_id"] == "DE441").all()
     assert (frame["source_version"] == "1.2").all()
     assert set(raw) == {"sun", "earth"}
