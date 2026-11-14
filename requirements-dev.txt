@@ -1,20 +1,20 @@
-﻿# LUNA SIGHT - gelistirme ve test bagimliliklari
-# Calisma zamani bagimliliklari icin requirements.txt kullanilir.
+# LUNA SIGHT - geliştirme ve test bağımlılıkları
+# Kurulum: .venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 -r requirements.txt
 
 pytest==9.2.0
 ruff==0.17.5
 
-# Kapsam raporu (.gitignore zaten .coverage ve htmlcov/ disliyor)
+# Kapsam raporu (.gitignore zaten .coverage ve htmlcov/ dışlıyor)
 pytest-cov==7.1.0
 
-# HTTP testleri. Aga bagimli test yok: gercek Horizons yaniti bir kez
-# kasete kaydedilir ve cevrimdisi oynatilir. Kasetler test_fixture sayilir.
+# HTTP testleri. Ağa bağımlı test yok: gerçek Horizons yanıtı bir kez
+# kasete kaydedilir ve çevrimdışı oynatılır. Kasetler test_fixture sayılır.
 pytest-recording==0.14.1
 
-# Kasetle uretilemeyen hata yollari: HTTP 5xx, zaman asimi, kesik $$SOE
-# blogu. quality_flag = partial / missing mantiginin testi icin.
+# Kasetle üretilemeyen hata yolları: HTTP 5xx, zaman aşımı, kesik $$SOE
+# bloğu. quality_flag = partial / missing mantığının testi için.
 responses==0.26.3
 
-# .env.example icindeki LUNA_SIGHT_* degerlerini yerelde okumak icin.
+# .env.example içindeki LUNA_SIGHT_* değerlerini yerelde okumak için.
 python-dotenv==1.2.4
