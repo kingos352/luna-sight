@@ -59,6 +59,7 @@ küçük yuvarlama farkları görülebilir.
 | Güneş görünürlüğü | ≈ %28 | ≈ %41 |
 | Dünya görünürlüğü | ≈ %36 | ≈ %42 |
 | Ortak görünürlük | ≈ 25 sa | ≈ 45 sa |
+| En uzun kesintisiz ortak iletişim | ≈ 25 sa | ≈ 45 sa |
 | En uzun Dünya penceresi | ≈ 61 sa | ≈ 71 sa |
 | Ortalama ufuk yüksekliği | ≈ −0,4° | ≈ 3,3° |
 | En yüksek ufuk engeli | ≈ 2,2° (azimut 54°) | ≈ 32,1° (azimut 86°) |
@@ -118,7 +119,7 @@ gördüğü etiketi söylemeli.
 
 ### 00:30–01:00 — Aday Bölge Karşılaştırması
 
-**Ekran:** Adım 1 ve Adım 2 görünür. A/B sütunlarındaki dört metrik kartı ve
+**Ekran:** Adım 1 ve Adım 2 görünür. A/B sütunlarındaki beş metrik kartı ve
 “Topoğrafik engel özeti” açılır kutusu.
 
 **Çekim adımları**
@@ -127,17 +128,20 @@ gördüğü etiketi söylemeli.
    **Site01 · Connecting ridge**, **Site04 · Shackleton rim**.
 2. 00:38–00:48: Sol sütunda Güneş/Dünya/ortak görünürlük metrikleri; sağ sütunda
    aynı metriklerin daha yüksek değerleri.
-3. 00:48–01:00: “En uzun Dünya penceresi” ve “Topoğrafik engel özeti” satırları;
+3. 00:48–00:54: Her iki sütunda **“En Uzun Kesintisiz İletişim (Güneş+Dünya)”**
+   kartı vurgulanır; bu, Artemis için şarj ve haberleşmenin aynı anda sağlandığı
+   en uzun aralıktır.
+4. 00:54–01:00: “En uzun Dünya penceresi” ve “Topoğrafik engel özeti” satırları;
    imleç iki sütun arasında karşılaştırma yapar.
 
 **Anlatım (voice-over)**
 
 > Burada iki adayı yan yana görüyoruz: solda Site01, Connecting ridge; sağda
 > Site04, Shackleton rim. Varsayılan pencere yedi gün, bir saatlik örnekleme.
-> Her kartta dört metrik var: Güneş görünürlük süresi, Dünya görünürlük süresi,
-> ortak görünürlük ve en uzun kesintisiz Dünya penceresi. Bu pencerede Site04
-> yaklaşık yüzde kırk bir Güneş, yüzde kırk iki Dünya görünürlüğü veriyor; Site01
-> ise yüzde yirmi sekiz ve yüzde otuz altı. Fark, topoğrafik ufkun yüksekliğinden
+> Her kartta beş metrik var: Güneş süresi, Dünya süresi, ortak görünürlük, en
+> uzun Dünya penceresi ve Artemis için en kritik olan **en uzun kesintisiz ortak
+> iletişim penceresi**. Bu pencerede Site04 kırk beş saat kesintisiz ortak
+> görünürlük veriyor; Site01 yirmi beş saat. Fark, topoğrafik ufkun yüksekliğinden
 > geliyor.
 
 **Sunucu ipucu:** Rakamları yuvarlayın; “yaklaşık” demek güvenilirliği artırır.
@@ -182,9 +186,11 @@ atlamayın; 6–8 kademeli sürükleme hareketi videoda okunur olur.
 
 **Çekim adımları**
 
-1. 01:30–01:40: Üç kaynak kartı okunur: **K1 · JPL Horizons**,
-   **K2 · LOLA DEM ufuk profili**, **K3 · Görünürlük motoru**. Kartlarda dosya
-   yolları ve yeşil/uyarı simgeleri görünür.
+1. 01:30–01:40: Entegrasyon rozetleri okunur: **K2 · LOLA DEM · Tam Entegre ·
+   Aktif**, **K3 · Görünürlük ve Pencere Motoru · Tam Entegre · Aktif**; K1
+   rozeti amber renkte **“Bekliyor · Sentetik”** durumunu gösterir. Ardından üç
+   kaynak kartı: **K1 · JPL Horizons**, **K2 · LOLA DEM ufuk profili**,
+   **K3 · Görünürlük motoru**.
 2. 01:40–01:47: “Veri sözleşmesi (`docs/DATA_CONTRACT.md`): ✅ tam · 18 zorunlu
    alan” satırı ve kalite bayrağı `test_fixture` uyarısı gösterilir.
 3. 01:47–01:53: Kenar çubuğunda **Veri Kaynağı → Çevrimdışı Mock Modu (Test
@@ -194,13 +200,15 @@ atlamayın; 6–8 kademeli sürükleme hareketi videoda okunur olur.
 
 **Anlatım (voice-over)**
 
-> Güvenilirlik için her sayının kaynağı görünür. Veri ve kaynak sekmesinde üç
-> kart var: JPL Horizons efemerisi, LOLA DEM ufuk profili ve görünürlük motoru;
-> dosya yolları ve veri sözleşmesinin on sekiz zorunlu alanı burada. Şeffaf
-> olalım: girdi efemerisi şu an sentetik bir senaryo ve çıktılar `test_fixture`
-> etiketli; gerçek Horizons verisi bağlandığında aynı arayüz çalışacak. Üstelik
-> dosyalar okunamazsa uygulama çökmez, güvenli çevrimdışı moda düşer. LUNA SIGHT
-> bir ön değerlendirme aracıdır; iniş güvenliği kararını vermez.
+> Güvenilirlik için her sayının kaynağı görünür. Veri ve kaynak sekmesinde
+> entegrasyon rozetleri ve üç kart var: JPL Horizons efemerisi, LOLA DEM ufuk
+> profili ve görünürlük motoru; dosya yolları ve veri sözleşmesinin on sekiz
+> zorunlu alanı burada. K2 ve K3 tam entegre ve aktif; K1 efemerisi ise şu an
+> sentetik senaryoyla çalışıyor ve bu rozette açıkça görünüyor. Şeffaf olalım:
+> çıktılar `test_fixture` etiketli; gerçek Horizons verisi bağlandığında aynı
+> arayüz çalışacak. Üstelik dosyalar okunamazsa uygulama çökmez, güvenli
+> çevrimdışı moda düşer. LUNA SIGHT bir ön değerlendirme aracıdır; iniş
+> güvenliği kararını vermez.
 
 **Sunucu ipucu:** Fallback'i gösterirken “veri uyduruyoruz” demeyin; “çevrimdışı
 test verisiyle çalışmaya devam ediyor” deyin.
