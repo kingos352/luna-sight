@@ -1,0 +1,16 @@
+# LUNA SIGHT - NASA temali koyu uzay gorunumu
+# Streamlit bu dosyayi otomatik okur; app/app.py icinde CSS de destekler.
+
+[theme]
+base = "dark"
+primaryColor = "#5aa9ff"
+backgroundColor = "#0b1020"
+secondaryBackgroundColor = "#141a2e"
+textColor = "#e8ecf8"
+font = "sans serif"
+
+[browser]
+gatherUsageStats = false
+
+[server]
+headless = true
