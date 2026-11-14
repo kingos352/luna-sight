@@ -1,6 +1,5 @@
 """DEM okuma, LDEC boşluk maskesi ve projeksiyon doğrulaması (test_fixture)."""
 
-import math
 
 import numpy as np
 import pytest
@@ -92,7 +91,9 @@ def test_projection_matches_gdal():
     points = [(0.0, -89.9), (45.0, -89.0), (-120.0, -88.0)]
     lons = [p[0] for p in points]
     lats = [p[1] for p in points]
-    xs, ys = warp_transform(f"+proj=longlat +R={R_MOON_M:.1f} +no_defs", SOUTH_POLAR_PROJ, lons, lats)
+    xs, ys = warp_transform(
+        f"+proj=longlat +R={R_MOON_M:.1f} +no_defs", SOUTH_POLAR_PROJ, lons, lats
+    )
 
     for (lon, lat), gx, gy in zip(points, xs, ys, strict=True):
         mx, my = lonlat_to_xy(lon, lat)

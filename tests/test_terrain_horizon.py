@@ -218,9 +218,13 @@ def test_horizon_from_profile_interpolation_and_tolerance():
 
     # 5. interpolate=False ve tolerance kontrolü
     # 44° -> en yakın 0 veya 90 mı? 44° -> 0° farkı 44°, 90° farkı 46° -> en yakın 0° (10.0)
-    assert horizon_from_profile(profile, 2.0, interpolate=False, azimuth_tolerance_deg=5.0) == pytest.approx(10.0)
+    assert horizon_from_profile(
+        profile, 2.0, interpolate=False, azimuth_tolerance_deg=5.0
+    ) == pytest.approx(10.0)
     # Tolerans 1° iken 2° sorgulanırsa tolerans aşımı -> NaN
-    assert np.isnan(horizon_from_profile(profile, 2.0, interpolate=False, azimuth_tolerance_deg=1.0))
+    assert np.isnan(
+        horizon_from_profile(profile, 2.0, interpolate=False, azimuth_tolerance_deg=1.0)
+    )
 
     # 6. QUALITY_MISSING durumunda daima NaN
     profile_missing = HorizonProfile(
