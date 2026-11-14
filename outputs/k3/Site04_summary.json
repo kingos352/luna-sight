@@ -1,4 +1,8 @@
 {
+  "site_id": "Site04",
+  "latitude_deg": -89.766811,
+  "longitude_deg_east": 188.130102,
+  "synthetic_test_fixture": true,
   "site": {
     "site_id": "Site04",
     "latitude_deg": -89.766811,
