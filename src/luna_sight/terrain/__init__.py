@@ -12,6 +12,7 @@ from luna_sight.terrain.horizon import (
     HorizonProfile,
     compare_radii,
     compute_horizon,
+    horizon_from_profile,
 )
 from luna_sight.terrain.polar import (
     R_MOON_M,
@@ -30,6 +31,7 @@ __all__ = [
     "azimuth_unit_vector",
     "compare_radii",
     "compute_horizon",
+    "horizon_from_profile",
     "load_lola_dem",
     "lonlat_to_xy",
     "scan_coverage",

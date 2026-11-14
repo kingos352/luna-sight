@@ -1,0 +1,27 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "luna-sight"
+version = "0.1.0"
+description = "NASA Space Apps - Moon South Pole Landing Site & Visibility Tool"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=2.0",
+    "pandas>=2.2",
+    "requests>=2.32",
+    "rasterio>=1.4",
+    "pyproj>=3.6",
+    "streamlit>=1.35.0",
+    "plotly>=5.20.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

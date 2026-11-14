@@ -125,6 +125,21 @@ class HorizonProfile:
             "notes": list(self.notes),
         }
 
+    def horizon_at(
+        self,
+        azimuth_deg: float | np.ndarray | list[float],
+        *,
+        interpolate: bool = True,
+        azimuth_tolerance_deg: float | None = None,
+    ) -> float | np.ndarray:
+        """Verilen azimut(lar) için ufuk açısını döndürür."""
+        return horizon_from_profile(
+            self,
+            azimuth_deg,
+            interpolate=interpolate,
+            azimuth_tolerance_deg=azimuth_tolerance_deg,
+        )
+
 
 def _ray_grid(
     dem: DemGrid,
@@ -281,3 +296,62 @@ def compare_radii(
         "profiles": [p.summary() for p in profiles],
         "max_horizon_delta_deg": None if not deltas else round(max(deltas), 6),
     }
+
+
+def horizon_from_profile(
+    profile: HorizonProfile,
+    azimuth_deg: float | np.ndarray | list[float],
+    *,
+    interpolate: bool = True,
+    azimuth_tolerance_deg: float | None = None,
+) -> float | np.ndarray:
+    """Verilen ufuk profilinden istenen azimut(lar) için ufuk açısını döndürür.
+
+    K3 görünürlük motorunun Güneş ve Dünya azimutlarındaki topoğrafik ufuk
+    yükseklik açılarını (``terrain_horizon_sun_deg``, ``terrain_horizon_earth_deg``)
+    hesaplamasında kullanılır.
+
+    Parametreler:
+        profile:
+            ``compute_horizon`` ile üretilmiş ``HorizonProfile`` nesnesi.
+        azimuth_deg:
+            Sorgulanacak azimut veya azimut dizisi (derece cinsinden).
+        interpolate:
+            True ise dairesel periyodik [0, 360) doğrusal enterpolasyon yapar.
+            False ise en yakın azimut değerini seçer.
+        azimuth_tolerance_deg:
+            En yakın azimut eşleşmesinde (interpolate=False) izin verilen
+            en büyük açısal fark (derece). Fark toleransı aşarsa NaN döner.
+
+    Dönüş:
+        Skaler azimut için float, dizi için np.ndarray ufuk yükseklik açısı (derece).
+    """
+    is_scalar = np.isscalar(azimuth_deg)
+    query_az = np.asarray(azimuth_deg, dtype=float)
+    query_norm = np.mod(query_az, 360.0)
+
+    if profile.quality_flag == QUALITY_MISSING or profile.azimuth_deg.size == 0:
+        nan_res = np.full(query_norm.shape, np.nan)
+        return float(nan_res.item()) if is_scalar else nan_res
+
+    order = np.argsort(profile.azimuth_deg)
+    src_az = profile.azimuth_deg[order]
+    src_hz = profile.horizon_deg[order]
+
+    if interpolate:
+        ext_az = np.append(src_az, src_az[0] + 360.0)
+        ext_hz = np.append(src_hz, src_hz[0])
+        result = np.interp(query_norm, ext_az, ext_hz)
+    else:
+        diff = np.abs(query_norm[..., None] - src_az[None, :])
+        angular_dist = np.minimum(diff, 360.0 - diff)
+        nearest_idx = np.argmin(angular_dist, axis=-1)
+        min_dist = np.take_along_axis(angular_dist, nearest_idx[..., None], axis=-1).squeeze(axis=-1)
+
+        result = src_hz[nearest_idx]
+        if azimuth_tolerance_deg is not None:
+            result = np.where(min_dist <= azimuth_tolerance_deg, result, np.nan)
+
+    if is_scalar:
+        return float(result.item())
+    return result

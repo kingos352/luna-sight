@@ -178,3 +178,63 @@ def test_gap_scan_reports_fractions():
     assert report.native_coverage_fraction[0] == pytest.approx(1.0, abs=1e-9)
     assert 0.7 < report.native_coverage_fraction[1] < 0.9
     assert report.pixel_count[0] < report.pixel_count[1]
+
+
+def test_horizon_from_profile_interpolation_and_tolerance():
+    from luna_sight.terrain.horizon import HorizonProfile, horizon_from_profile
+
+    # Sentetik 4 yönlü profil: 0: 10°, 90: 20°, 180: 30°, 270: 40°
+    az = np.array([0.0, 90.0, 180.0, 270.0])
+    hz = np.array([10.0, 20.0, 30.0, 40.0])
+    cfg = HorizonConfig()
+    profile = HorizonProfile(
+        x_m=0.0,
+        y_m=0.0,
+        lon_deg=0.0,
+        lat_deg=-89.0,
+        config=cfg,
+        azimuth_deg=az,
+        horizon_deg=hz,
+        occluder_distance_m=np.full(4, 1000.0),
+        gap_fraction=np.zeros(4),
+        native_coverage=np.ones(4),
+        quality_flag=QUALITY_VALID,
+    )
+
+    # 1. Tam azimut eşleşmesi
+    assert horizon_from_profile(profile, 0.0) == pytest.approx(10.0)
+    assert horizon_from_profile(profile, 90.0) == pytest.approx(20.0)
+    assert horizon_from_profile(profile, 360.0) == pytest.approx(10.0)  # Modulo 360
+
+    # 2. Ara açı doğrusal enterpolasyonu (45° -> 10 ve 20 arası -> 15°)
+    assert horizon_from_profile(profile, 45.0, interpolate=True) == pytest.approx(15.0)
+
+    # 3. 360/0 dairesel döngü enterpolasyonu (315° -> 270: 40° ile 360: 10° arası -> 25°)
+    assert horizon_from_profile(profile, 315.0, interpolate=True) == pytest.approx(25.0)
+
+    # 4. profile.horizon_at metodu
+    arr_res = profile.horizon_at(np.array([0.0, 45.0, 90.0]))
+    assert np.allclose(arr_res, [10.0, 15.0, 20.0])
+
+    # 5. interpolate=False ve tolerance kontrolü
+    # 44° -> en yakın 0 veya 90 mı? 44° -> 0° farkı 44°, 90° farkı 46° -> en yakın 0° (10.0)
+    assert horizon_from_profile(profile, 2.0, interpolate=False, azimuth_tolerance_deg=5.0) == pytest.approx(10.0)
+    # Tolerans 1° iken 2° sorgulanırsa tolerans aşımı -> NaN
+    assert np.isnan(horizon_from_profile(profile, 2.0, interpolate=False, azimuth_tolerance_deg=1.0))
+
+    # 6. QUALITY_MISSING durumunda daima NaN
+    profile_missing = HorizonProfile(
+        x_m=0.0,
+        y_m=0.0,
+        lon_deg=0.0,
+        lat_deg=-89.0,
+        config=cfg,
+        azimuth_deg=az,
+        horizon_deg=hz,
+        occluder_distance_m=np.full(4, 1000.0),
+        gap_fraction=np.ones(4),
+        native_coverage=np.zeros(4),
+        quality_flag=QUALITY_MISSING,
+    )
+    assert np.isnan(horizon_from_profile(profile_missing, 45.0))
+
