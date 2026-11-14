@@ -294,6 +294,36 @@ health yanıtı `ok`.
 
 Veriyi sıfırdan üretmek için `docs/REAL_RUN.md` bölüm 7.
 
+### Videoyu yeniden üret
+
+Bu senaryo elle de çekilebilir, ama teslim edilen video üç betikle
+**yeniden üretilebilir** biçimde kurulmuştur:
+
+```powershell
+# 1) Uygulamayı kayıt için ayağa kaldır
+$env:PYTHONPATH = "src"
+.\.venv\Scripts\python.exe -m streamlit run app\app.py --server.port 8502 `
+  --server.headless true --client.toolbarMode minimal
+
+# 2) Gerçek arayüzden kareleri yakala (28 kare, 1920x900)
+.\.venv\Scripts\python.exe scripts\k5_record_demo.py --out build\frames
+
+# 3) Anlatımı seslendir ve sürelerini ölç
+.\.venv\Scripts\python.exe scripts\k5_synthesize_narration.py
+
+# 4) Videoyu kur (1080p30, H.264+AAC) ve .srt yaz
+.\.venv\Scripts\python.exe scripts\k5_build_video.py
+```
+
+Anlatım metninin tek kaynağı `docs/demo_narration_en.json`; ses, gömülü
+altyazı ve `.srt` dosyası aynı dosyadan türer, bu yüzden ayrışamazlar.
+Segment süreleri tahmin edilmez, seslendirmeden ölçülür.
+
+Anlatım **İngilizce**: NASA Space Apps değerlendirmesi İngilizce yürütülür ve
+bu makinede Türkçe TTS sesi yoktur. İnsan seslendirmesi tercih edilirse aynı
+`.srt` zamanlamasıyla ses değiştirilebilir; bu durumda yukarıdaki 3. adım
+atlanır ve kendi ses dosyanız `k5_build_video.py` çıktısına bindirilir.
+
 ---
 
 ## 7. Sunum ekibi için tek paragraflık özet

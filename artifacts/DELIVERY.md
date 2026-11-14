@@ -88,9 +88,33 @@ Git'e eklenmez (`data/cache/`, `.gitignore`).
 | Ürün kayıtları | `docs/K1_EPHEMERIS.md`, `K2_HORIZON.md`, `K3_VISIBILITY.md`, `REAL_RUN.md` | **hazır** |
 | Entegrasyon sözleşmesi | `docs/GOVERNANCE.md`, `governance/registry.json` | **hazır** |
 | Demo senaryosu | `docs/DEMO_SCRIPT.md` | **hazır**, gerçek sayılarla yenilendi |
-| Demo videosu | Drive (`docs/DRIVE_LAYOUT.md`) | **EKSİK — çekilmedi** |
+| Demo videosu | `build/luna_sight_demo_120s_v2.mp4` | **üretildi** — 121.81 sn, 1920×1080, 30 fps, H.264+AAC, 4.47 MB. Drive yüklemesi bekliyor |
+| Altyazı dosyası | `artifacts/luna_sight_demo_120s_v2.en.srt` | **hazır** — 17 girdi, anlatımın tamamı |
+| Anlatım kaynağı | `docs/demo_narration_en.json` | **hazır** — ses, gömülü altyazı ve `.srt` tek kaynaktan |
 | Sunum destesi | Drive | **EKSİK** |
-| Altyazı dosyası | Drive | **EKSİK** |
+
+### Demo videosu nasıl üretildi
+
+Video elle kaydedilmedi; üç betikle **yeniden üretilebilir** biçimde kuruldu:
+
+| Betik | İş |
+|---|---|
+| `scripts/k5_record_demo.py` | Kurulu Chrome'u DevTools Protokolü ile sürer, gerçek arayüzden 1920×900 kare yakalar (28 kare, 18'i zaman kaydırıcısı animasyonu) |
+| `scripts/k5_synthesize_narration.py` | Anlatımı Windows SAPI ile seslendirir ve her segmentin süresini `ffprobe` ile **ölçer** |
+| `scripts/k5_build_video.py` | Kare ve altyazı sınırlarını birleştirip ffmpeg ile 1080p30 H.264 kurar, sesi bindirir, `.srt` yazar |
+
+Zamanlama tahmin edilmez: segment süreleri seslendirmeden ölçülür, kareler ve
+altyazı parçaları o ölçülen süre içine dağıtılır. Altyazı arayüzün üzerine
+binmez — arayüz 900 piksel yüksekliğinde yakalanır, kalan 180 piksel altyazı
+şeridine ayrılır.
+
+Videoda görünen her sayı `outputs/k3` dosyalarından gelir; ayrı bir sunum
+verisi yoktur.
+
+**Anlatım dili İngilizce.** Gerekçe: NASA Space Apps değerlendirmesi İngilizce
+yürütülür ve bu makinede Türkçe TTS sesi yok (`Microsoft Zira`, en-US).
+Türkçe metni İngilizce sesle okutmak jüri videosunda kabul edilemezdi. Arayüz
+Türkçe kalır; karar `docs/demo_narration_en.json` içinde kayıtlı.
 
 Dosya adı, Drive bağlantısı, sürüm, sahip ve doğrulama durumu
 `artifacts/manifest.csv` içinde tutulur.
@@ -99,8 +123,10 @@ Dosya adı, Drive bağlantısı, sürüm, sahip ve doğrulama durumu
 
 Teslimle birlikte açıkça beyan edilir.
 
-1. **Demo videosu çekilmedi.** Senaryo hazır ve gerçek sayılarla doğrulandı
-   (`docs/DEMO_SCRIPT.md`), kayıt yapılmadı. Sunum destesi ve altyazı da eksik.
+1. **Demo videosu üretildi ama Drive'a yüklenmedi.** Dosya yerelde
+   (`build/`, Git tarafından izlenmez), SHA-256 manifestte. Sunum destesi hâlâ
+   eksik. Videonun anlatımı sentezlenmiş İngilizce sestir; insan seslendirmesi
+   istenirse aynı `.srt` zamanlamasıyla değiştirilebilir.
 2. **Gözlemci noktası DEM karo merkezidir**, optimize edilmiş iniş elipsi değil.
 3. **5 m/piksel yüzeyde gerçek LOLA dönüş oranı %8–11**; gerisi
    enterpolasyonlu. Ufuk açısında sistematik belirsizlik yaratır.
@@ -123,7 +149,8 @@ Teslimle birlikte açıkça beyan edilir.
 
 | Konu | Sahip |
 |---|---|
-| Demo videosu, sunum destesi, altyazı | K4 + K5 |
+| Demo videosunun Drive'a yüklenmesi ve bağlantının manifeste yazılması | K5 |
+| Sunum destesi | K5 |
 | `app/app.py` içinde `source_id` değerine `"+K3"` eklenmesi; kanonik sözlükte olmayan değer indirilen CSV'ye geçiyor | K4 |
 | `outputs/k2/*_summary_20000m.json` dosyalarında `dem` köken bölümünün eksikliği | K2 |
 | `scripts/k3_sensitivity.py` çok bölgeli `--series` kabul etmiyor | K3 |

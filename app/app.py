@@ -1444,7 +1444,8 @@ def render_sidebar_controls() -> tuple[int, int, dt.datetime, str]:
             "K1 · JPL Horizons efemerisi",
             SRC_DIR / "luna_sight" / "ephemeris",
             k1_ready,
-            "Modül hazır; API bağlandığında gerçek Güneş/Dünya serisi kullanılır."
+            "Modül hazır. Görünürlük çıktıları bu modülün ürettiği "
+            "Horizons serisiyle hesaplandı."
             if k1_ready
             else "Henüz yok; efemeris sentetik (test_fixture).",
         ),
@@ -1596,7 +1597,8 @@ def render_source_cards(spec_a: SiteSpec, spec_b: SiteSpec, frame_a: pd.DataFram
                 "K1 · JPL Horizons",
                 SRC_DIR / "luna_sight" / "ephemeris",
                 k1_ready,
-                "Gerçek efemeris modülü bağlandığında otomatik kullanılır."
+                "Görünürlük çıktıları bu modülün ürettiği Horizons serisiyle "
+                "hesaplandı; köken her satırda taşınır."
                 if k1_ready
                 else "Modül yok: efemeris sentetik senaryo (test_fixture).",
             ),
