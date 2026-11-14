@@ -28,6 +28,7 @@ from __future__ import annotations
 import datetime as dt
 import importlib
 import json
+import math
 import os
 import sys
 import zlib
@@ -46,6 +47,15 @@ SRC_DIR = REPO_ROOT / "src"
 HORIZON_DIR = REPO_ROOT / "data" / "derived"
 if SRC_DIR.is_dir() and str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
+
+from luna_sight.terrain.surface_3d import (
+    COLOR_SITE_A,
+    COLOR_SITE_B,
+    R_MOON_KM,
+    build_lunar_globe_figure,
+    build_polar_relief_figure,
+    compute_lunar_elevation,
+)
 
 # ---------------------------------------------------------------------------
 # Sabitler
@@ -1598,6 +1608,176 @@ def render_source_cards(spec_a: SiteSpec, spec_b: SiteSpec, frame_a: pd.DataFram
     )
 
 
+def render_surface_3d_tab(
+    spec_a: SiteSpec,
+    spec_b: SiteSpec,
+    metrics_a: SiteMetrics,
+    metrics_b: SiteMetrics,
+    source_mode: str,
+) -> None:
+    """3B Ay yüzeyi ve etkileşimli küre görselleştirme sekmesini çizer."""
+    st.caption(
+        "Ay'ın güney kutbuna odaklanmış 3B etkileşimli yüzey modeli. "
+        "Kullanıcı Ay küresini fareyle veya dokunarak serbestçe döndürebilir, "
+        "yakınlaştırıp uzaklaştırabilir."
+    )
+
+    ctrl_col1, ctrl_col2, ctrl_col3, ctrl_col4 = st.columns([1.1, 1.2, 1.2, 1.2])
+    with ctrl_col1:
+        show_grid = st.checkbox(
+            "Enlem - boylam ağı",
+            value=True,
+            key=f"globe_grid_{source_mode}",
+            help="Ekvator, kutup paralelleri (-89°, -88°, -85°, -80°, -75°, -60°, -30°) ve meridyenleri çizer.",
+        )
+    with ctrl_col2:
+        show_south_pole = st.checkbox(
+            "Ay Güney Kutbu (90° G)",
+            value=True,
+            key=f"globe_pole_{source_mode}",
+            help="Dönme ekseninin kesiştiği gerçek Ay Güney Kutbu noktasını ve zemin eksenini gösterir.",
+        )
+    with ctrl_col3:
+        show_craters = st.checkbox(
+            "Doğrulanmış IAU kraterleri",
+            value=True,
+            key=f"globe_craters_{source_mode}",
+            help="Shackleton, Shoemaker, Faustini, de Gerlache, Haworth, Cabeus, Nobile, Amundsen gibi doğrulanmış krater isim ve çaplarını gösterir.",
+        )
+    with ctrl_col4:
+        show_sites = st.checkbox(
+            "Aday iniş bölgeleri (A ve B)",
+            value=True,
+            key=f"globe_sites_{source_mode}",
+            help="Seçilen Bölge A ve Bölge B iniş hedeflerini 3B işaret direği ve zemin hedef halkasıyla gösterir.",
+        )
+
+    cam_options = [
+        ("south_pole", "🔭 Güney Kutbu (Varsayılan)"),
+        ("south_pole_zoom", "🔍 Güney Kutbu Yakın Çekim"),
+        ("site_a", f"🛰️ Bölge A Odaklı ({spec_a.name})"),
+        ("site_b", f"🛰️ Bölge B Odaklı ({spec_b.name})"),
+        ("global", "🌍 Küresel Genel Bakış"),
+    ]
+    camera_focus = st.selectbox(
+        "Kamera görünüm açısı",
+        options=cam_options,
+        format_func=lambda opt: opt[1],
+        index=0,
+        key=f"globe_cam_{source_mode}",
+        help="Varsayılan olarak Güney Kutbuna odaklıdır. Fareyle veya dokunarak serbestçe döndürülebilir ve yakınlaştırılabilir.",
+    )[0]
+
+    with st.expander("Görünüm, derinlik ve ışıklandırma ayarları", expanded=False):
+        opt_col1, opt_col2, opt_col3, opt_col4 = st.columns(4)
+        with opt_col1:
+            view_mode = st.radio(
+                "Görselleştirme Modu",
+                options=["globe", "polar_relief"],
+                format_func=lambda k: "🌐 3B Küresel Ay Küresi" if k == "globe" else "🏔️ 3B Güney Kutbu Rölyefi (260 km)",
+                horizontal=True,
+                key=f"globe_view_mode_{source_mode}",
+            )
+        with opt_col2:
+            default_exagg = 1.8 if view_mode == "globe" else 2.0
+            exaggeration = st.slider(
+                "Yükselti kabartması (çarpan)",
+                min_value=1.0,
+                max_value=3.5,
+                value=default_exagg,
+                step=0.2,
+                key=f"globe_exagg_{source_mode}",
+                help="Ay'ın gerçek küresel formunu bozmayan, yanıltıcı olmayan 1.0x (birebir gerçek ölçek) ile 3.5x arası doğal derinlik.",
+            )
+        with opt_col3:
+            light_azimuth = st.slider(
+                "Güneş azimutu (ışık açısı)",
+                min_value=0.0,
+                max_value=360.0,
+                value=60.0,
+                step=15.0,
+                key=f"globe_light_az_{source_mode}",
+                help="Güneş ışığının geliş yönünü değiştirerek krater gölgelerini simüle eder.",
+            )
+        with opt_col4:
+            sun_altitude = st.slider(
+                "Güneş ufuk yüksekliği",
+                min_value=0.5,
+                max_value=5.0,
+                value=2.0,
+                step=0.5,
+                key=f"globe_sun_alt_{source_mode}",
+                help="Kutup Güneşi'nin yerel ufkun üzerindeki alçak geliş açısı (1°-3°). Krater içi gölge derinliğini belirler.",
+            )
+
+    if view_mode == "globe":
+        fig = build_lunar_globe_figure(
+            spec_a=spec_a,
+            spec_b=spec_b,
+            show_grid=show_grid,
+            show_south_pole=show_south_pole,
+            show_sites=show_sites,
+            show_craters=show_craters,
+            exaggeration=exaggeration,
+            camera_focus=camera_focus,
+            light_azimuth_deg=light_azimuth,
+            sun_altitude_deg=sun_altitude,
+        )
+    else:
+        fig = build_polar_relief_figure(
+            spec_a=spec_a,
+            spec_b=spec_b,
+            show_grid=show_grid,
+            show_south_pole=show_south_pole,
+            show_sites=show_sites,
+            show_craters=show_craters,
+            exaggeration=exaggeration,
+            light_azimuth_deg=light_azimuth,
+        )
+
+    st.plotly_chart(fig)
+
+    st.caption(
+        "🎮 **3B Etkileşim:** Fare sol tuşu / tek parmak ile küreyi döndürün · "
+        "Tekerlek / iki parmak ile yakınlaştırıp uzaklaştırın · "
+        "Sağ tuş / iki parmak kaydırma ile sahneyi taşıyın. Kraterler küreye sabitlenmiştir, dönme sırasında konumunu korur."
+    )
+
+    st.info(
+        "**⚠️ Temsili Yükselti Modeli Bildirimi:** Bu 3B görselleştirme; Uluslararası Astronomi Birliği (IAU) "
+        "koordinat ve çaplarıyla doğrulanmış **Shackleton (21 km)**, **Shoemaker (51 km)**, **Faustini (42 km)**, "
+        "**de Gerlache (32 km)**, **Haworth (51 km)**, **Cabeus (100 km)**, **Nobile (79 km)**, **Amundsen (103 km)**, "
+        "**Malapert (69 km)** kraterleri ile K2'nin **Bağlantı Sırtı (Connecting Ridge)** ve **Malapert Masifi** "
+        "oluşumlarını içeren matematiksel **temsili bir modeldir**. Doğrulanmış tam küresel LRO/LOLA 3B DEM raster "
+        "dosyaları depoya eklendiğinde doğrudan gerçek veriyi işleyecek şekilde yapılandırılmıştır. "
+        "Veriyle desteklenmeyen koordinat veya resmi NASA yükseklik verisi iddiası sunulmaz.",
+        icon="ℹ️",
+    )
+
+    card_col_a, card_col_b = st.columns(2)
+    for col, spec, badge_title, color, metrics in (
+        (card_col_a, spec_a, "Aday Bölge A", COLOR_SITE_A, metrics_a),
+        (card_col_b, spec_b, "Aday Bölge B", COLOR_SITE_B, metrics_b),
+    ):
+        with col:
+            lat_rad = math.radians(spec.latitude_deg)
+            pole_dist_km = R_MOON_KM * (math.pi / 2.0 + lat_rad)
+            elev_km = float(compute_lunar_elevation(spec.latitude_deg, spec.longitude_deg_east))
+            st.markdown(
+                f"<div class='ls-card' style='border-left: 4px solid {color};'>"
+                f"<div class='ls-card-title' style='color:{color}; font-size: 0.95rem;'>"
+                f"{badge_title} · {spec.name} ({spec.site_id})</div>"
+                f"<div class='ls-card-detail' style='margin-top: 0.4rem;'>"
+                f"• <b>Enlem / Boylam:</b> {spec.coordinates}<br>"
+                f"• <b>3B Model Yükseltisi:</b> {elev_km:+.2f} km (Ay referans küresine göre)<br>"
+                f"• <b>Güney Kutup Noktasına Mesafe:</b> ~{pole_dist_km:.1f} km<br>"
+                f"• <b>Güneş Görünürlüğü:</b> %{metrics.sun_share * 100:.0f} ({metrics.sun_hours:.1f} saat)<br>"
+                f"• <b>Dünya Görüş Penceresi:</b> %{metrics.earth_share * 100:.0f} ({metrics.earth_hours:.1f} saat)"
+                f"</div></div>",
+                unsafe_allow_html=True,
+            )
+
+
 def render_data_tab(
     frame_a: pd.DataFrame,
     frame_b: pd.DataFrame,
@@ -1730,12 +1910,21 @@ def main() -> None:
 
     # --- Adım 3: görselleştirmeler ----------------------------------------
     st.markdown(
-        "<div class='ls-step'>3 · Karşılaştırma ve ufuk grafikleri</div>",
+        "<div class='ls-step'>3 · Karşılaştırma ve görselleştirmeler</div>",
         unsafe_allow_html=True,
     )
-    horizon_tab, timeline_tab, data_tab = st.tabs(
-        ["Ufuk görünümü", "Zaman çizelgesi", "Veri ve kaynak"]
+    globe_tab, horizon_tab, timeline_tab, data_tab = st.tabs(
+        ["3B Ay yüzeyi", "Ufuk görünümü", "Zaman çizelgesi", "Veri ve kaynak"]
     )
+
+    with globe_tab:
+        render_surface_3d_tab(
+            catalog[selected_a],
+            catalog[selected_b],
+            metrics_a,
+            metrics_b,
+            source_mode,
+        )
 
     with horizon_tab:
         st.caption(
