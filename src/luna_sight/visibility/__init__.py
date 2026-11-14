@@ -22,6 +22,8 @@ from luna_sight.visibility.providers import (
     EphemerisProvider,
     HorizonProvider,
     MockEphemeris,
+    ProfileHorizon,
+    load_horizon_profile,
 )
 from luna_sight.visibility.table import (
     CONTRACT_COLUMNS,
@@ -50,6 +52,7 @@ __all__ = [
     "MEASUREMENT_COLUMNS",
     "MockEphemeris",
     "POSITION_COLUMNS",
+    "ProfileHorizon",
     "QUALITY_VALUES",
     "REQUIRED_INPUT_COLUMNS",
     "STATES",
@@ -65,6 +68,7 @@ __all__ = [
     "classify_visibility",
     "combine_states",
     "derive_quality_flags",
+    "load_horizon_profile",
     "run_demo",
     "summarize",
     "visibility_windows",

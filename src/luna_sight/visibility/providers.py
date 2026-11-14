@@ -44,6 +44,85 @@ class ConstantHorizon:
         return np.full(azimuths.shape, float(self.horizon_deg_value), dtype=float)
 
 
+@dataclass(frozen=True, eq=False)
+class ProfileHorizon:
+    """K2 ufuk profili (azimut → ufuk açısı) sağlayıcısı.
+
+    ``outputs/k2/<Site>_horizon_<r>m.csv`` dosyalarındaki profili motora bağlar.
+    Varsayılan olarak dairesel (0–360) doğrusal enterpolasyon yapar; eksik
+    azimutlardaki ``nan`` değerleri komşu aralıklara yayılarak görünürlük
+    kararını ``uncertain`` yapar.
+    """
+
+    azimuth_deg: np.ndarray
+    values_deg: np.ndarray
+    interpolate: bool = True
+    azimuth_tolerance_deg: float | None = None
+
+    def __post_init__(self) -> None:
+        azimuths = np.asarray(self.azimuth_deg, dtype=float)
+        values = np.asarray(self.values_deg, dtype=float)
+        if azimuths.ndim != 1 or values.shape != azimuths.shape:
+            raise ValueError("azimut ve ufuk dizileri aynı 1B uzunlukta olmalı")
+        if azimuths.size == 0:
+            raise ValueError("ufuk profili boş olamaz")
+        if not np.isfinite(azimuths).all():
+            raise ValueError("azimut değerleri sonlu olmalı")
+        if self.azimuth_tolerance_deg is not None and self.azimuth_tolerance_deg < 0:
+            raise ValueError("azimuth_tolerance_deg negatif olamaz")
+
+        order = np.argsort(azimuths, kind="stable")
+        object.__setattr__(self, "azimuth_deg", azimuths[order])
+        object.__setattr__(self, "values_deg", values[order])
+
+    def horizon_deg(self, azimuth_deg) -> np.ndarray:
+        query = np.mod(np.asarray(azimuth_deg, dtype=float), 360.0)
+        source_az = self.azimuth_deg
+        source_hz = self.values_deg
+
+        if self.interpolate:
+            extended_az = np.append(source_az, source_az[0] + 360.0)
+            extended_hz = np.append(source_hz, source_hz[0])
+            return np.interp(query, extended_az, extended_hz)
+
+        diff = np.abs(np.atleast_1d(query)[..., None] - source_az[None, :])
+        distance = np.minimum(diff, 360.0 - diff)
+        nearest = np.argmin(distance, axis=-1)
+        result = np.asarray(source_hz[nearest], dtype=float)
+        if self.azimuth_tolerance_deg is not None:
+            closest = np.take_along_axis(distance, nearest[..., None], axis=-1)
+            result = np.where(
+                closest.squeeze(axis=-1) <= self.azimuth_tolerance_deg,
+                result,
+                np.nan,
+            )
+        return result.reshape(np.shape(query))
+
+
+def load_horizon_profile(
+    path,
+    *,
+    azimuth_column: str = "azimuth_deg",
+    horizon_column: str = "horizon_deg",
+    interpolate: bool = True,
+    azimuth_tolerance_deg: float | None = None,
+) -> ProfileHorizon:
+    """K2 ufuk CSV'sini okur ve motor sağlayıcısına dönüştürür."""
+    frame = pd.read_csv(path, encoding="utf-8-sig")
+    missing = [
+        name for name in (azimuth_column, horizon_column) if name not in frame.columns
+    ]
+    if missing:
+        raise ValueError("ufuk profilinde eksik sütun(lar): " + ", ".join(missing))
+    return ProfileHorizon(
+        azimuth_deg=frame[azimuth_column].to_numpy(dtype=float),
+        values_deg=frame[horizon_column].to_numpy(dtype=float),
+        interpolate=interpolate,
+        azimuth_tolerance_deg=azimuth_tolerance_deg,
+    )
+
+
+
 @dataclass(frozen=True)
 class MockEphemeris:
     """K1 yerine kullanılan deterministik, sinüzoidal geliştirme sağlayıcısı.
