@@ -657,13 +657,14 @@ def compute_hillshading_and_texture(
     elev_km: np.ndarray,
     albedo: np.ndarray,
     psr_mask: np.ndarray,
-    light_azimuth_deg: float = 60.0,
-    sun_altitude_deg: float = 2.0,
+    light_azimuth_deg: float = 45.0,
+    sun_altitude_deg: float = 10.0,
     use_hapke: bool = True,
 ) -> np.ndarray:
     """Yüzey normal vektörlerini ve fotometrik ışık-gölge + albedo haritasını hesaplar.
     
     Hapke modeli ile daha fiziksel gerçekçi aydınlatma; PSR bölgeleri vurgulanır.
+    Kutup singularitesi için radial normal fallback kullanılır.
     """
     # Merkez farklar ile teğet vektörleri
     d_xu, d_xv = np.gradient(x)
@@ -676,16 +677,20 @@ def compute_hillshading_and_texture(
     # Yüzey normal vektörü: N = Tu x Tv
     normal = np.cross(tu, tv)
     norm = np.linalg.norm(normal, axis=-1, keepdims=True)
-    norm[norm == 0.0] = 1.0
-    normal = normal / norm
     
-    # Normal vektörlerin dışa bakmasını garanti et
+    # Kutup singularitesi için radial normal fallback
     radial = np.stack([x, y, z], axis=-1)
     radial_norm = np.linalg.norm(radial, axis=-1, keepdims=True)
     radial_norm[radial_norm == 0.0] = 1.0
-    radial = radial / radial_norm
+    radial_unit = radial / radial_norm
     
-    flip_mask = np.sum(normal * radial, axis=-1) < 0.0
+    # Gradient tabanlı normalin yerinde radial normal kullan (singularity fallback)
+    zero_norm_mask = (norm == 0.0)
+    norm = np.where(zero_norm_mask, 1.0, norm)
+    normal = np.where(zero_norm_mask, radial_unit, normal / norm)
+    
+    # Normal vektörlerin dışa bakmasını garanti et
+    flip_mask = np.sum(normal * radial_unit, axis=-1) < 0.0
     normal[flip_mask] = -normal[flip_mask]
     
     # Işık yön vektörü (Güneş azimutu ve ufuk yüksekliği, güney kutbu perspektifi)
@@ -701,40 +706,23 @@ def compute_hillshading_and_texture(
     # Gözlemci vektörü (güney kutbu üzerinden bakıyor, yani -Z yönünden)
     view_vec = np.array([0.0, 0.0, -1.0], dtype=float)
     
-    if use_hapke:
-        # Açılar
-        cos_i = np.clip(np.sum(normal * light_vec, axis=-1), -1.0, 1.0)
-        cos_e = np.clip(np.sum(normal * view_vec, axis=-1), -1.0, 1.0)
-        
-        incidence_angle = np.arccos(np.clip(cos_i, -1.0, 1.0))
-        emission_angle = np.arccos(np.clip(cos_e, -1.0, 1.0))
-        phase_angle = incidence_angle + emission_angle
-        
-        # Hapke modeli
-        reflectance = _hapke_photometric_function(
-            incidence_angle, emission_angle, phase_angle,
-            w=0.07, b0=1.2, h=0.04, theta_bar=20.0
-        )
-        
-        # Albedo çarpımı
-        shaded = reflectance * albedo
-        
-        # Gölge: ışık yüzeye gelmiyorsa (cos_i <= 0)
-        in_shadow = cos_i <= 0.0
-        ambient = 0.12  # Daha gerçekçi ambient (ayda çok az da olsa yaygın ışık)
-        shaded = np.where(in_shadow, ambient * albedo, shaded)
-        
-    else:
-        # Basit Lambert + gölge
-        cos_i = np.clip(np.sum(normal * light_vec, axis=-1), 0.0, 1.0)
-        diffuse = cos_i ** 0.85
-        ambient = 0.15
-        shaded = albedo * (ambient + (1.0 - ambient) * diffuse)
-        in_shadow = np.sum(normal * light_vec, axis=-1) <= 0.0
-        shaded[in_shadow] = ambient * albedo[in_shadow]
+    # Basit Lambert + gölge - Hapke modeli yerine güçlü Lambert kullan
+    cos_i_raw = np.sum(normal * light_vec, axis=-1)
+    cos_i = np.clip(cos_i_raw, -1.0, 1.0)
     
-    # PSR vurgusu: kalıcı gölgeli bölgelerde hafif farklı ton ama yine de görünür
-    shaded = np.where(psr_mask, np.clip(shaded * 0.6, 0.05, 0.4), shaded)
+    # Daha güçlü diffuse exponent (daha sert gölgeler)
+    diffuse = np.maximum(cos_i, 0.0) ** 0.5
+    ambient = 0.25  # Yüksek ambient
+    shaded = albedo * (ambient + (1.0 - ambient) * diffuse)
+    
+    # Gölge alanları için ambient
+    in_shadow = cos_i_raw <= 0.0
+    shaded[in_shadow] = ambient * albedo[in_shadow]
+    
+    # PSR maskesi: PSR bölgelerde hafif ton farkı ama YINE DE GÖRÜNÜR
+    shaded = np.where(psr_mask, shaded * 0.9, shaded)
+    # PSR alt sınırını yükselt ki tam siyah olmasın
+    shaded = np.where(psr_mask, np.maximum(shaded, 0.12), shaded)
     
     return np.clip(shaded, 0.0, 1.0)
 
@@ -744,8 +732,8 @@ def generate_lunar_globe_mesh(
     n_lon: int = 280,
     exaggeration: float = 1.8,
     dem_path: Path | None = None,
-    light_azimuth_deg: float = 45.0,
-    sun_altitude_deg: float = 8.0,
+    light_azimuth_deg: float = 30.0,
+    sun_altitude_deg: float = 15.0,
     use_hapke: bool = True,
 ) -> SurfaceMesh:
     """3B küresel Ay yüzey kafesini üretir.
@@ -851,8 +839,8 @@ def generate_polar_relief_mesh(
     extent_km: float = 150.0,
     resolution: int = 200,
     exaggeration: float = 2.2,
-    light_azimuth_deg: float = 45.0,
-    sun_altitude_deg: float = 5.0,
+    light_azimuth_deg: float = 30.0,
+    sun_altitude_deg: float = 15.0,
     use_hapke: bool = True,
 ) -> SurfaceMesh:
     """Güney kutbu 300 km çaplı yerel düzlem 3B yüksek çözünürlüklü rölief kafesi üretir."""
@@ -1187,8 +1175,13 @@ def build_site_pin_traces(
 def build_crater_label_traces(
     exaggeration: float = 1.8,
     max_labels: int = 12,
+    show_text_labels: int = 3,
 ) -> list[go.Scatter3d]:
-    """Doğrulanmış IAU krater konumları ve isimleri için yüzeye sabit etiketler üretir."""
+    """Doğrulanmış IAU krater konumları ve isimleri için yüzeye sabit etiketler üretir.
+    
+    Sadece en önemli `show_text_labels` kraterinin ismi sürekli görünür;
+    diğerleri sadece hover'da görünür.
+    """
     xs, ys, zs, hover_texts, display_labels = [], [], [], [], []
     
     # Sadece en önemli kraterleri etiketle (PSR oranı yüksek + büyük çap)
@@ -1198,7 +1191,7 @@ def build_crater_label_traces(
         reverse=True,
     )
     
-    for crater in sorted_craters[:max_labels]:
+    for i, crater in enumerate(sorted_craters[:max_labels]):
         lat = math.radians(crater["lat_deg"])
         lon = math.radians(crater["lon_deg"])
         elev_km = float(compute_lunar_elevation(crater["lat_deg"], crater["lon_deg"]))
@@ -1208,7 +1201,12 @@ def build_crater_label_traces(
         ys.append(r_label * math.cos(lat) * math.sin(lon))
         zs.append(r_label * math.sin(lat))
         
-        display_labels.append(f"{crater['name']} ({crater['diameter_km']:.0f} km)")
+        # Sadece en önemli `show_text_labels` tanesinin ismi görünür
+        if i < show_text_labels:
+            display_labels.append(f"{crater['name']} ({crater['diameter_km']:.0f} km)")
+        else:
+            display_labels.append("")  # Hover'da gözükecek, metin olarak gösterilmez
+        
         hover_texts.append(
             f"<b>Krater: {crater['name']} (IAU)</b><br>"
             f"Çap: <b>{crater['diameter_km']:.1f} km</b> · Derinlik: <b>~{crater['depth_km']:.1f} km</b><br>"
@@ -1217,6 +1215,7 @@ def build_crater_label_traces(
             f"<i>{crater['description']}</i>"
         )
     
+    # Sadece marker ve hover, text sadece ilk few için
     trace = go.Scatter3d(
         x=xs, y=ys, z=zs,
         mode="markers+text",
@@ -1298,8 +1297,8 @@ def build_lunar_globe_figure(
     show_craters: bool = True,
     exaggeration: float = 1.8,
     camera_focus: str = "south_pole",
-    light_azimuth_deg: float = 45.0,
-    sun_altitude_deg: float = 8.0,
+    light_azimuth_deg: float = 30.0,
+    sun_altitude_deg: float = 15.0,
     dem_path: Path | None = None,
     use_hapke: bool = True,
 ) -> go.Figure:
@@ -1446,8 +1445,8 @@ def build_polar_relief_figure(
     show_sites: bool = True,
     show_craters: bool = True,
     exaggeration: float = 2.2,
-    light_azimuth_deg: float = 45.0,
-    sun_altitude_deg: float = 5.0,
+    light_azimuth_deg: float = 30.0,
+    sun_altitude_deg: float = 15.0,
     use_hapke: bool = True,
 ) -> go.Figure:
     """Güney kutbu 300 km çaplı yerel yüksek çözünürlüklü 3B topografya röliefi."""
