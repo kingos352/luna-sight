@@ -1,7 +1,0 @@
-# LUNA SIGHT — Python 3.12
-# K2 (topoğrafya/ufuk) için gerekli en küçük küme.
-numpy>=2.0
-pandas>=2.2
-requests>=2.32
-rasterio>=1.4
-pytest>=8.0
