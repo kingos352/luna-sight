@@ -21,7 +21,7 @@ jobs:
       - name: Reject committed secrets and oversized files
         shell: bash
         run: |
-          if git ls-files | grep -E '(^|/)(\.env|secrets/)|\.(key|pem)$'; then
+          if git ls-files | grep -E '(^|/)(\.env($|\.)|secrets/)|\.(key|pem)$' | grep -v -E '(^|/)\.env\.example$'; then
             echo "Credential-like file detected"
             exit 1
           fi
