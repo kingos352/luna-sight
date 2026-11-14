@@ -26,13 +26,13 @@ import requests
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from luna_sight.terrain import (
+from luna_sight.terrain import (  # noqa: E402
     HorizonConfig,
     compare_radii,
     load_lola_dem,
     scan_coverage,
 )
-from luna_sight.terrain.horizon import compute_horizon
+from luna_sight.terrain.horizon import compute_horizon  # noqa: E402
 
 PGDA_BASE = "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp"
 PROVIDER = "NASA GSFC PGDA (LOLA Data Node)"
@@ -221,9 +221,7 @@ def main() -> int:
         all_manifests.extend(manifest_rows(site, paths))
 
     combined = out_dir / "k2_comparison.json"
-    combined.write_text(
-        json.dumps(comparison, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
+    combined.write_text(json.dumps(comparison, indent=2, ensure_ascii=False), encoding="utf-8")
     manifest_csv = out_dir / "manifest_rows.csv"
     write_csv(manifest_csv, all_manifests)
     print(f"\nÖzet: {combined.relative_to(ROOT)}")

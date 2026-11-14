@@ -9,7 +9,6 @@ eksik veri sessizce sıfıra çevrilmez.
 from __future__ import annotations
 
 import csv
-import itertools
 import math
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -120,7 +119,7 @@ def validate_series(samples: list[Sample]) -> None:
     """Boş seri ve azalan/tekrarlı zaman damgaları reddedilir."""
     if not samples:
         raise ValueError("Seri boş.")
-    for previous, current in itertools.pairwise(samples):
+    for previous, current in zip(samples, samples[1:], strict=False):
         if current.timestamp_utc <= previous.timestamp_utc:
             raise ValueError(
                 "Zaman damgaları kesin artan olmalı: "

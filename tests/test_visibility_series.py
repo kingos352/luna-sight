@@ -12,7 +12,10 @@ from luna_sight.visibility.series import (
     validate_series,
 )
 
-HEADER = "timestamp_utc,site_id,latitude_deg,longitude_deg_east,sun_az_deg,sun_alt_deg,earth_az_deg,earth_alt_deg,quality_flag\n"
+HEADER = (
+    "timestamp_utc,site_id,latitude_deg,longitude_deg_east,sun_az_deg,"
+    "sun_alt_deg,earth_az_deg,earth_alt_deg,quality_flag\n"
+)
 
 
 def write_csv(tmp_path, body):

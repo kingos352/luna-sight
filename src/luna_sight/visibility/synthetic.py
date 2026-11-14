@@ -9,6 +9,7 @@ işaretlenir.
 
 from __future__ import annotations
 
+import json
 import math
 from datetime import UTC, datetime, timedelta
 
@@ -37,7 +38,7 @@ def synthetic_series(
     """
     start = start_utc or datetime(2026, 11, 15, tzinfo=UTC)
     step = timedelta(minutes=step_minutes)
-    count = round(hours * 60.0 / step_minutes) + 1
+    count = int(round(hours * 60.0 / step_minutes)) + 1
     span_hours = max(hours, 1e-9)
 
     samples: list[Sample] = []
@@ -61,7 +62,14 @@ def synthetic_series(
                 source_id=SYNTHETIC_SOURCE_ID,
                 source_version=SYNTHETIC_SOURCE_VERSION,
                 model_id=SYNTHETIC_MODEL_ID,
-                parameters=f"hours={hours};step_minutes={step_minutes};azimut_hizlandirilmis",
+                parameters=json.dumps(
+                    {
+                        "hours": hours,
+                        "step_minutes": step_minutes,
+                        "scenario": "azimut_hizlandirilmis",
+                    },
+                    separators=(",", ":"),
+                ),
             )
         )
     return samples

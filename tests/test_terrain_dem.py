@@ -1,16 +1,15 @@
 """DEM okuma, LDEC boşluk maskesi ve projeksiyon doğrulaması (test_fixture)."""
 
-
 import numpy as np
 import pytest
 
 from luna_sight.terrain.polar import R_MOON_M, lonlat_to_xy
 
 rasterio = pytest.importorskip("rasterio")
-from rasterio.transform import Affine
-from rasterio.warp import transform as warp_transform
+from rasterio.transform import Affine  # noqa: E402
+from rasterio.warp import transform as warp_transform  # noqa: E402
 
-from luna_sight.terrain.dem import load_lola_dem
+from luna_sight.terrain.dem import load_lola_dem  # noqa: E402
 
 SOUTH_POLAR_PROJ = (
     f"+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +k=1 +x_0=0 +y_0=0 "
@@ -91,7 +90,9 @@ def test_projection_matches_gdal():
     points = [(0.0, -89.9), (45.0, -89.0), (-120.0, -88.0)]
     lons = [p[0] for p in points]
     lats = [p[1] for p in points]
-    xs, ys = warp_transform(f"+proj=longlat +R={R_MOON_M:.1f} +no_defs", SOUTH_POLAR_PROJ, lons, lats)
+    xs, ys = warp_transform(
+        f"+proj=longlat +R={R_MOON_M:.1f} +no_defs", SOUTH_POLAR_PROJ, lons, lats
+    )
 
     for (lon, lat), gx, gy in zip(points, xs, ys, strict=True):
         mx, my = lonlat_to_xy(lon, lat)
@@ -120,4 +121,3 @@ def test_bilinear_sampling_at_pixel_centers_and_bounds():
     outside, ok_out = dem.sample(np.array([-15.0]), np.array([-15.0]))
     assert not ok_out.any()
     assert np.isnan(outside).all()
-

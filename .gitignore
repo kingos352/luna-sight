@@ -36,6 +36,7 @@ coverage.xml
 htmlcov/
 dist/
 build/
+*.egg-info/
 
 # OS and editors
 .DS_Store

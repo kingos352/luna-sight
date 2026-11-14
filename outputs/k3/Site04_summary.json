@@ -18,54 +18,54 @@
     "quality_flag_missing": "missing"
   },
   "series": {
-    "source": "synthetic-scenario-v1",
-    "synthetic_test_fixture": true,
+    "source": "data/cache/ephemeris_Site04_20261114T0000_168h.csv",
+    "synthetic_test_fixture": false,
     "samples": 2017,
-    "start_utc": "2026-11-15T00:00:00+00:00",
-    "end_utc": "2026-11-22T00:00:00+00:00",
+    "start_utc": "2026-11-14T00:00:00+00:00",
+    "end_utc": "2026-11-21T00:00:00+00:00",
     "span_hours": 168.0,
-    "quality_flag": "test_fixture"
+    "quality_flag": "valid"
   },
   "bodies": {
     "sun": {
-      "window_count": 5,
+      "window_count": 1,
       "total_hours": 168.0,
       "state_hours": {
-        "visible": 70.1429,
-        "blocked": 97.5282,
-        "uncertain": 0.329
+        "visible": 168.0,
+        "blocked": 0.0,
+        "uncertain": 0.0
       },
-      "visible_fraction": 0.417517,
-      "longest_visible_hours": 70.1429,
-      "longest_visible_start_utc": "2026-11-18T13:29:11.998747+00:00",
-      "refined_boundaries": 5
+      "visible_fraction": 1.0,
+      "longest_visible_hours": 168.0,
+      "longest_visible_start_utc": "2026-11-14T00:00:00+00:00",
+      "refined_boundaries": 0
     },
     "earth": {
-      "window_count": 5,
+      "window_count": 1,
       "total_hours": 168.0,
       "state_hours": {
-        "visible": 70.7975,
-        "blocked": 96.8954,
-        "uncertain": 0.307
+        "visible": 0.0,
+        "blocked": 168.0,
+        "uncertain": 0.0
       },
-      "visible_fraction": 0.421414,
-      "longest_visible_hours": 70.7975,
-      "longest_visible_start_utc": "2026-11-17T11:37:07.118750+00:00",
-      "refined_boundaries": 5
+      "visible_fraction": 0.0,
+      "longest_visible_hours": null,
+      "longest_visible_start_utc": null,
+      "refined_boundaries": 0
     },
     "joint": {
-      "window_count": 5,
+      "window_count": 1,
       "total_hours": 168.0,
       "state_hours": {
-        "visible": 44.9295,
-        "blocked": 122.7477,
-        "uncertain": 0.3227
+        "visible": 0.0,
+        "blocked": 168.0,
+        "uncertain": 0.0
       },
-      "visible_fraction": 0.267438,
-      "longest_visible_hours": 44.9295,
-      "longest_visible_start_utc": "2026-11-18T13:29:11.998747+00:00",
-      "refined_boundaries": 5
+      "visible_fraction": 0.0,
+      "longest_visible_hours": null,
+      "longest_visible_start_utc": null,
+      "refined_boundaries": 0
     }
   },
-  "generated_utc": "2026-11-14T09:34:16+00:00"
+  "generated_utc": "2026-11-14T12:23:25+00:00"
 }

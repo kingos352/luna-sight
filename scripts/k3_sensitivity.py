@@ -27,15 +27,15 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from luna_sight.visibility import (
+from luna_sight.visibility import (  # noqa: E402
     HorizonProfileLookup,
     VisibilityConfig,
     evaluate_series,
     load_series_csv,
     sensitivity_rows,
 )
-from luna_sight.visibility.series import Sample
-from luna_sight.visibility.synthetic import synthetic_series
+from luna_sight.visibility.series import Sample  # noqa: E402
+from luna_sight.visibility.synthetic import synthetic_series  # noqa: E402
 
 PROFILE_PATTERN = re.compile(
     r"^(?P<site>[A-Za-z0-9_-]+)_horizon_(?P<radius>\d+)m\.csv$"
@@ -132,9 +132,6 @@ def main() -> int:
         all_series = load_series_csv(ROOT / args.series)
         print(f"Seri: {args.series} ({len(all_series)} örnek)")
     else:
-        datetime.fromisoformat(args.start).astimezone(
-            UTC
-        )
         print(
             "UYARI: --series verilmedi; hızlandırılmış SENARYO serisi kullanılıyor "
             "(test_fixture, bilimsel değil)."
@@ -152,7 +149,7 @@ def main() -> int:
             if site_id not in series_cache:
                 series_cache[site_id] = synthetic_series(
                     start_utc=datetime.fromisoformat(
-                        args.start
+                        args.start.replace("Z", "+00:00")
                     ).astimezone(UTC),
                     hours=args.hours,
                     step_minutes=args.step_minutes,
@@ -185,7 +182,7 @@ def main() -> int:
         uncertain = row["uncertain_fraction"]
         longest = row["longest_visible_hours"]
         print(
-            f"{row['site_id']:<8} {row['radius_m']!s:>8} "
+            f"{row['site_id']:<8} {str(row['radius_m']):>8} "
             f"{row['margin_deg']:>6} "
             f"{('-' if visible is None else f'{visible * 100:.1f}'):>16} "
             f"{('-' if longest is None else f'{longest:.2f}'):>13} "

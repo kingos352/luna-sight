@@ -12,6 +12,7 @@ from luna_sight.terrain.horizon import (
     HorizonProfile,
     compare_radii,
     compute_horizon,
+    horizon_from_profile,
 )
 from luna_sight.terrain.polar import (
     R_MOON_M,
@@ -19,17 +20,22 @@ from luna_sight.terrain.polar import (
     lonlat_to_xy,
     xy_to_lonlat,
 )
+from luna_sight.terrain.sites import CANDIDATE_SITES, CandidateSite, get_candidate_site
 
 __all__ = [
-    "R_MOON_M",
+    "CANDIDATE_SITES",
+    "CandidateSite",
     "DemGrid",
     "DemMetadata",
     "GapReport",
     "HorizonConfig",
     "HorizonProfile",
+    "R_MOON_M",
     "azimuth_unit_vector",
     "compare_radii",
     "compute_horizon",
+    "get_candidate_site",
+    "horizon_from_profile",
     "load_lola_dem",
     "lonlat_to_xy",
     "scan_coverage",

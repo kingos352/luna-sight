@@ -23,7 +23,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from luna_sight.visibility import (
+from luna_sight.visibility import (  # noqa: E402
     BODY_EARTH,
     BODY_JOINT,
     BODY_SUN,
@@ -34,7 +34,7 @@ from luna_sight.visibility import (
     load_series_csv,
     summarize_windows,
 )
-from luna_sight.visibility.synthetic import synthetic_series
+from luna_sight.visibility.synthetic import synthetic_series  # noqa: E402
 
 
 def write_csv(path: Path, rows: list[dict[str, object]]) -> None:
@@ -54,7 +54,7 @@ def load_site_coordinate(site_id: str) -> tuple[float | None, float | None]:
     path = ROOT / "outputs" / "k2" / f"{site_id}_summary.json"
     if not path.exists():
         return None, None
-    data = json.loads(path.read_text(encoding="utf-8"))
+    data = json.loads(path.read_text(encoding="utf-8-sig"))
     coordinate = data.get("coordinate", {})
     return coordinate.get("lon_deg_east"), coordinate.get("lat_deg")
 
@@ -85,7 +85,7 @@ def main() -> int:
         synthetic = False
         print(f"Seri: {args.series} ({len(samples)} örnek)")
     else:
-        start = datetime.fromisoformat(args.start).astimezone(
+        start = datetime.fromisoformat(args.start.replace("Z", "+00:00")).astimezone(
             UTC
         )
         samples = synthetic_series(

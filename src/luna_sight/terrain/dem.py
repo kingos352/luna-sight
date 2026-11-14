@@ -226,22 +226,14 @@ class DemGrid:
         yeniden normalize edilir; boşluk kenarında tam kayıp yerine kısmi
         örnek elde edilir.
         """
-        return _bilinear(
-            self.heights_m, self.valid, self.transform, np.asarray(xs), np.asarray(ys)
-        )
+        return _bilinear(self.heights_m, self.valid, self.transform, np.asarray(xs), np.asarray(ys))
 
-    def sample_coverage(
-        self, xs: np.ndarray | float, ys: np.ndarray | float
-    ) -> np.ndarray:
+    def sample_coverage(self, xs: np.ndarray | float, ys: np.ndarray | float) -> np.ndarray:
         """Gerçek LOLA dönüşü var mı (en yakın piksel, mantıksal)."""
-        values, inside = _nearest(
-            self.coverage, self.transform, np.asarray(xs), np.asarray(ys)
-        )
+        values, inside = _nearest(self.coverage, self.transform, np.asarray(xs), np.asarray(ys))
         return inside & np.nan_to_num(values, nan=0.0).astype(bool)
 
-    def sample_uncertainty(
-        self, xs: np.ndarray | float, ys: np.ndarray | float
-    ) -> np.ndarray:
+    def sample_uncertainty(self, xs: np.ndarray | float, ys: np.ndarray | float) -> np.ndarray:
         """Toplam Z belirsizliği (metre); ürün yoksa ``NaN``."""
         if self.uncertainty_m is None:
             return np.full(np.atleast_1d(np.asarray(xs)).shape, np.nan)
@@ -288,9 +280,7 @@ def load_lola_dem(
     try:
         import rasterio
     except ImportError as exc:  # pragma: no cover - ortam bağımlılığı
-        raise RuntimeError(
-            "DEM okumak için rasterio gerekir: pip install rasterio"
-        ) from exc
+        raise RuntimeError("DEM okumak için rasterio gerekir: pip install rasterio") from exc
 
     surface_path = Path(surface_path)
     with rasterio.open(surface_path) as ds:
@@ -323,9 +313,7 @@ def load_lola_dem(
         with rasterio.open(toterr_path) as tds:
             uncertainty = tds.read(1).astype(float)
         if uncertainty.shape != heights.shape:
-            raise ValueError(
-                f"Belirsizlik boyutu ({uncertainty.shape}) DEM boyutuyla uyuşmuyor."
-            )
+            raise ValueError(f"Belirsizlik boyutu ({uncertainty.shape}) DEM boyutuyla uyuşmuyor.")
 
     site_id = surface_path.name.split("_")[0] if surface_path.stem else surface_path.stem
     metadata = DemMetadata(

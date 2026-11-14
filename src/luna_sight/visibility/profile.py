@@ -55,7 +55,7 @@ class HorizonProfileLookup:
         """K2 çıktısındaki profil CSV'sini yükler."""
         azimuths: list[float] = []
         horizons: list[float] = []
-        with Path(path).open(newline="", encoding="utf-8") as handle:
+        with Path(path).open(newline="", encoding="utf-8-sig") as handle:
             reader = csv.DictReader(handle)
             if reader.fieldnames is None or azimuth_column not in reader.fieldnames:
                 raise ValueError(f"{path}: {azimuth_column} sütunu yok.")
@@ -77,6 +77,10 @@ class HorizonProfileLookup:
         """Vektörel sorgu; bilinmeyen azimutlar ``NaN`` döner."""
         az = np.asarray(azimuths, dtype=float) % 360.0
         return np.interp(az, self._az_ext, self._el_ext)
+
+    def horizon_deg(self, azimuth_deg: float) -> float | None:
+        """``elevation_at`` için okunabilir diğer ad (K2 sözlüğü)."""
+        return self.elevation_at(azimuth_deg)
 
     @property
     def azimuths(self) -> np.ndarray:
