@@ -23,10 +23,10 @@ pyproj==3.8.0
 streamlit==1.67.0
 plotly==7.1.0
 
-# ÖNERİ - ekip onayı bekliyor (bkz. docs/DECISIONS.md ADR-004).
+# ÖNERİ - ekip onayı bekliyor (bkz. docs/DECISIONS.md ADR-006).
 # docs/DATA_CONTRACT.md zorunlu alanlarını, enum değerlerini ve açı
 # aralıklarını kodda zorlamak için. K1-K3-K4 modül sınırında tek
-# doğrulama kapısı. Reddedilirse bu satır ve ADR-004 geri alınır.
+# doğrulama kapısı. Reddedilirse bu satır ve ADR-006 geri alınır.
 pandera[pandas]==0.36.0
 
 # İhtiyaç doğduğunda açılacak adaylar.
