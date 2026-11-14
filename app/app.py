@@ -28,14 +28,24 @@ from __future__ import annotations
 import datetime as dt
 import importlib
 import json
+import os
+import sys
 import zlib
-from dataclasses import dataclass
+from dataclasses import dataclass, fields
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+
+# `src/` düzenindeki bilimsel modüller (K1/K2/K3) birleştiğinde içe aktarılabilsin.
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SRC_DIR = REPO_ROOT / "src"
+HORIZON_DIR = REPO_ROOT / "data" / "derived"
+if SRC_DIR.is_dir() and str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
 # ---------------------------------------------------------------------------
 # Sabitler
@@ -82,6 +92,16 @@ NUMERIC_COLUMNS = [
     "earth_alt_deg",
     "terrain_horizon_sun_deg",
     "terrain_horizon_earth_deg",
+]
+
+# K3 motoru bağlandığında gelen isteğe bağlı tanılama sütunları.
+OPTIONAL_DIAGNOSTIC_COLUMNS = [
+    "sun_margin_deg",
+    "earth_margin_deg",
+    "joint_margin_deg",
+    "sun_reason",
+    "earth_reason",
+    "joint_reason",
 ]
 
 # Kenar çubuğundaki örnekleme seçenekleri: etiket -> dakika
@@ -309,7 +329,11 @@ def normalize_contract_frame(frame: pd.DataFrame) -> pd.DataFrame:
     if missing:
         raise ValueError("Veri sözleşmesinde eksik alan(lar): " + ", ".join(missing))
 
-    normalized = frame.loc[:, DATA_CONTRACT_COLUMNS].copy()
+    normalized = frame.loc[
+        :,
+        DATA_CONTRACT_COLUMNS
+        + [c for c in OPTIONAL_DIAGNOSTIC_COLUMNS if c in frame.columns],
+    ].copy()
     normalized["timestamp_utc"] = pd.to_datetime(
         normalized["timestamp_utc"], utc=True, errors="raise"
     )
@@ -329,31 +353,190 @@ def normalize_contract_frame(frame: pd.DataFrame) -> pd.DataFrame:
     return normalized
 
 
-def _external_series(
+def _import_optional(dotted_name: str):
+    """Modülü içe aktarır; yoksa ya da içe aktarma hata verirse ``None`` döner."""
+    try:
+        return importlib.import_module(dotted_name)
+    except Exception:  # noqa: BLE001 - isteğe bağlı bilimsel modül
+        return None
+
+
+def _callable_in(module, names: tuple[str, ...]):
+    """Modülde ilk bulunan çağrılabilir niteliği döndürür."""
+    if module is None:
+        return None
+    for name in names:
+        candidate = getattr(module, name, None)
+        if callable(candidate):
+            return candidate
+    return None
+
+
+def _module_implemented(dotted_name: str) -> bool:
+    """Modül gerçekten uygulanmış mı (boş klasörler namespace paketi sayılır)."""
+    directory = SRC_DIR.joinpath(*dotted_name.split("."))
+    if not any(directory.rglob("*.py")):
+        return False
+    return _import_optional(dotted_name) is not None
+
+
+def _engine_available() -> bool:
+    """K3 görünürlük motoru (``evaluate_series``) kullanılabilir mi."""
+    module = _import_optional("luna_sight.visibility")
+    return callable(getattr(module, "evaluate_series", None))
+
+
+def _k1_series(
     site: SiteSpec,
     start_utc: dt.datetime,
     days: int,
     step_minutes: int,
 ) -> pd.DataFrame | None:
-    """K3 görünürlük modülü varsa gerçek veriyi döndürür, yoksa None.
+    """K1 efemerisi varsa veri sözleşmesi sütunlarını taşıyan çerçeve döndürür.
 
-    Beklenen arayüz (K3 ile kararlaştırılacak):
-        from luna_sight.visibility import build_site_series
-        build_site_series(site_id, start_utc, days, step_minutes) -> DataFrame
+    Kabul edilen arayüz (K1 ile kararlaştırılacak):
+        luna_sight.ephemeris.build_series(site_id, start_utc, days, step_minutes)
+    Dönen çerçeve en az ``timestamp_utc``, ``sun_az_deg``, ``sun_alt_deg``,
+    ``earth_az_deg``, ``earth_alt_deg`` alanlarını içermelidir. K1 yoksa ya da
+    hata verirse ``None`` döner ve sentetik hatta düşülür.
     """
+    module = _import_optional("luna_sight.ephemeris")
+    builder = _callable_in(module, ("build_series", "build_site_series"))
+    if builder is None:
+        return None
     try:
-        module = importlib.import_module("luna_sight.visibility")
-    except Exception:  # noqa: BLE001 - modül henüz yok
+        frame = builder(site.site_id, start_utc, days, step_minutes)
+    except Exception:  # noqa: BLE001 - K1 hatasında sentetiğe düş
+        return None
+    if not isinstance(frame, pd.DataFrame) or frame.empty:
+        return None
+    required = {
+        "timestamp_utc",
+        "sun_az_deg",
+        "sun_alt_deg",
+        "earth_az_deg",
+        "earth_alt_deg",
+    }
+    if not required.issubset(frame.columns):
+        return None
+    return frame
+
+
+def _horizon_arrays(site: SiteSpec) -> tuple[np.ndarray, np.ndarray, str]:
+    """Ufuk profilini K2 çıktısından ya da analitik modelden üretir.
+
+    K2 dosyası şu sırayla aranır:
+        ``$LUNA_SIGHT_HORIZON_DIR/horizon_<site_id>.csv``
+        ``data/derived/horizon_<site_id>.csv``
+    Beklenen sütunlar: ``azimuth_deg``, ``horizon_deg``. Dosya yoksa analitik
+    profil kullanılır ve dönen kaynak etiketi ``synthetic`` olur.
+    """
+    names = [f"horizon_{site.site_id.lower()}.csv", f"horizon_{site.site_id}.csv"]
+    directories = [HORIZON_DIR]
+    override = os.environ.get("LUNA_SIGHT_HORIZON_DIR")
+    if override:
+        directories.insert(0, Path(override))
+
+    for directory in directories:
+        for name in names:
+            path = directory / name
+            if not path.is_file():
+                continue
+            try:
+                table = pd.read_csv(path)
+                azimuths = pd.to_numeric(
+                    table["azimuth_deg"], errors="coerce"
+                ).to_numpy(dtype=float)
+                horizons = pd.to_numeric(
+                    table["horizon_deg"], errors="coerce"
+                ).to_numpy(dtype=float)
+            except Exception:  # noqa: BLE001, S112 - bozuk profil dosyası
+                continue
+            if azimuths.size >= 2 and np.isfinite(azimuths).all():
+                return azimuths, horizons, "K2"
+
+    azimuths = np.arange(0.0, 360.0, 1.0)
+    return azimuths, _terrain_horizon_deg(azimuths, site), "synthetic"
+
+
+def _build_samples(frame: pd.DataFrame, module, sample_type):
+    """Veri sözleşmesi çerçevesini K3 ``Sample`` listesine çevirir."""
+    records: list[dict[str, object]] = []
+    for row in frame.to_dict(orient="records"):
+        record = dict(row)
+        record["timestamp_utc"] = pd.Timestamp(record["timestamp_utc"]).to_pydatetime()
+        records.append(record)
+
+    sample_from_row = getattr(module, "sample_from_row", None)
+    if callable(sample_from_row):
+        return [sample_from_row(record) for record in records]
+
+    allowed = {field.name for field in fields(sample_type)}
+    return [
+        sample_type(**{key: value for key, value in record.items() if key in allowed})
+        for record in records
+    ]
+
+
+def _merge_parameters(raw: object, extra: dict[str, object]) -> str:
+    """Mevcut ``parameters`` JSON'unu motor bilgisiyle birleştirir."""
+    payload: object
+    try:
+        payload = json.loads(raw) if isinstance(raw, str) and raw.strip() else {}
+    except json.JSONDecodeError:
+        payload = {"raw": raw}
+    if not isinstance(payload, dict):
+        payload = {"raw": payload}
+    payload.update(extra)
+    return json.dumps(payload, ensure_ascii=False, sort_keys=True, default=str)
+
+
+def _evaluate_with_engine(frame: pd.DataFrame, site: SiteSpec) -> pd.DataFrame | None:
+    """K3 motoru varsa çerçeveyi ``evaluate_series`` ile sınıflandırır.
+
+    K3 API'si (``k3/visibility-engine``):
+    ``Sample``, ``HorizonProfileLookup``, ``VisibilityConfig`` ve
+    ``evaluate_series(samples, profile, config) -> list[SampleResult]``.
+    Sonuçlar ``SampleResult.as_row()`` ile veri sözleşmesine çevrilir;
+    ``uncertain`` durumu ve gerekçe kodları korunur. Motor yoksa ya da hata
+    verirse ``None`` döner ve çağıran taraf sentetik sınıflandırmada kalır.
+    """
+    module = _import_optional("luna_sight.visibility")
+    if module is None or not callable(getattr(module, "evaluate_series", None)):
         return None
 
-    builder = getattr(module, "build_site_series", None)
-    if not callable(builder):
+    sample_type = getattr(module, "Sample", None)
+    profile_type = getattr(module, "HorizonProfileLookup", None)
+    config_type = getattr(module, "VisibilityConfig", None)
+    if sample_type is None or profile_type is None or config_type is None:
         return None
 
     try:
-        return builder(site.site_id, start_utc, days, step_minutes)
+        config = config_type()
+        azimuths, horizons, horizon_source = _horizon_arrays(site)
+        profile = profile_type(azimuths, horizons)
+        samples = _build_samples(frame, module, sample_type)
+        results = module.evaluate_series(samples, profile, config)
+        rows = [result.as_row() for result in results]
     except Exception:  # noqa: BLE001 - entegrasyon hatasında sentetiğe düş
         return None
+
+    if not rows:
+        return None
+
+    evaluated = pd.DataFrame(rows)
+    engine_info = {
+        "engine": "K3:evaluate_series",
+        "engine_config": (
+            config.as_dict() if callable(getattr(config, "as_dict", None)) else {}
+        ),
+        "horizon_profile": horizon_source,
+    }
+    evaluated["parameters"] = evaluated["parameters"].map(
+        lambda raw: _merge_parameters(raw, engine_info)
+    )
+    evaluated["source_id"] = evaluated["source_id"].astype(str) + "+K3"
+    return evaluated
 
 
 @st.cache_data(show_spinner=False)
@@ -363,13 +546,22 @@ def load_site_series(
     days: int,
     step_minutes: int,
 ) -> pd.DataFrame:
-    """Tek giriş noktası: gerçek modül varsa onu, yoksa sentetik veriyi kullanır."""
+    """Tek giriş noktası: K1 → K3 → sentetik yedek.
+
+    Dönen çerçeve her zaman ``docs/DATA_CONTRACT.md`` şemasına uyar. Gerçek
+    efemeris yoksa ``quality_flag=test_fixture`` olarak kalır; K3 motoru varsa
+    sınıflandırma yine gerçek motorla yapılır ve ``uncertain`` korunur.
+    """
     site = SITES[site_id]
     start_utc = dt.datetime.fromisoformat(start_iso)
 
-    frame = _external_series(site, start_utc, days, step_minutes)
+    frame = _k1_series(site, start_utc, days, step_minutes)
     if frame is None:
         frame = generate_synthetic_series(site, start_utc, days, step_minutes)
+
+    evaluated = _evaluate_with_engine(frame, site)
+    if evaluated is not None:
+        frame = evaluated
     return normalize_contract_frame(frame)
 
 
@@ -389,6 +581,7 @@ class SiteMetrics:
     longest_earth_window: float
     sun_share: float
     earth_share: float
+    joint_uncertain_share: float
     terrain_blocked_share: float
     horizon_mean: float
     horizon_max: float
@@ -414,13 +607,15 @@ def compute_metrics(frame: pd.DataFrame, step_minutes: int) -> SiteMetrics:
     sun = frame["sun_visible"].eq(VISIBLE)
     earth = frame["earth_visible"].eq(VISIBLE)
     joint = frame["joint_visible"].eq(VISIBLE)
+    joint_uncertain = frame["joint_visible"].eq(UNCERTAIN)
 
     horizon = frame["terrain_horizon_sun_deg"]
     max_index = horizon.idxmax()
 
     # Güneş geometrik olarak ufkun üzerindeyken topoğrafya tarafından kesilen oran.
+    # Belirsiz (uncertain) örnekler engellenmiş sayılmaz.
     above_geometric = frame["sun_alt_deg"] > 0.0
-    blocked_by_terrain = above_geometric & ~sun
+    blocked_by_terrain = above_geometric & frame["sun_visible"].eq(BLOCKED)
 
     return SiteMetrics(
         total_hours=total_hours,
@@ -430,6 +625,7 @@ def compute_metrics(frame: pd.DataFrame, step_minutes: int) -> SiteMetrics:
         longest_earth_window=_longest_run_hours(earth, step_hours),
         sun_share=float(sun.mean()),
         earth_share=float(earth.mean()),
+        joint_uncertain_share=float(joint_uncertain.mean()),
         terrain_blocked_share=float(blocked_by_terrain.mean()),
         horizon_mean=float(horizon.mean()),
         horizon_max=float(horizon.max()),
@@ -661,6 +857,7 @@ def inject_theme() -> None:
             border: 1px solid rgba(90,169,255,0.35); color: #a9c8ff; background: rgba(90,169,255,0.08);
         }
         .ls-chip-warn {border-color: rgba(245,185,66,0.45); color: #f5c76a; background: rgba(245,185,66,0.08);}
+        .ls-chip-ok {border-color: rgba(61,220,151,0.45); color: #7ff0bd; background: rgba(61,220,151,0.10);}
         div[data-testid="stMetric"] {background: rgba(20,26,46,0.65); border: 1px solid rgba(90,169,255,0.16);
             border-radius: 12px; padding: 0.65rem 0.8rem;}
         </style>
@@ -669,17 +866,20 @@ def inject_theme() -> None:
     )
 
 
-def render_header(synthetic: bool) -> None:
+def render_header(synthetic: bool, engine_active: bool = False) -> None:
     """Başlık ve durum rozetleri."""
-    chips = [
-        '<span class="ls-chip">JPL Horizons · K1</span>',
-        '<span class="ls-chip">LOLA DEM · K2</span>',
-        '<span class="ls-chip">Görünürlük motoru · K3</span>',
-    ]
+    chips = ['<span class="ls-chip">JPL Horizons · K1</span>']
     if synthetic:
         chips.append(
-            '<span class="ls-chip ls-chip-warn">Sentetik veri · test_fixture</span>'
+            '<span class="ls-chip ls-chip-warn">Sentetik efemeris · test_fixture</span>'
         )
+    chips.append('<span class="ls-chip">LOLA DEM · K2</span>')
+    if engine_active:
+        chips.append(
+            '<span class="ls-chip ls-chip-ok">Görünürlük motoru · K3 etkin</span>'
+        )
+    else:
+        chips.append('<span class="ls-chip">Görünürlük motoru · K3</span>')
     st.markdown(
         f"""
         <div class="ls-hero">
@@ -725,17 +925,27 @@ def render_sidebar_controls() -> tuple[int, int, dt.datetime]:
 
     st.sidebar.divider()
     st.sidebar.subheader("Veri kaynağı durumu")
-    if _module_ready("luna_sight.ephemeris") and _module_ready("luna_sight.visibility"):
+    k1_ready = _module_implemented("luna_sight.ephemeris")
+    k2_ready = _module_implemented("luna_sight.terrain")
+    k3_ready = _engine_available()
+    if k1_ready and k3_ready:
         st.sidebar.success("JPL Horizons & LOLA DEM Entegrasyonu: Aktif")
+    elif k3_ready:
+        st.sidebar.warning("K3 motoru etkin · sentetik efemeris (test_fixture)")
+        st.sidebar.caption(
+            "Sınıflandırmayı gerçek K3 motoru yapıyor; Güneş/Dünya efemerisi "
+            "K1 bağlanana kadar sentetik."
+        )
     else:
         st.sidebar.warning("Sentetik veri hattı (test_fixture) etkin")
         st.sidebar.caption(
             "K1 efemeris ve K3 görünürlük modülleri bağlanınca bu uyarı kaybolur."
         )
+    marks = {True: "hazır", False: "bekliyor"}
     st.sidebar.markdown(
-        "- JPL Horizons (K1): **bekliyor**\n"
-        "- LOLA DEM / ufuk (K2): **bekliyor**\n"
-        "- Görünürlük motoru (K3): **bekliyor**"
+        f"- JPL Horizons (K1): **{marks[k1_ready]}**\n"
+        f"- LOLA DEM / ufuk (K2): **{marks[k2_ready]}**\n"
+        f"- Görünürlük motoru (K3): **{marks[k3_ready]}**"
     )
 
     st.sidebar.divider()
@@ -748,21 +958,6 @@ def render_sidebar_controls() -> tuple[int, int, dt.datetime]:
             "karşılaştırmalı olarak ön değerlendirmeye sunar."
         )
     return days, step_minutes, start_utc
-
-
-def _module_ready(dotted_name: str) -> bool:
-    """Modül gerçekten uygulanmış mı (boş klasörler namespace paketi sayılır)."""
-    from pathlib import Path
-
-    src_dir = Path(__file__).resolve().parents[1] / "src"
-    directory = src_dir.joinpath(*dotted_name.split("."))
-    if not any(directory.rglob("*.py")):
-        return False
-    try:
-        importlib.import_module(dotted_name)
-        return True
-    except Exception:  # noqa: BLE001
-        return False
 
 
 def render_site_panel(
@@ -819,7 +1014,9 @@ def render_site_panel(
                 f"- En yüksek engel: **{metrics.horizon_max:.1f}°** "
                 f"(Güneş azimutu {metrics.horizon_max_az:.0f}°)\n"
                 f"- Güneş geometrik olarak ufkun üzerindeyken topoğrafya "
-                f"tarafından kesilen süre: **%{metrics.terrain_blocked_share * 100:.0f}**"
+                f"tarafından kesilen süre: **%{metrics.terrain_blocked_share * 100:.0f}**\n"
+                f"- Geçiş bandı nedeniyle belirsiz ortak görünürlük: "
+                f"**%{metrics.joint_uncertain_share * 100:.0f}**"
             )
             st.progress(
                 min(max(metrics.sun_share, 0.0), 1.0),
@@ -880,15 +1077,25 @@ def main() -> None:
     days, step_minutes, start_utc = render_sidebar_controls()
     start_iso = start_utc.astimezone(dt.UTC).isoformat()
 
-    synthetic = not _module_ready("luna_sight.visibility")
-    render_header(synthetic=synthetic)
+    k1_ready = _module_implemented("luna_sight.ephemeris")
+    engine_active = _engine_available()
+    synthetic = not k1_ready
+    render_header(synthetic=synthetic, engine_active=engine_active)
 
     if synthetic:
-        st.info(
-            "Bilimsel modüller (K1/K2/K3) henüz bağlı değil. Arayüz, veri sözleşmesine "
-            "uygun **sentetik** veriyle çalışıyor; sonuçlar `test_fixture` etiketlidir.",
-            icon="ℹ️",
-        )
+        if engine_active:
+            st.info(
+                "Sınıflandırma **K3 görünürlük motoruyla** (`evaluate_series`) yapılıyor. "
+                "Güneş/Dünya efemerisi K1 bağlanana kadar sentetiktir; çıktılar "
+                "`test_fixture` etiketlidir ve bilimsel sonuç olarak kullanılamaz.",
+                icon="ℹ️",
+            )
+        else:
+            st.info(
+                "Bilimsel modüller (K1/K2/K3) henüz bağlı değil. Arayüz, veri sözleşmesine "
+                "uygun **sentetik** veriyle çalışıyor; sonuçlar `test_fixture` etiketlidir.",
+                icon="ℹ️",
+            )
 
     # --- A/B karşılaştırma panelleri -------------------------------------
     st.subheader("A/B aday iniş bölgesi karşılaştırması")
@@ -986,8 +1193,8 @@ def main() -> None:
 
     with timeline_tab:
         st.caption(
-            "Renkler: yeşil = görünür, gri = engellenmiş. Üç kanal Güneş, Dünya ve "
-            "ortak görünürlüğü gösterir."
+            "Renkler: yeşil = görünür, gri = engellenmiş, sarı = belirsiz (geçiş bandı "
+            "ya da eksik veri). Üç kanal Güneş, Dünya ve ortak görünürlüğü gösterir."
         )
         left, right = st.columns(2)
         with left:
