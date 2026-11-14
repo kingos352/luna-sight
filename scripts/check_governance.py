@@ -31,10 +31,13 @@ REPO = DEFAULT_REPO
 
 _REQ_LINE = re.compile(r"^\s*([A-Za-z0-9_.\-]+)\s*(?:\[[^\]]*\])?\s*(?:[=<>!~]=|@|$)")
 _ADR_ROW = re.compile(r"^\|\s*(ADR-\d+)\s*\|([^|]*)\|([^|]*)\|([^|]*)\|([^|]*)\|")
-_SOURCE_ID = re.compile(r"""(?:SOURCE_ID\s*=|["']source_id["']\s*:|\bsource_id\s*=)\s*["']([^"']+)["']""")
+_SOURCE_ID = re.compile(
+    r"""(?:SOURCE_ID\s*=|["']source_id["']\s*:|\bsource_id\s*=)\s*["']([^"']+)["']"""
+)
 _LONGITUDE = re.compile(r"longitude_deg_east\s*=\s*(-?\d+(?:\.\d+)?)")
 _ENUM_ASSIGN = re.compile(
-    r"""["']?(quality_flag|sun_visible|earth_visible|joint_visible|sun_reason|earth_reason|joint_reason)["']?\s*(?::|=)\s*["']([a-z_]+)["']"""
+    r"""["']?(quality_flag|sun_visible|earth_visible|joint_visible"""
+    r"""|sun_reason|earth_reason|joint_reason)["']?\s*(?::|=)\s*["']([a-z_]+)["']"""
 )
 
 
@@ -100,12 +103,13 @@ def check_python_version(registry: dict, report: Report) -> None:
     has_setup = any((REPO / name).exists() for name in ("requirements.txt", "pyproject.toml"))
     if not has_setup:
         return  # Kurulum dosyası yoksa sürüm beyanı da beklenmez.
+    canonical = canon["canonical_version"]
     if not version_file.exists():
-        report.fail(rule, f"{canon['version_file']} yok; kanonik sürüm {canon['canonical_version']} beyan edilmeli.")
+        report.fail(rule, f"{canon['version_file']} yok; kanonik sürüm {canonical} beyan edilmeli.")
         return
     found = _read(version_file).strip()
-    if found != canon["canonical_version"]:
-        report.fail(rule, f"{canon['version_file']} = {found!r}, kanonik {canon['canonical_version']!r}.")
+    if found != canonical:
+        report.fail(rule, f"{canon['version_file']} = {found!r}, kanonik {canonical!r}.")
     else:
         report.ok(rule)
 
@@ -115,7 +119,8 @@ def check_python_version(registry: dict, report: Report) -> None:
         if match and match.group(1).replace(" ", "") not in (f">={canon['min_requires_python']}",):
             report.fail(
                 "PY-02",
-                f"pyproject.toml requires-python = {match.group(1)!r}; kanonik >={canon['min_requires_python']}.",
+                f"pyproject.toml requires-python = {match.group(1)!r}; "
+                f"kanonik >={canon['min_requires_python']}.",
             )
 
 
@@ -162,19 +167,21 @@ def check_canonical_files(registry: dict, report: Report) -> None:
         return  # Henüz kurulum dosyası gelmemiş dal.
     report.ok("DEP-01")
 
+    runtime_name = files["runtime_deps"]
+    dev_name = files["dev_deps"]
     active = _active_requirement_names(runtime)
     for package in files["dev_only_packages"]:
         if package.lower() in active:
             report.fail(
                 "DEP-02",
-                f"{files['runtime_deps']} içinde geliştirme paketi var: {active[package.lower()]!r}. "
-                f"{files['dev_deps']} dosyasına taşı.",
+                f"{runtime_name} içinde geliştirme paketi var: "
+                f"{active[package.lower()]!r}. {dev_name} dosyasına taşı.",
             )
     if dev.exists():
-        if f"-r {files['runtime_deps']}" not in _read(dev):
-            report.fail("DEP-03", f"{files['dev_deps']} dosyası '-r {files['runtime_deps']}' satırını içermeli.")
+        if f"-r {runtime_name}" not in _read(dev):
+            report.fail("DEP-03", f"{dev_name} dosyası '-r {runtime_name}' satırını içermeli.")
     else:
-        report.fail("DEP-03", f"{files['dev_deps']} yok; test araçları çalışma zamanı dosyasına karışır.")
+        report.fail("DEP-03", f"{dev_name} yok; test araçları çalışma zamanı dosyasına karışır.")
 
     for package, meta in registry["proposals"].items():
         if meta["status"] != "accepted" and package.lower() in active:
@@ -197,7 +204,10 @@ def check_adr(registry: dict, report: Report) -> None:
             continue
         adr_id, _when, decision, _why, owner = (g.strip() for g in match.groups()[:5])
         if adr_id in seen:
-            report.fail("ADR-01", f"{adr_id} iki kez tanımlı: {seen[adr_id][:40]!r} ve {decision[:40]!r}.")
+            report.fail(
+                "ADR-01",
+                f"{adr_id} iki kez tanımlı: {seen[adr_id][:40]!r} ve {decision[:40]!r}.",
+            )
             continue
         seen[adr_id] = decision
         if adr_id in spec["grandfathered"]:
@@ -205,7 +215,10 @@ def check_adr(registry: dict, report: Report) -> None:
         number = int(adr_id.split("-")[1])
         allowed = spec["ranges"].get(owner) or spec["ranges"].get(owner.split("/")[0])
         if allowed is None:
-            report.fail("ADR-02", f"{adr_id} sahibi {owner!r} tanımlı aralıklarda yok: {sorted(spec['ranges'])}.")
+            report.fail(
+                "ADR-02",
+                f"{adr_id} sahibi {owner!r} tanımlı aralıklarda yok: {sorted(spec['ranges'])}.",
+            )
         elif not allowed[0] <= number <= allowed[1]:
             report.fail(
                 "ADR-02",
@@ -250,7 +263,8 @@ def check_identifiers(registry: dict, report: Report) -> None:
             if value not in enum_sets[column]:
                 report.fail(
                     "ID-02",
-                    f"{rel}: {column} = {value!r} sözlük dışında. İzinli: {sorted(enum_sets[column])}.",
+                    f"{rel}: {column} = {value!r} sözlük dışında. "
+                    f"İzinli: {sorted(enum_sets[column])}.",
                 )
         for raw in set(_LONGITUDE.findall(text)):
             value = float(raw)
@@ -320,10 +334,12 @@ def main(argv: list[str] | None = None) -> int:
     check_outputs(registry, report)
 
     if args.json:
-        print(json.dumps({"failures": report.failures, "warnings": report.warnings}, ensure_ascii=False, indent=2))
+        payload = {"failures": report.failures, "warnings": report.warnings}
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
     else:
         authority = registry["authority"]
-        print(f"Kanonik sözleşme denetimi - otorite: {authority['integrator']} ({authority['role']})")
+        who = f"{authority['integrator']} ({authority['role']})"
+        print(f"Kanonik sözleşme denetimi - otorite: {who}")
         print(f"Kural metni: {authority['document']}\n")
         for message in report.warnings:
             print(f"UYARI   {message}")

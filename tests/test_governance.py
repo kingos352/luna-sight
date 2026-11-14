@@ -16,7 +16,7 @@ import pytest
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "scripts"))
 
-import check_governance
+import check_governance  # noqa: E402  (sys.path kurulduktan sonra içe aktarılmalı)
 
 CANONICAL_RUNTIME = "numpy==2.5.4\npandas==3.1.1\n"
 CANONICAL_DEV = "-r requirements.txt\n\npytest==9.2.0\nruff==0.17.5\n"
@@ -26,7 +26,8 @@ CANONICAL_DEV = "-r requirements.txt\n\npytest==9.2.0\nruff==0.17.5\n"
 def repo(tmp_path: Path) -> Path:
     """Sözleşmeye uyan en küçük depo."""
     (tmp_path / "governance").mkdir()
-    shutil.copy(REPO_ROOT / "governance" / "registry.json", tmp_path / "governance" / "registry.json")
+    registry = REPO_ROOT / "governance" / "registry.json"
+    shutil.copy(registry, tmp_path / "governance" / "registry.json")
     (tmp_path / "requirements.txt").write_text(CANONICAL_RUNTIME, encoding="utf-8")
     (tmp_path / "requirements-dev.txt").write_text(CANONICAL_DEV, encoding="utf-8")
     (tmp_path / ".python-version").write_text("3.12\n", encoding="utf-8")
@@ -64,7 +65,8 @@ def test_dev_package_in_runtime_fails(repo: Path) -> None:
 
 def test_unapproved_proposal_fails(repo: Path) -> None:
     """ADR-006 onaylanmadan pandera kanonik dosyaya giremez."""
-    (repo / "requirements.txt").write_text(CANONICAL_RUNTIME + "pandera[pandas]==0.36.0\n", encoding="utf-8")
+    runtime = CANONICAL_RUNTIME + "pandera[pandas]==0.36.0\n"
+    (repo / "requirements.txt").write_text(runtime, encoding="utf-8")
     assert run(repo) == 1
 
 

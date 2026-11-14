@@ -156,19 +156,27 @@ ADR-006 **onaylanmadı**. Onaylanana kadar `pandera` kanonik
 
 ## 8. Birleştirme treni
 
-`main` boş. Üç yığın aynı dosyalara dokunuyor. Sıra bağlayıcıdır:
+#10 (`k1/dev-environment`) `main`'e alındı: kanonik kurulum dosyaları, CI test
+kapısı ve K1 efemeris modülü artık `main` üzerinde. Kalan sıra bağlayıcıdır:
 
-1. **`k5/integration-contract`** → `main` — sözleşme ve denetleyici. Yalnızca
-   yeni dosya ekler, hiçbir dalla çakışmaz. Önce bu girer ki kalan birleşmeler
-   kapıdan geçsin.
-2. **#10 `k1/dev-environment`** → `main` — kanonik kurulum dosyaları, CI test
-   kapısı, K1 efemeris modülü.
+1. **#20 `k1/dev-environment`** → `main` — #10 birleştikten sonra gelen iki K1
+   commit'i: onaysız `pandera` satırının çıkarılması ve K3 efemeris sağlayıcısı.
+   **Önce bu girer:** `main` şu an `DEP-04` ihlali taşıyor ve bu düzelmeden
+   denetleyici hiçbir dalda yeşile dönemez.
+2. **#19 `k5/integration-contract`** → `main` — sözleşme, kayıt defteri ve
+   denetleyici. Yalnızca yeni dosya ekler, hiçbir dalla çakışmaz.
 3. **#6 `k2/lola-horizon`** → `main` — K2 arazi + K3 görünürlük.
 4. **#8 `k4/dev-environment`** → `main` — arayüz.
 
 Her adımda bir sonraki dal `main` ile güncellenir ve denetleyici yeşile dönene
 kadar birleşmez. Sıra dışına çıkmak isteyen rol, koordinasyon Issue'sunda
 gerekçe yazar.
+
+Sıranın gerekçesi: #6 ve #8 ile `main` arasındaki çakışma yüzeyi büyük
+(`requirements.txt`, `requirements-dev.txt`, `pytest.ini`,
+`src/luna_sight/__init__.py`, `data/manifest.csv`, `docs/DECISIONS.md`,
+`README.md`). Kapı önce ayağa kalkmazsa bu çakışmalar elle ve her seferinde
+yeniden çözülür.
 
 #7 (`k3/visibility-engine`) kapatılır: #16 onun tam üst kümesidir ve
 `k2/lola-horizon` içine birleşti. Aynı kodu ikinci kez incelemek zaman kaybıdır.
