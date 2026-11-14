@@ -7,6 +7,7 @@ testler doğrudan onları kullanır. Dosyalar yoksa ilgili testler atlanır.
 from __future__ import annotations
 
 import importlib
+import json
 import sys
 from pathlib import Path
 
@@ -53,6 +54,16 @@ def test_default_real_mode_runs_without_exception(clean_caches):
     # Gerçek çıktı 168 saatlik pencereye kırpılır: 169 saatlik örnek.
     assert "169 satır" in captions
 
+    # A/B panellerinde kesintisiz ortak iletişim metriği iki kez görünür.
+    metric_labels = [metric.label for metric in at.metric]
+    assert metric_labels.count("En Uzun Kesintisiz İletişim (Güneş+Dünya)") == 2
+
+    # K2/K3 rozetleri yeşil "Tam Entegre · Aktif"; K1 henüz sentetik.
+    badges = " ".join(m.value for m in at.markdown if "ls-badge" in m.value)
+    assert "K2 · LOLA DEM · Topoğrafya · Tam Entegre · Aktif" in badges
+    assert "K3 · Görünürlük ve Pencere Motoru · Tam Entegre · Aktif" in badges
+    assert "K1 · JPL Horizons · Efemeris · Bekliyor" in badges
+
 
 @pytest.mark.skipif(not app.REAL_AVAILABLE, reason="gerçek K3 çıktısı yok")
 def test_mock_mode_can_be_selected(clean_caches):
@@ -82,6 +93,38 @@ def test_horizon_profile_comes_from_k2(clean_caches):
 
     assert source == "K2"
     assert len(azimuths) == len(horizons) == 360
+
+
+@pytest.mark.skipif(not app.REAL_AVAILABLE, reason="gerçek K3 çıktısı yok")
+def test_longest_joint_window_matches_k3_summary(clean_caches):
+    frame = app.load_site_series(
+        "Site01", "2026-11-15T00:00:00+00:00", 7, 60, app.SOURCE_REAL
+    )
+    metrics = app.compute_metrics(frame, 60)
+
+    summary = json.loads(
+        (ROOT / "outputs" / "k3" / "Site01_summary.json").read_text(encoding="utf-8")
+    )
+    expected = summary["bodies"]["joint"]["longest_visible_hours"]
+
+    assert metrics.longest_joint_window > 0.0
+    assert metrics.longest_joint_window <= metrics.joint_hours
+    # 1 saatlik örnekleme nedeniyle K3'ün 5 dk çözünürlüklü değerinden sapabilir.
+    assert metrics.longest_joint_window == pytest.approx(expected, abs=1.5)
+
+
+def test_integration_badges_reflect_real_modules():
+    statuses = {code: ready for code, _, ready in app._integration_statuses()}
+
+    assert set(statuses) == {"K1", "K2", "K3"}
+    assert statuses["K2"] is True
+    assert statuses["K3"] is True
+    # K1 efemeris modülü depoya eklenirse bu rozet otomatik yeşile döner.
+    assert isinstance(statuses["K1"], bool)
+
+    html = app._integration_badges_html()
+    assert html.count("Tam Entegre · Aktif") >= 2
+    assert "ls-badge-ok" in html
 
 
 def test_missing_real_file_falls_back_to_synthetic(clean_caches, monkeypatch, tmp_path):

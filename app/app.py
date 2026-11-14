@@ -825,6 +825,7 @@ class SiteMetrics:
     earth_hours: float
     joint_hours: float
     longest_earth_window: float
+    longest_joint_window: float
     sun_share: float
     earth_share: float
     joint_uncertain_share: float
@@ -869,6 +870,7 @@ def compute_metrics(frame: pd.DataFrame, step_minutes: int) -> SiteMetrics:
         earth_hours=float(earth.sum() * step_hours),
         joint_hours=float(joint.sum() * step_hours),
         longest_earth_window=_longest_run_hours(earth, step_hours),
+        longest_joint_window=_longest_run_hours(joint, step_hours),
         sun_share=float(sun.mean()),
         earth_share=float(earth.mean()),
         joint_uncertain_share=float(joint_uncertain.mean()),
@@ -1127,6 +1129,16 @@ def inject_theme() -> None:
         .ls-card-title {font-size: 0.8rem; color: #e8ecf8; font-weight: 600;}
         .ls-card-path {font-size: 0.7rem; color: #7fb4ff; word-break: break-all; margin-top: 0.15rem;}
         .ls-card-detail {font-size: 0.7rem; color: #b9c3dc;}
+        .ls-badge-row {display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.25rem 0 0.65rem 0;}
+        .ls-badge {
+            display: inline-flex; align-items: center; gap: 0.3rem;
+            padding: 0.22rem 0.62rem; border-radius: 999px;
+            font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em;
+            border: 1px solid rgba(90,169,255,0.35); color: #a9c8ff;
+            background: rgba(90,169,255,0.08);
+        }
+        .ls-badge-ok {border-color: rgba(61,220,151,0.45); color: #7ff0bd; background: rgba(61,220,151,0.10);}
+        .ls-badge-warn {border-color: rgba(245,185,66,0.45); color: #f5c76a; background: rgba(245,185,66,0.08);}
         div[data-testid="stMetric"] {background: rgba(20,26,46,0.65); border: 1px solid rgba(90,169,255,0.16);
             border-radius: 12px; padding: 0.65rem 0.8rem;}
         </style>
@@ -1192,6 +1204,29 @@ def _file_card(title: str, path: Path, ok: bool, detail: str = "") -> str:
         f"<div class='ls-card'><div class='ls-card-title'>{icon} {title}</div>"
         f"<div class='ls-card-path'>{path.as_posix()}</div>{suffix}</div>"
     )
+
+
+def _integration_statuses() -> list[tuple[str, str, bool]]:
+    """K1/K2/K3 modüllerinin gerçek entegrasyon durumunu döndürür.
+
+    Durum, dosya sistemindeki gerçek modüllere bakılarak belirlenir; K1
+    efemeris modülü depoya gelene kadar rozet yeşile dönmez.
+    """
+    return [
+        ("K1", "JPL Horizons · Efemeris", _module_implemented("luna_sight.ephemeris")),
+        ("K2", "LOLA DEM · Topoğrafya", _module_implemented("luna_sight.terrain")),
+        ("K3", "Görünürlük ve Pencere Motoru", _engine_available()),
+    ]
+
+
+def _integration_badges_html() -> str:
+    """K1/K2/K3 için yeşil/amber durum rozetlerini HTML olarak üretir."""
+    items = []
+    for code, name, ready in _integration_statuses():
+        state = "Tam Entegre · Aktif" if ready else "Bekliyor · Sentetik"
+        css = "ls-badge-ok" if ready else "ls-badge-warn"
+        items.append(f"<span class='ls-badge {css}'>{code} · {name} · {state}</span>")
+    return "<div class='ls-badge-row'>" + "".join(items) + "</div>"
 
 
 def render_sidebar_controls() -> tuple[int, int, dt.datetime, str]:
@@ -1271,6 +1306,7 @@ def render_sidebar_controls() -> tuple[int, int, dt.datetime, str]:
 
     st.sidebar.divider()
     st.sidebar.subheader("Bilimsel kaynaklar")
+    st.sidebar.markdown(_integration_badges_html(), unsafe_allow_html=True)
     k1_ready = _module_implemented("luna_sight.ephemeris")
     k2_ready = _module_implemented("luna_sight.terrain")
     k3_ready = _engine_available()
@@ -1338,6 +1374,9 @@ def render_site_panel(
         sun_delta = metrics.sun_hours - compare.sun_hours
         earth_delta = metrics.earth_hours - compare.earth_hours
         joint_delta = metrics.joint_hours - compare.joint_hours
+        joint_longest_delta = (
+            metrics.longest_joint_window - compare.longest_joint_window
+        )
 
         first, second = st.columns(2)
         first.metric(
@@ -1370,6 +1409,22 @@ def render_site_panel(
             border=True,
         )
 
+        # Artemis operasyonu için kritik: kesintisiz şarj + haberleşme penceresi.
+        st.metric(
+            "En Uzun Kesintisiz İletişim (Güneş+Dünya)",
+            f"{metrics.longest_joint_window:.1f} sa",
+            f"{joint_longest_delta:+.1f} sa",
+            help=(
+                "Güneş ve Dünya'nın aynı anda kesintisiz görünür kaldığı en uzun "
+                "süre; Artemis için şarj ve doğrudan haberleşme penceresini belirler."
+            ),
+            border=True,
+        )
+        st.caption(
+            "Kritik karar metriği: kesintisiz ortak görünürlük, görev boyunca "
+            "enerji ve iletişimin aynı anda sağlandığı en uzun aralıktır."
+        )
+
         with st.expander("Topoğrafik engel özeti", expanded=True):
             st.markdown(
                 f"- Ortalama ufuk yüksekliği: **{metrics.horizon_mean:.1f}°**\n"
@@ -1397,6 +1452,9 @@ def render_source_cards(
     contract_missing = [
         column for column in DATA_CONTRACT_COLUMNS if column not in frame_a.columns
     ]
+
+    st.markdown("**Entegrasyon durumu**")
+    st.markdown(_integration_badges_html(), unsafe_allow_html=True)
 
     first, second, third = st.columns(3)
     with first:
