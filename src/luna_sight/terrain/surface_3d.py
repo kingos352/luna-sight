@@ -36,17 +36,20 @@ SOUTH_POLE_LAT_DEG = -90.0
 
 # LRO/LOLA ve Kaguya verilerine dayalı bilimsel ay yüzeyi renk paleti
 # Albedo aralığı: mare ~0.07-0.10, highlands ~0.12-0.18, anorthosite ~0.20+
+# Daha görünür renkler için parlaklık artırıldı; fiziksel albedo oranları korunur.
 LUNAR_SCIENTIFIC_COLORSCALE = [
-    [0.00, "#050506"],   # PSR / kalıcı gölgeli krater tabanları (albedo ~0.03)
-    [0.08, "#0e0f12"],   # Derin mare bazalt ve gölgeli krater içleri
-    [0.18, "#1a1d24"],   # Mare bazalt yüzeyleri (düşük albedo)
-    [0.30, "#2d313c"],   # Orta albedo highlands / krater duvarları
-    [0.42, "#444b5e"],   # Karma highlands-mare geçiş bölgeleri
-    [0.55, "#636b85"],   # Ortalama highlands regolith
-    [0.68, "#848da8"],   # Açık renkli highlands / anortozit yamaçlar
-    [0.80, "#a8b0c8"],   # Yüksek albedo krater kenarları (rim) ve fırlatma örtüsü
-    [0.90, "#cdd6eb"],   # Parlak anortozit zirveleri ve taze krater kenarları
-    [1.00, "#f0f4fc"],   # En parlak taze çarpma özellikleri (albedo >0.20)
+    [0.00, "#1a1a2e"],   # PSR / kalıcı gölgeli krater tabanları (albedo ~0.03) - daha görünür koyu mavi
+    [0.05, "#2d2d44"],   # Derin gölgeler
+    [0.10, "#3d3d55"],   # Gölge geçişi
+    [0.18, "#4a4a6a"],   # Mare bazalt yüzeyleri (düşük albedo ~0.07)
+    [0.25, "#5a5a7a"],   # Mare-highlands geçiş
+    [0.35, "#6b6b8a"],   # Orta albedo highlands
+    [0.45, "#7d7d9a"],   # Açık highlands
+    [0.55, "#9090aa"],   # Yüksek albedo highlands / anortozit
+    [0.65, "#a5a5bc"],   # Krater kenarları (rim) ve fırlatma örtüsü
+    [0.75, "#babacf"],   # Parlak anortozit yamaçlar
+    [0.85, "#d0d0e2"],   # Taze krater kenarları
+    [1.00, "#e8e8f0"],   # En parlak taze çarpma özellikleri (albedo >0.20)
 ]
 
 # Gorsel stil renkleri (erişilebilirlik için WCAG AA uyumlu)
@@ -685,17 +688,18 @@ def compute_hillshading_and_texture(
     flip_mask = np.sum(normal * radial, axis=-1) < 0.0
     normal[flip_mask] = -normal[flip_mask]
     
-    # Işık yön vektörü (Güneş azimutu ve ufuk yüksekliği)
+    # Işık yön vektörü (Güneş azimutu ve ufuk yüksekliği, güney kutbu perspektifi)
+    # Güney kutbunda "yukarı" -Z yönündedir; Güneş ufuk üzerinden gelen ışık -Z bileşenine sahiptir.
     light_az = math.radians(light_azimuth_deg)
     light_alt = math.radians(sun_altitude_deg)
     lx = math.cos(light_alt) * math.cos(light_az)
-    ly = math.cos(light_alt) * math.sin(light_alt)
-    lz = math.sin(light_alt)  # Pozitif = yukarıdan gelen ışık
+    ly = math.cos(light_alt) * math.sin(light_az)
+    lz = -math.sin(light_alt)  # Negatif: Güney kutbu yönünden gelen ışık (yukarı = -Z)
     light_vec = np.array([lx, ly, lz], dtype=float)
     light_vec = light_vec / np.linalg.norm(light_vec)
     
-    # Gözlemci vektörü (uzay aracı / gözlemci pozisyonu - kuzeyden bakıyor)
-    view_vec = np.array([0.0, 0.0, 1.0], dtype=float)
+    # Gözlemci vektörü (güney kutbu üzerinden bakıyor, yani -Z yönünden)
+    view_vec = np.array([0.0, 0.0, -1.0], dtype=float)
     
     if use_hapke:
         # Açılar
@@ -717,20 +721,20 @@ def compute_hillshading_and_texture(
         
         # Gölge: ışık yüzeye gelmiyorsa (cos_i <= 0)
         in_shadow = cos_i <= 0.0
-        ambient = 0.02  # Çok düşük ambient (ayda atmosfer yok)
+        ambient = 0.12  # Daha gerçekçi ambient (ayda çok az da olsa yaygın ışık)
         shaded = np.where(in_shadow, ambient * albedo, shaded)
         
     else:
         # Basit Lambert + gölge
         cos_i = np.clip(np.sum(normal * light_vec, axis=-1), 0.0, 1.0)
         diffuse = cos_i ** 0.85
-        ambient = 0.03
+        ambient = 0.15
         shaded = albedo * (ambient + (1.0 - ambient) * diffuse)
         in_shadow = np.sum(normal * light_vec, axis=-1) <= 0.0
         shaded[in_shadow] = ambient * albedo[in_shadow]
     
-    # PSR vurgusu: kalıcı gölgeli bölgelerde özel renk tonlaması
-    shaded = np.where(psr_mask, np.clip(shaded * 0.3, 0.0, 0.15), shaded)
+    # PSR vurgusu: kalıcı gölgeli bölgelerde hafif farklı ton ama yine de görünür
+    shaded = np.where(psr_mask, np.clip(shaded * 0.6, 0.05, 0.4), shaded)
     
     return np.clip(shaded, 0.0, 1.0)
 
@@ -740,8 +744,8 @@ def generate_lunar_globe_mesh(
     n_lon: int = 280,
     exaggeration: float = 1.8,
     dem_path: Path | None = None,
-    light_azimuth_deg: float = 60.0,
-    sun_altitude_deg: float = 2.0,
+    light_azimuth_deg: float = 45.0,
+    sun_altitude_deg: float = 8.0,
     use_hapke: bool = True,
 ) -> SurfaceMesh:
     """3B küresel Ay yüzey kafesini üretir.
@@ -847,8 +851,8 @@ def generate_polar_relief_mesh(
     extent_km: float = 150.0,
     resolution: int = 200,
     exaggeration: float = 2.2,
-    light_azimuth_deg: float = 60.0,
-    sun_altitude_deg: float = 1.5,
+    light_azimuth_deg: float = 45.0,
+    sun_altitude_deg: float = 5.0,
     use_hapke: bool = True,
 ) -> SurfaceMesh:
     """Güney kutbu 300 km çaplı yerel düzlem 3B yüksek çözünürlüklü rölief kafesi üretir."""
@@ -1242,20 +1246,20 @@ def calculate_camera_view(
     """Seçilen odak moduna göre Plotly 3B kamera bakış açısını döndürür."""
     if focus == "south_pole":
         return {
-            "eye": {"x": 0.0, "y": 0.001, "z": -1.85},
+            "eye": {"x": 0.0, "y": 0.001, "z": -1.35},
             "up": {"x": 0.0, "y": 1.0, "z": 0.0},
             "center": {"x": 0.0, "y": 0.0, "z": -0.05},
         }
     if focus == "south_pole_zoom":
         return {
-            "eye": {"x": 0.0, "y": 0.001, "z": -1.20},
+            "eye": {"x": 0.0, "y": 0.001, "z": -1.10},
             "up": {"x": 0.0, "y": 1.0, "z": 0.0},
             "center": {"x": 0.0, "y": 0.0, "z": -0.15},
         }
     if focus == "site_a" and spec_a is not None:
         lat = math.radians(spec_a.latitude_deg)
         lon = math.radians(spec_a.longitude_deg_east)
-        dist = 1.30
+        dist = 1.20
         ux = math.cos(lat) * math.cos(lon)
         uy = math.cos(lat) * math.sin(lon)
         uz = math.sin(lat)
@@ -1267,7 +1271,7 @@ def calculate_camera_view(
     if focus == "site_b" and spec_b is not None:
         lat = math.radians(spec_b.latitude_deg)
         lon = math.radians(spec_b.longitude_deg_east)
-        dist = 1.30
+        dist = 1.20
         ux = math.cos(lat) * math.cos(lon)
         uy = math.cos(lat) * math.sin(lon)
         uz = math.sin(lat)
@@ -1278,7 +1282,7 @@ def calculate_camera_view(
         }
     # Küresel yandan açılı görüş
     return {
-        "eye": {"x": 1.40, "y": 1.15, "z": -0.90},
+        "eye": {"x": 1.20, "y": 1.00, "z": -0.80},
         "up": {"x": 0.0, "y": 0.0, "z": 1.0},
         "center": {"x": 0.0, "y": 0.0, "z": 0.0},
     }
@@ -1294,8 +1298,8 @@ def build_lunar_globe_figure(
     show_craters: bool = True,
     exaggeration: float = 1.8,
     camera_focus: str = "south_pole",
-    light_azimuth_deg: float = 60.0,
-    sun_altitude_deg: float = 2.0,
+    light_azimuth_deg: float = 45.0,
+    sun_altitude_deg: float = 8.0,
     dem_path: Path | None = None,
     use_hapke: bool = True,
 ) -> go.Figure:
@@ -1309,12 +1313,26 @@ def build_lunar_globe_figure(
         use_hapke=use_hapke,
     )
     
+    # Renk skalasını verinin gerçek aralığına ayarla (PSR maskesi 0.05 minimum)
+    # Sadece PSR olmayan, gölgeli olmayan alanları kullanarak contrast stretch hesapla
+    valid_mask = (~mesh.psr_mask) & (mesh.shading_matrix > 0.05)
+    if np.any(valid_mask):
+        valid_shading = mesh.shading_matrix[valid_mask]
+        shading_min = float(np.percentile(valid_shading, 5))
+        shading_max = float(np.percentile(valid_shading, 95))
+    else:
+        shading_min = 0.05
+        shading_max = 0.30
+    # Genel minimum/maksimum sınırları
+    shading_min = max(0.0, min(shading_min, 0.08))
+    shading_max = max(shading_max, 0.25)
+    
     # 3B Yüzey katmanı (fotometrik ışıklandırma + doku + albedo)
     surface_trace = go.Surface(
         x=mesh.x, y=mesh.y, z=mesh.z,
         surfacecolor=mesh.shading_matrix,
         colorscale=LUNAR_SCIENTIFIC_COLORSCALE,
-        cmin=0.0, cmax=1.0,
+        cmin=shading_min, cmax=shading_max,
         showscale=False,
         lighting={
             "ambient": 0.25,
@@ -1428,8 +1446,8 @@ def build_polar_relief_figure(
     show_sites: bool = True,
     show_craters: bool = True,
     exaggeration: float = 2.2,
-    light_azimuth_deg: float = 60.0,
-    sun_altitude_deg: float = 1.5,
+    light_azimuth_deg: float = 45.0,
+    sun_altitude_deg: float = 5.0,
     use_hapke: bool = True,
 ) -> go.Figure:
     """Güney kutbu 300 km çaplı yerel yüksek çözünürlüklü 3B topografya röliefi."""
@@ -1441,11 +1459,23 @@ def build_polar_relief_figure(
         use_hapke=use_hapke,
     )
     
+    # Renk skalasını verinin gerçek aralığına ayarla (PSR olmayan alanlar için)
+    valid_mask = (~mesh.psr_mask) & (mesh.shading_matrix > 0.05)
+    if np.any(valid_mask):
+        valid_shading = mesh.shading_matrix[valid_mask]
+        shading_min = float(np.percentile(valid_shading, 5))
+        shading_max = float(np.percentile(valid_shading, 95))
+    else:
+        shading_min = 0.05
+        shading_max = 0.30
+    shading_min = max(0.0, min(shading_min, 0.08))
+    shading_max = max(shading_max, 0.25)
+    
     surface_trace = go.Surface(
         x=mesh.x, y=mesh.y, z=mesh.z,
         surfacecolor=mesh.shading_matrix,
         colorscale=LUNAR_SCIENTIFIC_COLORSCALE,
-        cmin=0.0, cmax=1.0,
+        cmin=shading_min, cmax=shading_max,
         showscale=False,
         lighting={
             "ambient": 0.25, "diffuse": 0.95,
@@ -1599,7 +1629,7 @@ def build_polar_relief_figure(
         scene={
             "aspectmode": "data",
             "camera": {
-                "eye": {"x": 0.0, "y": -0.01, "z": 1.70},
+                "eye": {"x": 0.0, "y": -0.01, "z": 1.40},
                 "up": {"x": 0.0, "y": 1.0, "z": 0.0},
                 "center": {"x": 0.0, "y": 0.0, "z": 0.0},
             },

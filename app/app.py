@@ -1679,7 +1679,7 @@ def render_surface_3d_tab(
                 key=f"globe_view_mode_{source_mode}",
             )
         with opt_col2:
-            default_exagg = 1.8 if view_mode == "globe" else 2.0
+            default_exagg = 1.8 if view_mode == "globe" else 2.2
             exaggeration = st.slider(
                 "Yükselti kabartması (çarpan)",
                 min_value=1.0,
@@ -1694,7 +1694,7 @@ def render_surface_3d_tab(
                 "Güneş azimutu (ışık açısı)",
                 min_value=0.0,
                 max_value=360.0,
-                value=60.0,
+                value=45.0,
                 step=15.0,
                 key=f"globe_light_az_{source_mode}",
                 help="Güneş ışığının geliş yönünü değiştirerek krater gölgelerini simüle eder.",
@@ -1702,12 +1702,12 @@ def render_surface_3d_tab(
         with opt_col4:
             sun_altitude = st.slider(
                 "Güneş ufuk yüksekliği",
-                min_value=0.5,
-                max_value=5.0,
-                value=2.0,
+                min_value=1.0,
+                max_value=15.0,
+                value=8.0,
                 step=0.5,
                 key=f"globe_sun_alt_{source_mode}",
-                help="Kutup Güneşi'nin yerel ufkun üzerindeki alçak geliş açısı (1°-3°). Krater içi gölge derinliğini belirler.",
+                help="Kutup Güneşi'nin yerel ufkun üzerindeki geliş açısı. Daha yüksek değer krater gölgelerini azaltır, daha düşük değer gölgeleri derinleştirir.",
             )
 
     if view_mode == "globe":
@@ -1733,6 +1733,7 @@ def render_surface_3d_tab(
             show_craters=show_craters,
             exaggeration=exaggeration,
             light_azimuth_deg=light_azimuth,
+            sun_altitude_deg=sun_altitude,
         )
 
     st.plotly_chart(fig)
