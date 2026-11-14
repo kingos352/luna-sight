@@ -278,6 +278,56 @@ def check_identifiers(registry: dict, report: Report) -> None:
         report.ok("ID-01")
 
 
+def _walk_json(node: object, path: str = "") -> list[tuple[str, str, object]]:
+    """JSON ağacını dolaş ve (yol, anahtar, değer) üçlüleri döndür."""
+    found: list[tuple[str, str, object]] = []
+    if isinstance(node, dict):
+        for key, value in node.items():
+            here = f"{path}.{key}" if path else key
+            if isinstance(value, (dict, list)):
+                found.extend(_walk_json(value, here))
+            else:
+                found.append((here, key, value))
+    elif isinstance(node, list):
+        for index, value in enumerate(node):
+            found.extend(_walk_json(value, f"{path}[{index}]"))
+    return found
+
+
+def check_output_json(registry: dict, report: Report) -> None:
+    """Çıktı JSON dosyalarındaki boylam değerleri kanonik aralıkta mı.
+
+    `GEO-01` yalnızca kaynak kodu tarar. Boylam, üretilmiş özet dosyalarına
+    da yazılır; kod düzeltilip çıktı yeniden üretilmezse tutarsızlık
+    görünmez kalır. Bu kural o boşluğu kapatır.
+    """
+    geo = registry["geometry"]
+    keys = set(geo.get("longitude_keys", ()))
+    if not keys:
+        return
+    low, high = geo["longitude_range"]
+    for pattern in registry["checker"].get("output_json_globs", ()):
+        for path in sorted(REPO.glob(pattern)):
+            rel = path.relative_to(REPO).as_posix()
+            try:
+                payload = json.loads(_read(path))
+            except ValueError as exc:
+                report.fail("OUT-03", f"{rel}: JSON ayrıştırılamadı ({exc}).")
+                continue
+            for where, key, value in _walk_json(payload):
+                if key not in keys or not isinstance(value, (int, float)):
+                    continue
+                if isinstance(value, bool) or low <= value <= high:
+                    continue
+                wrapped = value - 360.0 if value > high else value + 360.0
+                report.fail(
+                    "GEO-02",
+                    f"{rel}: {where} = {value} kanonik aralık [{low}, {high}] dışında. "
+                    f"Doğu-pozitif yön korunur, değer {wrapped:.6f} olarak yazılır. "
+                    "Kaynak kod düzeltildiyse çıktının yeniden üretilmesi gerekir.",
+                )
+
+
 def check_outputs(registry: dict, report: Report) -> None:
     contract = registry["data_contract"]
     required = contract["required_columns"]
@@ -331,6 +381,7 @@ def main(argv: list[str] | None = None) -> int:
     check_canonical_files(registry, report)
     check_adr(registry, report)
     check_identifiers(registry, report)
+    check_output_json(registry, report)
     check_outputs(registry, report)
 
     if args.json:

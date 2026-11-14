@@ -108,6 +108,10 @@
     "elevation_range": [
       -90.0,
       90.0
+    ],
+    "longitude_keys": [
+      "lon_deg_east",
+      "longitude_deg_east"
     ]
   },
   "identifiers": {
@@ -198,6 +202,9 @@
       "governance/registry.json",
       "scripts/check_governance.py",
       "docs/GOVERNANCE.md"
+    ],
+    "output_json_globs": [
+      "outputs/**/*.json"
     ]
   }
 }
