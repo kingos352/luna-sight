@@ -7,9 +7,7 @@ import pytest
 
 from luna_sight.visibility.profile import HorizonProfileLookup
 
-K2_PROFILE = (
-    Path(__file__).resolve().parents[1] / "outputs" / "k2" / "Site04_horizon_4000m.csv"
-)
+K2_PROFILE = Path(__file__).resolve().parents[1] / "outputs" / "k2" / "Site04_horizon_4000m.csv"
 
 
 @pytest.fixture()
@@ -31,12 +29,8 @@ def test_circular_wrap_between_last_and_first(coarse_profile):
 
 
 def test_longitudes_are_normalised(coarse_profile):
-    assert coarse_profile.elevation_at(-45.0) == pytest.approx(
-        coarse_profile.elevation_at(315.0)
-    )
-    assert coarse_profile.elevation_at(405.0) == pytest.approx(
-        coarse_profile.elevation_at(45.0)
-    )
+    assert coarse_profile.elevation_at(-45.0) == pytest.approx(coarse_profile.elevation_at(315.0))
+    assert coarse_profile.elevation_at(405.0) == pytest.approx(coarse_profile.elevation_at(45.0))
 
 
 def test_vector_query_matches_scalar(coarse_profile):
@@ -62,9 +56,7 @@ def test_nan_segment_returns_none():
 
 
 def test_vector_query_propagates_nan():
-    profile = HorizonProfileLookup(
-        [0.0, 90.0, 180.0, 270.0], [1.0, float("nan"), 2.0, 3.0]
-    )
+    profile = HorizonProfileLookup([0.0, 90.0, 180.0, 270.0], [1.0, float("nan"), 2.0, 3.0])
     values = profile.elevations_at([0.0, 90.0, 180.0])
     assert np.isfinite(values[0])
     assert np.isnan(values[1])
@@ -107,9 +99,7 @@ def test_real_k2_profile_loads_and_is_finite():
 
 def test_csv_missing_columns_raises(tmp_path):
     path = tmp_path / "bad.csv"
-    path.write_text(
-        "azimuth_deg,horizon_deg\n0,1\n90,2\n", encoding="utf-8"
-    )
+    path.write_text("azimuth_deg,horizon_deg\n0,1\n90,2\n", encoding="utf-8")
     HorizonProfileLookup.from_csv(path)  # bu hâlâ geçerli
 
     with pytest.raises(ValueError):
@@ -120,9 +110,7 @@ def test_csv_missing_columns_raises(tmp_path):
 
 def test_csv_empty_horizon_becomes_nan(tmp_path):
     path = tmp_path / "partial.csv"
-    path.write_text(
-        "azimuth_deg,horizon_deg\n0,0.5\n90,\n180,1.5\n", encoding="utf-8"
-    )
+    path.write_text("azimuth_deg,horizon_deg\n0,0.5\n90,\n180,1.5\n", encoding="utf-8")
     profile = HorizonProfileLookup.from_csv(path)
     assert profile.elevation_at(90.0) is None
     assert profile.elevation_at(0.0) == pytest.approx(0.5)

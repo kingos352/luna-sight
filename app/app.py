@@ -1475,7 +1475,7 @@ def render_sidebar_controls() -> tuple[int, int, dt.datetime, str]:
             "**Gerçek çıktı modu:** K3 motorunun ürettiği `outputs/k3` CSV'leri "
             "(5 dk adım, 168 saat) okunur; topoğrafik ufuk `outputs/k2` "
             "profilinden gelir. Efemeris kaynağı, sürümü ve kalite bayrağı "
-            "sabit metin değildir: her satırdan okunup \"Veri ve kaynak\" "
+            'sabit metin değildir: her satırdan okunup "Veri ve kaynak" '
             "sekmesinde gösterilir.\n\n"
             "**Mock modu:** Güneş için 29,53 günlük sinodik dönem, Dünya için "
             "27,21 günlük librasyon salınımı ve azimuta bağlı analitik ufuk.\n\n"

@@ -31,9 +31,7 @@ from luna_sight.visibility.synthetic import synthetic_series
 
 START = datetime(2026, 11, 15, tzinfo=UTC)
 FLAT = HorizonProfileLookup([0.0, 180.0], [0.0, 0.0])
-K2_PROFILE = (
-    Path(__file__).resolve().parents[1] / "outputs" / "k2" / "Site04_horizon_4000m.csv"
-)
+K2_PROFILE = Path(__file__).resolve().parents[1] / "outputs" / "k2" / "Site04_horizon_4000m.csv"
 CONTRACT_FIELDS = {
     "site_id",
     "latitude_deg",
@@ -124,9 +122,7 @@ def test_missing_ephemeris_is_explicit():
 
 
 def test_missing_horizon_segment_is_uncertain():
-    profile = HorizonProfileLookup(
-        [0.0, 90.0, 180.0, 270.0], [0.0, float("nan"), 2.0, 3.0]
-    )
+    profile = HorizonProfileLookup([0.0, 90.0, 180.0, 270.0], [0.0, float("nan"), 2.0, 3.0])
     # 90° civarı NaN segmentin içinde kalır.
     result = evaluate(make_sample(0, 10.0, 10.0, sun_az=90.0, earth_az=90.0), profile)
     assert result.sun.state == UNCERTAIN
@@ -318,9 +314,7 @@ def test_summarize_windows_totals():
 
 
 def test_summarize_windows_without_visible_period():
-    results = evaluate_series(
-        [make_sample(0, -1.0, -1.0), make_sample(10, -1.0, -1.0)], FLAT
-    )
+    results = evaluate_series([make_sample(0, -1.0, -1.0), make_sample(10, -1.0, -1.0)], FLAT)
     summary = summarize_windows(build_windows(results, BODY_JOINT))
     assert summary["visible_fraction"] == pytest.approx(0.0)
     assert summary["longest_visible_hours"] is None

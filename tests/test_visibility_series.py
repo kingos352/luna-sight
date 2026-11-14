@@ -25,17 +25,11 @@ def write_csv(tmp_path, body):
 
 
 def test_parse_utc_normalises_to_utc():
-    assert parse_utc("2026-11-15T00:00:00Z") == datetime(
-        2026, 11, 15, tzinfo=UTC
-    )
+    assert parse_utc("2026-11-15T00:00:00Z") == datetime(2026, 11, 15, tzinfo=UTC)
     # Zaman dilimi belirtilmemiş metin UTC kabul edilir.
-    assert parse_utc("2026-11-15 03:00:00") == datetime(
-        2026, 11, 15, 3, tzinfo=UTC
-    )
+    assert parse_utc("2026-11-15 03:00:00") == datetime(2026, 11, 15, 3, tzinfo=UTC)
     # +03:00 → UTC'ye çevrilir.
-    assert parse_utc("2026-11-15T03:00:00+03:00") == datetime(
-        2026, 11, 15, tzinfo=UTC
-    )
+    assert parse_utc("2026-11-15T03:00:00+03:00") == datetime(2026, 11, 15, tzinfo=UTC)
 
 
 def test_load_series_reads_optional_columns(tmp_path):

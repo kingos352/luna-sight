@@ -133,9 +133,7 @@ class VisibilityRunner:
             raise TypeError("efemeris sağlayıcısı pandas DataFrame döndürmeli")
 
         missing = [
-            name
-            for name in ("timestamp_utc",) + POSITION_COLUMNS
-            if name not in positions.columns
+            name for name in ("timestamp_utc",) + POSITION_COLUMNS if name not in positions.columns
         ]
         if missing:
             raise ValueError("efemeris çıktısında eksik sütun(lar): " + ", ".join(missing))
@@ -169,18 +167,12 @@ class VisibilityRunner:
         return samples
 
     # ----------------------------------------------------------------- işlem
-    def evaluate(
-        self, site: Site, horizon: HorizonProvider | None = None
-    ) -> list[SampleResult]:
+    def evaluate(self, site: Site, horizon: HorizonProvider | None = None) -> list[SampleResult]:
         """Site için örnek bazlı sınıflandırma sonuçları."""
         provider = horizon or self.horizon
-        return evaluate_series(
-            self.samples(site), provider, self.config.visibility_config()
-        )
+        return evaluate_series(self.samples(site), provider, self.config.visibility_config())
 
-    def run(
-        self, site: Site, horizon: HorizonProvider | None = None
-    ) -> pd.DataFrame:
+    def run(self, site: Site, horizon: HorizonProvider | None = None) -> pd.DataFrame:
         """Site için sözleşme tablosunu üretir."""
         return results_to_frame(self.evaluate(site, horizon))
 
@@ -207,9 +199,7 @@ class VisibilityRunner:
         """Site için kesintisiz durum pencereleri."""
         if body not in BODIES:
             raise ValueError(f"Bilinmeyen gövde: {body}")
-        return build_windows(
-            self.evaluate(site, horizon), body, self.config.visibility_config()
-        )
+        return build_windows(self.evaluate(site, horizon), body, self.config.visibility_config())
 
 
 def run_demo(

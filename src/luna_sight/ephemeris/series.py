@@ -106,18 +106,14 @@ def build_site_timeseries(
     merged["site_id"] = site.site_id
     merged["latitude_deg"] = site.latitude_deg
     merged["longitude_deg_east"] = site.longitude_deg_east
-    merged["quality_flag"] = (
-        quality_flag if quality_flag else merged.apply(_quality_flag, axis=1)
-    )
+    merged["quality_flag"] = quality_flag if quality_flag else merged.apply(_quality_flag, axis=1)
     merged["source_id"] = SOURCE_ID
     # İki sorgu aynı API ve aynı efemeris çekirdeğini kullanır; farklıysa
     # köken alanı bunu görünür kılar.
     merged["source_version"] = "|".join(
         sorted({response.source_version for response in responses.values()})
     )
-    merged["model_id"] = "|".join(
-        sorted({response.model_id for response in responses.values()})
-    )
+    merged["model_id"] = "|".join(sorted({response.model_id for response in responses.values()}))
     merged["parameters"] = responses["sun"].parameters_json
     return merged[EPHEMERIS_COLUMNS], responses
 
