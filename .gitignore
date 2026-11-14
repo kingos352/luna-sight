@@ -32,6 +32,7 @@ data/cache/
 # Streamlit and tools
 .streamlit/secrets.toml
 .coverage
+coverage.xml
 htmlcov/
 dist/
 build/

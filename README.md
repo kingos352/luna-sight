@@ -18,6 +18,30 @@ Ay'ın güney kutbundaki aday iniş bölgelerini ve görev tarihlerini; Güneş 
 4. `k1/...`, `k2/...`, `k3/...`, `k4/...`, `k5/...` biçiminde kısa bir dal açın.
 5. Küçük ve çalışan bir değişiklik gönderin; Pull Request şablonunu doldurun.
 
+## Geliştirme ortamı
+
+Ortak hedef sürüm: Python 3.12 (`numpy`, `rasterio` ve `pyproj` 3.12 veya üstünü ister).
+Bağımlılıklar tek ortak dosyada tutulur; rol başına ayrı dosya açılmaz.
+
+Windows (PowerShell):
+
+```powershell
+py -3.12 -m venv .venv
+.venv\Scripts\python.exe -m pip install --upgrade pip
+.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+```
+
+Linux ve macOS:
+
+```bash
+python3.12 -m venv .venv
+.venv/bin/python -m pip install --upgrade pip
+.venv/bin/python -m pip install -r requirements-dev.txt
+```
+
+Doğrulama: `.venv\Scripts\python.exe -m pip check` ve `.venv\Scripts\python.exe -m pytest`.
+`.venv`, `.env`, ham NASA verisi ve önbellekler Git tarafından izlenmez.
+
 ## K3 görünürlük motoru
 
 K2 ufuk profili + K1 efemeris serisinden `visible` / `blocked` / `uncertain`

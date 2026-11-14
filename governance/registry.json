@@ -1,0 +1,210 @@
+{
+  "schema_version": 1,
+  "updated_utc": "2026-11-14T11:20Z",
+  "authority": {
+    "integrator": "kingos352",
+    "role": "K5",
+    "document": "docs/GOVERNANCE.md",
+    "note": "Bu dosya makine tarafindan okunur. Degisiklik yalnizca entegrasyon otoritesinin onayiyla birlesir (CODEOWNERS)."
+  },
+  "python": {
+    "canonical_version": "3.12",
+    "version_file": ".python-version",
+    "min_requires_python": "3.12",
+    "reason": "numpy, rasterio ve pyproj guncel surumleri requires-python >= 3.12 ilan ediyor."
+  },
+  "canonical_files": {
+    "runtime_deps": "requirements.txt",
+    "dev_deps": "requirements-dev.txt",
+    "tool_config": "pyproject.toml",
+    "forbidden": [
+      "pytest.ini",
+      "setup.cfg",
+      "tox.ini",
+      "Pipfile",
+      "Pipfile.lock",
+      "poetry.lock",
+      "environment.yml",
+      "conda.yaml",
+      "requirements-k1.txt",
+      "requirements-k2.txt",
+      "requirements-k3.txt",
+      "requirements-k4.txt",
+      "requirements-k5.txt"
+    ],
+    "dev_only_packages": [
+      "pytest",
+      "ruff",
+      "pytest-cov",
+      "pytest-recording",
+      "vcrpy",
+      "responses",
+      "coverage",
+      "mypy"
+    ]
+  },
+  "proposals": {
+    "pandera": {
+      "adr": "ADR-006",
+      "status": "proposed",
+      "rule": "Onaylanana kadar requirements.txt icinde etkin satir olarak bulunamaz."
+    }
+  },
+  "adr": {
+    "grandfathered": [
+      "ADR-001",
+      "ADR-002",
+      "ADR-003",
+      "ADR-004",
+      "ADR-005",
+      "ADR-006"
+    ],
+    "ranges": {
+      "shared": [
+        1,
+        99
+      ],
+      "K1": [
+        100,
+        199
+      ],
+      "K2": [
+        200,
+        299
+      ],
+      "K3": [
+        300,
+        399
+      ],
+      "K4": [
+        400,
+        499
+      ],
+      "K5": [
+        500,
+        599
+      ]
+    },
+    "file": "docs/DECISIONS.md"
+  },
+  "geometry": {
+    "time": "UTC, ISO 8601, zaman dilimi bilgisi zorunlu",
+    "angle_unit": "degree",
+    "longitude_sign": "east-positive",
+    "longitude_range": [
+      -180.0,
+      180.0
+    ],
+    "latitude_range": [
+      -90.0,
+      90.0
+    ],
+    "azimuth_reference": "north",
+    "azimuth_direction": "clockwise",
+    "azimuth_range": [
+      0.0,
+      360.0
+    ],
+    "elevation_range": [
+      -90.0,
+      90.0
+    ],
+    "longitude_keys": [
+      "lon_deg_east",
+      "longitude_deg_east"
+    ]
+  },
+  "identifiers": {
+    "style": "kebab-case",
+    "style_note": "source_id ve model_id kebab-case. quality_flag, *_visible ve *_reason degerleri docs/DATA_CONTRACT.md ve K3 states.py sozlugunden birebir alinir, bu kurala tabi degildir.",
+    "source_id": [
+      "jpl-horizons",
+      "pgda-lola-5mpp",
+      "synthetic-analytic",
+      "synthetic-fixture",
+      "synthetic-scenario",
+      "synthetic-series"
+    ],
+    "synthetic_prefix": "synthetic-",
+    "quality_flag": [
+      "valid",
+      "partial",
+      "missing",
+      "test_fixture"
+    ],
+    "visibility_state": [
+      "visible",
+      "blocked",
+      "uncertain"
+    ],
+    "reason_code": [
+      "clear",
+      "occluded",
+      "transition_band",
+      "missing_ephemeris",
+      "missing_horizon",
+      "quality_missing"
+    ],
+    "case": "lowercase"
+  },
+  "data_contract": {
+    "file": "docs/DATA_CONTRACT.md",
+    "required_columns": [
+      "site_id",
+      "latitude_deg",
+      "longitude_deg_east",
+      "timestamp_utc",
+      "sun_az_deg",
+      "sun_alt_deg",
+      "earth_az_deg",
+      "earth_alt_deg",
+      "terrain_horizon_sun_deg",
+      "terrain_horizon_earth_deg",
+      "sun_visible",
+      "earth_visible",
+      "joint_visible",
+      "quality_flag",
+      "source_id",
+      "source_version",
+      "model_id",
+      "parameters"
+    ],
+    "extra_columns_allowed": true,
+    "extra_columns_note": "Teshis kolonlari (ornegin *_margin_deg, *_reason) serbesttir; GOVERNANCE.md icinde listelenir.",
+    "parameters_format": "json-object",
+    "parameters_grace": "K3 mevcut outputs/k3 dosyalari yeniden uretilene kadar key=value;... bicimi uyari olarak raporlanir."
+  },
+  "ownership": {
+    "src/luna_sight/ephemeris/": "K1",
+    "src/luna_sight/terrain/": "K2",
+    "src/luna_sight/visibility/": "K3",
+    "app/": "K4",
+    "tests/": "modul sahibi",
+    ".github/": "K5",
+    "docs/": "K5",
+    "governance/": "K5"
+  },
+  "shared_append_only": [
+    "data/manifest.csv",
+    "docs/DECISIONS.md"
+  ],
+  "checker": {
+    "script": "scripts/check_governance.py",
+    "scan_roots": [
+      "src",
+      "app",
+      "scripts"
+    ],
+    "output_globs": [
+      "outputs/**/*.csv"
+    ],
+    "ignore_paths": [
+      "governance/registry.json",
+      "scripts/check_governance.py",
+      "docs/GOVERNANCE.md"
+    ],
+    "output_json_globs": [
+      "outputs/**/*.json"
+    ]
+  }
+}

@@ -1,3 +1,3 @@
-"""LUNA SIGHT bilimsel çekirdeği."""
+"""LUNA SIGHT bilimsel ve teknik modülleri."""
 
-__all__ = ["terrain"]
+__all__ = ["ephemeris", "terrain", "visibility"]
