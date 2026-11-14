@@ -5,6 +5,7 @@ Dışa açık yüzey:
 - `Site`: Ay yüzeyinde gözlem noktası (doğu-pozitif boylam).
 - `fetch`, `parse_observer_table`: tek gövde için ham sorgu ve ayrıştırma.
 - `build_site_timeseries`: veri sözleşmesine uygun Güneş + Dünya tablosu.
+- `HorizonsEphemeris`: K3 görünürlük motorunun efemeris sağlayıcı protokolü.
 - `write_cache`, `append_manifest_row`: köken kaydı.
 """
 
@@ -21,6 +22,7 @@ from luna_sight.ephemeris.horizons import (
     fetch,
     parse_observer_table,
 )
+from luna_sight.ephemeris.provider import POSITION_COLUMNS, HorizonsEphemeris
 from luna_sight.ephemeris.series import (
     EPHEMERIS_COLUMNS,
     append_manifest_row,
@@ -34,6 +36,8 @@ __all__ = [
     "EPHEMERIS_COLUMNS",
     "HorizonsError",
     "HorizonsFormatError",
+    "POSITION_COLUMNS",
+    "HorizonsEphemeris",
     "HorizonsResponse",
     "SOURCE_ID",
     "Site",
