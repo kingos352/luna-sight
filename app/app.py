@@ -945,7 +945,9 @@ def build_horizon_figure(
             mode="lines",
             name=f"Topoğrafik ufuk · {horizon_source}",
             line={"color": "#9aa4bf", "width": 2.2, "dash": "dot"},
-            hovertemplate="Azimut %{theta:.0f}°<br>Ufuk yüksekliği %{customdata:.1f}°<extra></extra>",
+            hovertemplate=(
+                "Azimut %{theta:.0f}°<br>Ufuk yüksekliği %{customdata:.1f}°<extra></extra>"
+            ),
             customdata=90.0 - horizon_radius,
         )
     )
@@ -1095,52 +1097,112 @@ def inject_theme() -> None:
     st.markdown(
         """
         <style>
-        .block-container {padding-top: 1.4rem; padding-bottom: 2rem; max-width: 1500px;}
+        .block-container {
+            padding-top: 1.4rem;
+            padding-bottom: 2rem;
+            max-width: 1500px;
+        }
         .ls-hero {
-            background: radial-gradient(1200px 400px at 15% -20%, #1b2a5e 0%, #0b1020 55%, #070a14 100%);
+            background: radial-gradient(
+                1200px 400px at 15% -20%, #1b2a5e 0%, #0b1020 55%, #070a14 100%
+            );
             border: 1px solid rgba(90,169,255,0.25);
             border-radius: 16px;
             padding: 1.4rem 1.6rem 1.2rem 1.6rem;
             margin-bottom: 1.1rem;
         }
         .ls-kicker {
-            font-size: 0.72rem; letter-spacing: 0.22em; text-transform: uppercase;
-            color: #7fb4ff; margin-bottom: 0.35rem;
+            font-size: 0.72rem;
+            letter-spacing: 0.22em;
+            text-transform: uppercase;
+            color: #7fb4ff;
+            margin-bottom: 0.35rem;
         }
         .ls-title {font-size: 2.05rem; line-height: 1.15; margin: 0 0 0.45rem 0; color: #f4f7ff;}
         .ls-sub {font-size: 0.95rem; color: #b9c3dc; margin: 0; max-width: 70ch;}
         .ls-chip {
-            display: inline-block; padding: 0.15rem 0.6rem; margin: 0.55rem 0.35rem 0 0;
-            border-radius: 999px; font-size: 0.72rem; letter-spacing: 0.04em;
-            border: 1px solid rgba(90,169,255,0.35); color: #a9c8ff; background: rgba(90,169,255,0.08);
+            display: inline-block;
+            padding: 0.15rem 0.6rem;
+            margin: 0.55rem 0.35rem 0 0;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            letter-spacing: 0.04em;
+            border: 1px solid rgba(90,169,255,0.35);
+            color: #a9c8ff;
+            background: rgba(90,169,255,0.08);
         }
-        .ls-chip-warn {border-color: rgba(245,185,66,0.45); color: #f5c76a; background: rgba(245,185,66,0.08);}
-        .ls-chip-ok {border-color: rgba(61,220,151,0.45); color: #7ff0bd; background: rgba(61,220,151,0.10);}
+        .ls-chip-warn {
+            border-color: rgba(245,185,66,0.45);
+            color: #f5c76a;
+            background: rgba(245,185,66,0.08);
+        }
+        .ls-chip-ok {
+            border-color: rgba(61,220,151,0.45);
+            color: #7ff0bd;
+            background: rgba(61,220,151,0.10);
+        }
         .ls-step {
-            display: inline-block; padding: 0.22rem 0.7rem; border-radius: 8px;
-            background: rgba(90,169,255,0.12); border: 1px solid rgba(90,169,255,0.35);
-            color: #a9c8ff; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.03em;
+            display: inline-block;
+            padding: 0.22rem 0.7rem;
+            border-radius: 8px;
+            background: rgba(90,169,255,0.12);
+            border: 1px solid rgba(90,169,255,0.35);
+            color: #a9c8ff;
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.03em;
             margin: 0.2rem 0 0.7rem 0;
         }
         .ls-card {
-            background: rgba(20,26,46,0.7); border: 1px solid rgba(90,169,255,0.16);
-            border-radius: 10px; padding: 0.55rem 0.7rem; margin-bottom: 0.5rem;
+            background: rgba(20,26,46,0.7);
+            border: 1px solid rgba(90,169,255,0.16);
+            border-radius: 10px;
+            padding: 0.55rem 0.7rem;
+            margin-bottom: 0.5rem;
         }
         .ls-card-title {font-size: 0.8rem; color: #e8ecf8; font-weight: 600;}
-        .ls-card-path {font-size: 0.7rem; color: #7fb4ff; word-break: break-all; margin-top: 0.15rem;}
+        .ls-card-path {
+            font-size: 0.7rem;
+            color: #7fb4ff;
+            word-break: break-all;
+            margin-top: 0.15rem;
+        }
         .ls-card-detail {font-size: 0.7rem; color: #b9c3dc;}
-        .ls-badge-row {display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.25rem 0 0.65rem 0;}
+        .ls-badge-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.35rem;
+            margin: 0.25rem 0 0.65rem 0;
+        }
         .ls-badge {
-            display: inline-flex; align-items: center; gap: 0.3rem;
-            padding: 0.22rem 0.62rem; border-radius: 999px;
-            font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em;
-            border: 1px solid rgba(90,169,255,0.35); color: #a9c8ff;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            padding: 0.22rem 0.62rem;
+            border-radius: 999px;
+            font-size: 0.72rem;
+            font-weight: 600;
+            letter-spacing: 0.02em;
+            border: 1px solid rgba(90,169,255,0.35);
+            color: #a9c8ff;
             background: rgba(90,169,255,0.08);
         }
-        .ls-badge-ok {border-color: rgba(61,220,151,0.45); color: #7ff0bd; background: rgba(61,220,151,0.10);}
-        .ls-badge-warn {border-color: rgba(245,185,66,0.45); color: #f5c76a; background: rgba(245,185,66,0.08);}
-        div[data-testid="stMetric"] {background: rgba(20,26,46,0.65); border: 1px solid rgba(90,169,255,0.16);
-            border-radius: 12px; padding: 0.65rem 0.8rem;}
+        .ls-badge-ok {
+            border-color: rgba(61,220,151,0.45);
+            color: #7ff0bd;
+            background: rgba(61,220,151,0.10);
+        }
+        .ls-badge-warn {
+            border-color: rgba(245,185,66,0.45);
+            color: #f5c76a;
+            background: rgba(245,185,66,0.08);
+        }
+        div[data-testid="stMetric"] {
+            background: rgba(20,26,46,0.65);
+            border: 1px solid rgba(90,169,255,0.16);
+            border-radius: 12px;
+            padding: 0.65rem 0.8rem;
+        }
         </style>
         """,
         unsafe_allow_html=True,

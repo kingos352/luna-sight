@@ -58,11 +58,10 @@ def test_default_real_mode_runs_without_exception(clean_caches):
     metric_labels = [metric.label for metric in at.metric]
     assert metric_labels.count("En Uzun Kesintisiz İletişim (Güneş+Dünya)") == 2
 
-    # K2/K3 rozetleri yeşil "Tam Entegre · Aktif"; K1 henüz sentetik.
     badges = " ".join(m.value for m in at.markdown if "ls-badge" in m.value)
+    assert "K1 · JPL Horizons · Efemeris · Tam Entegre · Aktif" in badges
     assert "K2 · LOLA DEM · Topoğrafya · Tam Entegre · Aktif" in badges
     assert "K3 · Görünürlük ve Pencere Motoru · Tam Entegre · Aktif" in badges
-    assert "K1 · JPL Horizons · Efemeris · Bekliyor" in badges
 
 
 @pytest.mark.skipif(not app.REAL_AVAILABLE, reason="gerçek K3 çıktısı yok")
@@ -123,7 +122,7 @@ def test_integration_badges_reflect_real_modules():
     assert isinstance(statuses["K1"], bool)
 
     html = app._integration_badges_html()
-    assert html.count("Tam Entegre · Aktif") >= 2
+    assert html.count("Tam Entegre · Aktif") == 3
     assert "ls-badge-ok" in html
 
 
