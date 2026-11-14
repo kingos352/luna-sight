@@ -11,7 +11,7 @@ from __future__ import annotations
 import csv
 import math
 from dataclasses import dataclass
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 REQUIRED_COLUMNS = (
@@ -46,8 +46,8 @@ def parse_utc(value: str | datetime) -> datetime:
             text = text.replace(" ", "T", 1)
         moment = datetime.fromisoformat(text)
     if moment.tzinfo is None:
-        moment = moment.replace(tzinfo=timezone.utc)
-    return moment.astimezone(timezone.utc)
+        moment = moment.replace(tzinfo=UTC)
+    return moment.astimezone(UTC)
 
 
 def _optional_float(value: object) -> float | None:
@@ -119,7 +119,7 @@ def validate_series(samples: list[Sample]) -> None:
     """Boş seri ve azalan/tekrarlı zaman damgaları reddedilir."""
     if not samples:
         raise ValueError("Seri boş.")
-    for previous, current in zip(samples, samples[1:]):
+    for previous, current in zip(samples, samples[1:], strict=False):
         if current.timestamp_utc <= previous.timestamp_utc:
             raise ValueError(
                 "Zaman damgaları kesin artan olmalı: "

@@ -10,7 +10,7 @@ işaretlenir.
 from __future__ import annotations
 
 import math
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from luna_sight.visibility.series import Sample
 
@@ -35,7 +35,7 @@ def synthetic_series(
     - Güneş yüksekliği −1.7°…+0.1° arasında salınır.
     - Dünya, Güneş'ten 55° ileride ve daha dar bir yükseklik aralığında.
     """
-    start = start_utc or datetime(2026, 11, 15, tzinfo=timezone.utc)
+    start = start_utc or datetime(2026, 11, 15, tzinfo=UTC)
     step = timedelta(minutes=step_minutes)
     count = int(round(hours * 60.0 / step_minutes)) + 1
     span_hours = max(hours, 1e-9)

@@ -346,7 +346,9 @@ def horizon_from_profile(
         diff = np.abs(query_norm[..., None] - src_az[None, :])
         angular_dist = np.minimum(diff, 360.0 - diff)
         nearest_idx = np.argmin(angular_dist, axis=-1)
-        min_dist = np.take_along_axis(angular_dist, nearest_idx[..., None], axis=-1).squeeze(axis=-1)
+        min_dist = np.take_along_axis(
+            angular_dist, nearest_idx[..., None], axis=-1
+        ).squeeze(axis=-1)
 
         result = src_hz[nearest_idx]
         if azimuth_tolerance_deg is not None:

@@ -8,14 +8,14 @@ from __future__ import annotations
 
 import json
 import math
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Mapping
 
 import pandas as pd
 
 from luna_sight.visibility.engine import (
-    BODY_JOINT,
     BODIES,
+    BODY_JOINT,
     SampleResult,
     Window,
     build_windows,
@@ -53,9 +53,9 @@ class Site:
             raise ValueError("latitude_deg -90..90 aralığında olmalı")
         if (
             not math.isfinite(self.longitude_deg_east)
-            or not -180.0 <= self.longitude_deg_east <= 180.0
+            or not -180.0 <= self.longitude_deg_east <= 360.0
         ):
-            raise ValueError("longitude_deg_east -180..180 aralığında olmalı")
+            raise ValueError("longitude_deg_east -180..360 aralığında olmalı")
 
     def as_dict(self) -> dict[str, object]:
         return {

@@ -51,7 +51,7 @@ class HorizonProfileLookup:
         path: str | Path,
         azimuth_column: str = "azimuth_deg",
         horizon_column: str = "horizon_deg",
-    ) -> "HorizonProfileLookup":
+    ) -> HorizonProfileLookup:
         """K2 çıktısındaki profil CSV'sini yükler."""
         azimuths: list[float] = []
         horizons: list[float] = []

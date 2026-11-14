@@ -13,7 +13,7 @@ import numpy as np
 import pandas as pd
 
 from luna_sight.visibility.states import BLOCKED, UNCERTAIN, VISIBLE
-from luna_sight.visibility.table import STATE_COLUMNS, validate_table
+from luna_sight.visibility.table import validate_table
 
 SUMMARY_COLUMNS = (
     "samples",

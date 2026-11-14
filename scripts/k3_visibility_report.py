@@ -17,7 +17,7 @@ import csv
 import json
 import sys
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -86,7 +86,7 @@ def main() -> int:
         print(f"Seri: {args.series} ({len(samples)} örnek)")
     else:
         start = datetime.fromisoformat(args.start.replace("Z", "+00:00")).astimezone(
-            timezone.utc
+            UTC
         )
         samples = synthetic_series(
             start_utc=start,
@@ -158,7 +158,7 @@ def main() -> int:
             )
             for body in (BODY_SUN, BODY_EARTH, BODY_JOINT)
         },
-        "generated_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        "generated_utc": datetime.now(UTC).replace(microsecond=0).isoformat(),
     }
 
     windows_path = out_dir / f"{site_id}_windows.json"

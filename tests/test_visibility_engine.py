@@ -1,6 +1,6 @@
 """Motor testleri: birleşik durum, pencereler ve sınır inceltme (test_fixture)."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -17,7 +17,6 @@ from luna_sight.visibility.engine import (
 )
 from luna_sight.visibility.profile import HorizonProfileLookup
 from luna_sight.visibility.series import Sample
-from luna_sight.visibility.synthetic import synthetic_series
 from luna_sight.visibility.states import (
     BLOCKED,
     REASON_CLEAR,
@@ -28,8 +27,9 @@ from luna_sight.visibility.states import (
     VISIBLE,
     VisibilityConfig,
 )
+from luna_sight.visibility.synthetic import synthetic_series
 
-START = datetime(2026, 11, 15, tzinfo=timezone.utc)
+START = datetime(2026, 11, 15, tzinfo=UTC)
 FLAT = HorizonProfileLookup([0.0, 180.0], [0.0, 0.0])
 K2_PROFILE = (
     Path(__file__).resolve().parents[1] / "outputs" / "k2" / "Site04_horizon_4000m.csv"

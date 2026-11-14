@@ -37,6 +37,7 @@ pakette birleştirir:
 | `table.py` | `docs/DATA_CONTRACT.md` tablosu + marj/gerekçe teşhis sütunları |
 | `summary.py` | Site bazlı süre, oran, pencere ve en uzun görünürlük özeti |
 | `runner.py` | `Site`, `RunnerConfig`, `VisibilityRunner`, `run_demo` |
+| `integration.py` | K2 kataloğu + profil keşfi, K1 serisi ve K4 `build_site_series` arayüzü |
 | `__main__.py` | CLI: `python -m luna_sight.visibility` |
 
 ## 1. Kapsam
@@ -45,7 +46,7 @@ pakette birleştirir:
 
 | Girdi | Kaynak | Not |
 |---|---|---|
-| Ufuk profili | `outputs/k2/<Site>_horizon_<r>m.csv` | 360 satır: `azimuth_deg`, `horizon_deg`, `gap_fraction`, `native_coverage_fraction` |
+| Ufuk profili | `outputs/k2/<Site>_horizon_<r>m.csv` | 360 satır: `azimuth_deg`, `horizon_deg`, `gap_fraction`, `native_coverage_fraction`; yarıçaplar 2 km / 4 km / 20 km |
 | Ephemeris serisi | K1 (JPL Horizons) CSV veya `synthetic.py` senaryosu | `timestamp_utc`, `sun_az_deg`, `sun_alt_deg`, `earth_az_deg`, `earth_alt_deg` |
 
 **Çıktı**
@@ -169,6 +170,32 @@ uydurulmaz. `table.validate_table` sütunları, durum değerlerini, gerekçe
 kodlarını, UTC zaman damgalarını ve `(site_id, timestamp_utc)` tekilliğini
 denetler.
 
+## 5.1 K1 / K2 / K4 entegrasyon yüzeyi
+
+`luna_sight.visibility.integration` diğer modüllerin somut çıktılarını K3
+motoruna bağlar; K3 tek başına da çalışmaya devam eder.
+
+| İşlev | Görev |
+|---|---|
+| `resolve_site(site_id)` | Siteyi önce resmi K2 kataloğundan (`luna_sight.terrain.sites.CANDIDATE_SITES`), yoksa K2 özet JSON'undan çözer |
+| `find_horizon_profiles(site_id)` | `outputs/k2/<Site>_horizon_<r>m.csv` dosyalarını yarıçapa göre bulur |
+| `available_radii(site_id)` | Mevcut yarıçapları sıralı döndürür (ör. `[2000, 4000, 20000]`) |
+| `resolve_horizon_profile(site_id, radius_m=None)` | Profili seçer, okur ve `quality_flag` ile özeti taşır |
+| `build_site_series(site_id, start_utc, days, step_minutes)` | K4 arayüzü: tek çağrıda sözleşme tablosu |
+
+**Yarıçap seçimi.** `radius_m` verilmezse 4 km → 2 km → 20 km sırasıyla ilk
+bulunan kullanılır. K2'nin 20 km bölgesel profilleri DEM kapsamını aştığı
+için `quality_flag="partial"` taşır; bu bayrak üretilen satırlara da yazılır.
+
+**Koordinat kuralı.** K2 kataloğu ve K1 `Site` sınıfı doğu-pozitif boylamı
+`[-180, 360]` aralığında kabul eder (`Site01 = 222.51°`, `Site04 =
+188.13°`). K3 `Site` doğrulaması bu kurala uyar; sözleşme tablosunda
+`latitude_deg` / `longitude_deg_east` de aynı aralıkta denetlenir.
+
+**Efemeris.** `build_site_series` varsayılan olarak `SyntheticEphemeris`
+(`quality_flag=test_fixture`) kullanır. K1'in gerçek serisi bağlanana kadar
+sayılar bilimsel değildir; K4 bu nedenle kalite bayrağını göstermelidir.
+
 ## 6. Örnek çıktılar (senaryo verisi — bilimsel değil)
 
 `--series` verilmediğinde motor, 168 saatlik **hızlandırılmış azimut
@@ -206,7 +233,9 @@ bir marj değerinin ürettiği sayıyı "kesin" gibi sunmamaktır.
 
 Yöntem:
 
-1. `outputs/k2/*_horizon_*m.csv` profilleri otomatik bulunur.
+1. `outputs/k2/*_horizon_*m.csv` profilleri otomatik bulunur (2 km / 4 km /
+   20 km). 20 km profilleri `quality_flag="partial"` taşıdığı için yalnızca
+   bölgesel bağlam olarak okunmalı; 2–4 km ile aynı satırda yarıştırılmaz.
 2. Her bölge için seri **bir kez** üretilir; böylece fark yalnızca profil ve
    marjdan kaynaklanır.
 3. Her kombinasyon için `visible` / `blocked` / `uncertain` süreleri ve
@@ -249,8 +278,9 @@ Okuma:
 
 ## 8. Doğrulama
 
-`python -m pytest` → **118 test, hepsi geçiyor** (2 K2-profili testi dahil;
-K2 çıktıları bu dalda mevcut olduğu için atlanmıyor).
+`python -m pytest` → **130 test, hepsi geçiyor** (K2 katalog/profil ve
+K4 imza testleri dahil; K2 çıktıları bu dalda mevcut olduğu için atlanmıyor).
+K5'nin `ruff check .` kapısı (E, F, I, UP, B; satır 100) bu dalda temizdir.
 
 | Dosya | Kapsam |
 |---|---|
@@ -262,6 +292,7 @@ K2 çıktıları bu dalda mevcut olduğu için atlanmıyor).
 | `tests/test_grid.py` | Aralık-tam ızgara, 168 sa/5 dk = 2016 örnek, UTC zorunluluğu, geçersiz adım/süre |
 | `tests/test_runner.py` | Site/yapılandırma doğrulaması, sağlayıcı sözleşmesi, sözleşme + teşhis sütunları, site bazlı ufuk, BOM'lu profil, `NaN` boşluğu → `uncertain`, demo |
 | `tests/test_summary.py` | Süre/oran toplamı, pencere sayısı/en uzun pencere, tek örnek, ortak durum, tablo doğrulaması |
+| `tests/test_integration.py` | K2 kataloğu ve 0–360° boylam, profil keşfi (2/4/20 km), 20 km `partial` kalite yayılımı, K4 `build_site_series` imzası, naif başlangıç zamanı, bilinmeyen site |
 
 Kabul ölçütleri karşılığı:
 
@@ -295,11 +326,20 @@ Kabul ölçütleri karşılığı:
 ```bash
 python -m venv .venv
 .venv/Scripts/python -m pip install -r requirements.txt
-.venv/Scripts/python -m pytest        # 118 passed
+.venv/Scripts/python -m pytest        # 130 passed
 
 # K2 profili + senaryo serisi (test_fixture):
 .venv/Scripts/python scripts/k3_visibility_report.py \
   --profile outputs/k2/Site04_horizon_4000m.csv
+
+# K4 arayüzü / K2 kataloğu üzerinden tek çağrı:
+$env:PYTHONPATH = "src"
+.venv/Scripts/python -c "from luna_sight.visibility import build_site_series; \
+print(build_site_series('Site04', '2026-11-15T00:00:00Z', 1, 60).shape)"
+
+# 20 km bölgesel profil (quality_flag=partial):
+.venv/Scripts/python scripts/k3_visibility_report.py \
+  --profile outputs/k2/Site04_horizon_20000m.csv
 
 # Yarıçap × marj duyarlılık taraması:
 .venv/Scripts/python scripts/k3_sensitivity.py \

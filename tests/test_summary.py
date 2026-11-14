@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -17,7 +17,7 @@ from luna_sight.visibility import (
 from luna_sight.visibility.summary import SUMMARY_COLUMNS
 from luna_sight.visibility.table import results_to_frame, validate_table
 
-START = datetime(2026, 11, 14, tzinfo=timezone.utc)
+START = datetime(2026, 11, 14, tzinfo=UTC)
 
 
 def sample(index: int, sun_alt: float, earth_alt: float = 5.0) -> Sample:
@@ -38,7 +38,7 @@ def sample(index: int, sun_alt: float, earth_alt: float = 5.0) -> Sample:
     )
 
 
-def frame_for(alts: list[float]) -> "object":
+def frame_for(alts: list[float]) -> object:
     results = evaluate_series(
         [sample(index, alt) for index, alt in enumerate(alts)],
         ConstantHorizon(0.0),

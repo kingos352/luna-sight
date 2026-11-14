@@ -99,6 +99,15 @@ def validate_table(frame: pd.DataFrame) -> pd.DataFrame:
     if data["site_id"].isna().any() or (data["site_id"].astype(str).str.strip() == "").any():
         raise ValueError("site_id boş olamaz")
 
+    for column, lower, upper in (
+        ("latitude_deg", -90.0, 90.0),
+        ("longitude_deg_east", -180.0, 360.0),
+    ):
+        values = pd.to_numeric(data[column], errors="coerce")
+        outside = values.notna() & ((values < lower) | (values > upper))
+        if outside.any():
+            raise ValueError(f"{column} {lower}..{upper} aralığında olmalı")
+
     timestamp = pd.to_datetime(data["timestamp_utc"], errors="raise", utc=True)
     data["timestamp_utc"] = timestamp
 

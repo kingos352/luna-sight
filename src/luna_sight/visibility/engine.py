@@ -325,7 +325,7 @@ def build_windows(
         boundaries.append((refined_time or times[next_index], refined))
 
     windows: list[Window] = []
-    for run_index, (state, first_index, last_index) in enumerate(runs):
+    for run_index, (state, first_index, _last_index) in enumerate(runs):
         start_time = times[0] if run_index == 0 else boundaries[run_index - 1][0]
         start_refined = False if run_index == 0 else boundaries[run_index - 1][1]
         if run_index == len(runs) - 1:

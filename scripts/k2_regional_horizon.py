@@ -18,12 +18,12 @@ from __future__ import annotations
 import csv
 import hashlib
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 
-from luna_sight.terrain import (
+from luna_sight.terrain import (  # noqa: E402
     CANDIDATE_SITES,
     HorizonConfig,
     compute_horizon,
@@ -172,7 +172,7 @@ def main() -> int:
             "product": "LDEM_60S_240MPP_ADJ (Ay Guney Kutbu Bolgesel DEM, 240 m/piksel)",
             "version": "Barker et al. 2021 (PSS 203:105119)",
             "source_url": "https://pgda.gsfc.nasa.gov/data/LOLA_240mpp/LDEM_60S_240MPP_ADJ.tiff",
-            "retrieved_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "retrieved_utc": datetime.now(UTC).isoformat(timespec="seconds"),
             "parameters": "MOON_ME;DE421;guney_kutup_stereografik;240mpp;60S_kutup",
             "sha256": file_sha,
             "local_path": "data/LDEM_60S_240MPP_ADJ.tiff",

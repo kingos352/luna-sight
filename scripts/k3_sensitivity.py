@@ -21,7 +21,7 @@ import argparse
 import csv
 import re
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,7 +34,6 @@ from luna_sight.visibility import (  # noqa: E402
     load_series_csv,
     sensitivity_rows,
 )
-from luna_sight.visibility.analysis import joint_totals  # noqa: E402
 from luna_sight.visibility.series import Sample  # noqa: E402
 from luna_sight.visibility.synthetic import synthetic_series  # noqa: E402
 
@@ -133,9 +132,6 @@ def main() -> int:
         all_series = load_series_csv(ROOT / args.series)
         print(f"Seri: {args.series} ({len(all_series)} örnek)")
     else:
-        start = datetime.fromisoformat(args.start.replace("Z", "+00:00")).astimezone(
-            timezone.utc
-        )
         print(
             "UYARI: --series verilmedi; hızlandırılmış SENARYO serisi kullanılıyor "
             "(test_fixture, bilimsel değil)."
@@ -154,7 +150,7 @@ def main() -> int:
                 series_cache[site_id] = synthetic_series(
                     start_utc=datetime.fromisoformat(
                         args.start.replace("Z", "+00:00")
-                    ).astimezone(timezone.utc),
+                    ).astimezone(UTC),
                     hours=args.hours,
                     step_minutes=args.step_minutes,
                     site_id=site_id,
