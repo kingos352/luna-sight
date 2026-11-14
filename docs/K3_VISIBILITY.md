@@ -1,4 +1,4 @@
-# K3 — Görünürlük ve pencere motoru
+﻿# K3 — Görünürlük ve pencere motoru
 
 Issue: [#3](https://github.com/kingos352/luna-sight/issues/3) · Dal: `k3/visibility-merged`
 Bağımlılık: [#6](https://github.com/kingos352/luna-sight/pull/6) (K2 ufuk profili) — bu dal
@@ -249,7 +249,7 @@ Okuma:
 
 ## 8. Doğrulama
 
-`python -m pytest` → **116 test, hepsi geçiyor** (2 K2-profili testi dahil;
+`python -m pytest` → **118 test, hepsi geçiyor** (2 K2-profili testi dahil;
 K2 çıktıları bu dalda mevcut olduğu için atlanmıyor).
 
 | Dosya | Kapsam |
@@ -295,7 +295,7 @@ Kabul ölçütleri karşılığı:
 ```bash
 python -m venv .venv
 .venv/Scripts/python -m pip install -r requirements.txt
-.venv/Scripts/python -m pytest        # 116 passed
+.venv/Scripts/python -m pytest        # 118 passed
 
 # K2 profili + senaryo serisi (test_fixture):
 .venv/Scripts/python scripts/k3_visibility_report.py \
