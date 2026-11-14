@@ -45,7 +45,7 @@ def test_site_validates_coordinates():
     with pytest.raises(ValueError):
         Site("A", -91.0, 0.0)
     with pytest.raises(ValueError):
-        Site("A", -89.5, 360.1)
+        Site("A", -89.5, 180.1)
     with pytest.raises(ValueError):
         Site("A", float("nan"), 0.0)
 

@@ -187,10 +187,10 @@ motoruna bağlar; K3 tek başına da çalışmaya devam eder.
 bulunan kullanılır. K2'nin 20 km bölgesel profilleri DEM kapsamını aştığı
 için `quality_flag="partial"` taşır; bu bayrak üretilen satırlara da yazılır.
 
-**Koordinat kuralı.** K2 kataloğu ve K1 `Site` sınıfı doğu-pozitif boylamı
-`[-180, 360]` aralığında kabul eder (`Site01 = 222.51°`, `Site04 =
-188.13°`). K3 `Site` doğrulaması bu kurala uyar; sözleşme tablosunda
-`latitude_deg` / `longitude_deg_east` de aynı aralıkta denetlenir.
+**Koordinat kuralı.** Kanonik doğu-pozitif boylam aralığı `[-180, 180]`’dir
+(`Site01 = -137.489553°`, `Site04 = -171.869898°`, K2 kataloğu ve
+governance ile uyumlu). K3 `Site` ve sözleşme tablosu doğrulaması bu aralığı
+uygular.
 
 **Efemeris.** `build_site_series` varsayılan olarak `SyntheticEphemeris`
 (`quality_flag=test_fixture`) kullanır. K1'in gerçek serisi bağlanana kadar
