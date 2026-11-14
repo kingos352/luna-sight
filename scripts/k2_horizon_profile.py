@@ -221,9 +221,7 @@ def main() -> int:
         all_manifests.extend(manifest_rows(site, paths))
 
     combined = out_dir / "k2_comparison.json"
-    combined.write_text(
-        json.dumps(comparison, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
+    combined.write_text(json.dumps(comparison, indent=2, ensure_ascii=False), encoding="utf-8")
     manifest_csv = out_dir / "manifest_rows.csv"
     write_csv(manifest_csv, all_manifests)
     print(f"\nÖzet: {combined.relative_to(ROOT)}")

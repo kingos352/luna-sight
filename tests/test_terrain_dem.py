@@ -1,6 +1,5 @@
 """DEM okuma, LDEC boşluk maskesi ve projeksiyon doğrulaması (test_fixture)."""
 
-
 import numpy as np
 import pytest
 
@@ -122,4 +121,3 @@ def test_bilinear_sampling_at_pixel_centers_and_bounds():
     outside, ok_out = dem.sample(np.array([-15.0]), np.array([-15.0]))
     assert not ok_out.any()
     assert np.isnan(outside).all()
-

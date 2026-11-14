@@ -45,9 +45,7 @@ class GapReport:
             "y_m": round(self.y_m, 3),
             "radii_m": list(self.radii_m),
             "surface_gap_fraction": [round(v, 6) for v in self.surface_gap_fraction],
-            "native_coverage_fraction": [
-                round(v, 6) for v in self.native_coverage_fraction
-            ],
+            "native_coverage_fraction": [round(v, 6) for v in self.native_coverage_fraction],
             "pixel_count": list(self.pixel_count),
             "uncertainty_median_m": [
                 None if v is None else round(v, 4) for v in self.uncertainty_median_m
@@ -105,19 +103,19 @@ def scan_coverage(
         surface_gaps.append(float(1.0 - valid[inside].mean()))
         native.append(float(coverage[inside].mean()))
         if uncertainty is not None:
-            values = uncertainty[np.ix_(np.arange(0, dem.heights_m.shape[0], stride),
-                                        np.arange(0, dem.heights_m.shape[1], stride))][inside]
+            values = uncertainty[
+                np.ix_(
+                    np.arange(0, dem.heights_m.shape[0], stride),
+                    np.arange(0, dem.heights_m.shape[1], stride),
+                )
+            ][inside]
             values = values[np.isfinite(values)]
             uncertainties.append(None if values.size == 0 else float(np.median(values)))
         else:
             uncertainties.append(None)
 
     quality = QUALITY_VALID
-    if (
-        counts[0] == 0
-        or max(surface_gaps) > gap_tolerance
-        or min(native) < coverage_tolerance
-    ):
+    if counts[0] == 0 or max(surface_gaps) > gap_tolerance or min(native) < coverage_tolerance:
         quality = QUALITY_PARTIAL
 
     return GapReport(

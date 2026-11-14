@@ -78,9 +78,7 @@ def test_ridge_east_sets_max_horizon_at_azimuth_90():
     expected = math.degrees(math.atan2(100.0 - 2.0, 910.0))
 
     assert profile.horizon_deg[east] == pytest.approx(expected, rel=0.02)
-    assert profile.horizon_deg[east] == pytest.approx(
-        np.nanmax(profile.horizon_deg), abs=1e-9
-    )
+    assert profile.horizon_deg[east] == pytest.approx(np.nanmax(profile.horizon_deg), abs=1e-9)
     # Batı yönü düz zeminde kalır.
     west = np.argmin(np.abs(azimuths - 270.0))
     assert profile.horizon_deg[west] < 0.0
@@ -241,4 +239,3 @@ def test_horizon_from_profile_interpolation_and_tolerance():
         quality_flag=QUALITY_MISSING,
     )
     assert np.isnan(horizon_from_profile(profile_missing, 45.0))
-

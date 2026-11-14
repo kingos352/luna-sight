@@ -149,9 +149,7 @@ def _ray_grid(
     lon_deg: float,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
     azimuths = np.arange(0.0, 360.0, config.azimuth_step_deg)
-    radii = np.arange(
-        config.radial_step_m, config.max_radius_m + 1e-9, config.radial_step_m
-    )
+    radii = np.arange(config.radial_step_m, config.max_radius_m + 1e-9, config.radial_step_m)
     directions = np.array([azimuth_unit_vector(float(az), lon_deg) for az in azimuths])
     xs = x_m + directions[:, 0:1] * radii[None, :]
     ys = y_m + directions[:, 1:2] * radii[None, :]
@@ -346,9 +344,9 @@ def horizon_from_profile(
         diff = np.abs(query_norm[..., None] - src_az[None, :])
         angular_dist = np.minimum(diff, 360.0 - diff)
         nearest_idx = np.argmin(angular_dist, axis=-1)
-        min_dist = np.take_along_axis(
-            angular_dist, nearest_idx[..., None], axis=-1
-        ).squeeze(axis=-1)
+        min_dist = np.take_along_axis(angular_dist, nearest_idx[..., None], axis=-1).squeeze(
+            axis=-1
+        )
 
         result = src_hz[nearest_idx]
         if azimuth_tolerance_deg is not None:
