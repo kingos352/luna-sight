@@ -56,6 +56,11 @@ from luna_sight.terrain.surface_3d import (
     build_polar_relief_figure,
     compute_lunar_elevation,
 )
+from luna_sight.terrain.risk import (
+    analyze_all_sites_risk,
+    format_side_by_side_comparison,
+    SiteRiskMetrics,
+)
 
 # ---------------------------------------------------------------------------
 # Sabitler
@@ -1824,6 +1829,123 @@ def render_data_tab(
         )
 
 
+def _render_risk_metric_card(metrics) -> None:
+    """Tek bir site için risk metrik kartını çizer."""
+    color = "#38bdf8" if metrics.site_id == "Site01" else "#3ddc97"
+
+    st.markdown(
+        f"<div style='border-left: 4px solid {color}; padding: 1rem; "
+        f"background: rgba(255,255,255,0.02); border-radius: 0.5rem;'>"
+        f"<h4 style='margin:0 0 0.5rem; color:{color};'>{metrics.site_id} · {metrics.site_name}</h4>"
+        f"<small style='color:#888;'>{metrics.latitude_deg:.4f}° G / {metrics.longitude_deg_east:+.4f}° D</small>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
+    # Eğim metrikleri
+    st.markdown("**Eğim (derece)**")
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Ortalama", f"{metrics.slope.mean_deg:.2f}°" if not np.isnan(metrics.slope.mean_deg) else "—")
+    m2.metric("Maksimum", f"{metrics.slope.max_deg:.2f}°" if not np.isnan(metrics.slope.max_deg) else "—")
+    m3.metric("Medyan", f"{metrics.slope.median_deg:.2f}°" if not np.isnan(metrics.slope.median_deg) else "—")
+    m4.metric("P95", f"{metrics.slope.p95_deg:.2f}°" if not np.isnan(metrics.slope.p95_deg) else "—")
+
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric(">5°", f"{metrics.slope.fraction_above_5deg:.1%}")
+    m2.metric(">10°", f"{metrics.slope.fraction_above_10deg:.1%}")
+    m3.metric(">15°", f"{metrics.slope.fraction_above_15deg:.1%}")
+    m4.metric(">20°", f"{metrics.slope.fraction_above_20deg:.1%}")
+
+    m1, m2 = st.columns(2)
+    m1.metric("Geçerli piksel %", f"{metrics.slope.valid_fraction:.1%}")
+    m2.metric("Veri kaynağı", metrics.dem_source)
+
+    st.divider()
+
+    # Krater metrikleri
+    st.markdown("**Krater Metrikleri**")
+    k1, k2 = st.columns(2)
+    k1.metric("Yoğunluk (adet/km²)", f"{metrics.crater.density_per_km2:.3f}")
+    k2.metric("En yakın krater", metrics.crater.nearest_crater_name)
+    k1.metric("En yakın mesafe", f"{metrics.crater.nearest_crater_distance_m/1000:.1f} km")
+    k2.metric("En yakın çap", f"{metrics.crater.nearest_crater_diameter_km:.1f} km")
+    k1.metric("Alan adeti", metrics.crater.craters_in_radius_count)
+    k2.metric("Kataloğu", metrics.crater.crater_catalog_used)
+
+    # DEM durumu
+    if metrics.dem_source == "missing":
+        st.error("❌ Gerçek DEM yok — eğim analizi yapılamıyor")
+    elif metrics.dem_source == "representative_model":
+        st.warning("⚠️ Temsili model — eğim NaN, sadece krater metrikleri")
+    else:
+        st.success("✅ Gerçek DEM — eğim analizi aktif")
+
+
+def render_risk_tab() -> None:
+    """Arazi Riski analiz sekmesini çizer."""
+    st.subheader("🌍 LunarSight — Arazi Riski Analizi")
+
+    # Site metriklerini hesapla (önbellekli)
+    from luna_sight.terrain.risk import analyze_all_sites_risk, format_side_by_side_comparison
+    from luna_sight.terrain.sites import CANDIDATE_SITES
+
+    with st.spinner("Arazi riski metrikleri hesaplanıyor..."):
+        risk_metrics = analyze_all_sites_risk()
+
+    # Yan yana karşılaştırma metni
+    comparison_text = format_side_by_side_comparison(risk_metrics)
+    st.code(comparison_text, language=None)
+
+    st.divider()
+
+    # Detaylı metrik kartları
+    st.markdown("### 📊 Site Bazlı Detaylar")
+
+    cols = st.columns(2)
+    for i, (site_id, metrics) in enumerate(risk_metrics.items()):
+        with cols[i % 2]:
+            _render_risk_metric_card(metrics)
+
+    st.divider()
+
+    # DEM durumu ve veri kaynakları
+    st.markdown("### 📡 Veri Kaynakları ve Kalite")
+    for site_id, metrics in risk_metrics.items():
+        with st.expander(f"{metrics.site_id} — {metrics.site_name} ({metrics.dem_source})"):
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("DEM Kaynağı", metrics.dem_source)
+                st.metric("DEM Mevcut", "Evet" if metrics.dem_available else "Hayır")
+                if metrics.dem_metadata:
+                    meta = metrics.dem_metadata
+                    st.json({
+                        "product": meta.get("product"),
+                        "pixel_size_m": meta.get("pixel_size_m"),
+                        "width": meta.get("width"),
+                        "height": meta.get("height"),
+                        "crs": meta.get("crs")[:100] + "..." if meta.get("crs") else None,
+                    })
+            with col2:
+                if metrics.dem_source == "missing":
+                    st.warning(
+                        "⚠️ Gerçek DEM (GeoTIFF) dosyası bulunamadı. "
+                        "`data/cache/lola/` klasörüne Site01 ve Site04 için "
+                        "`*_surf.tif`, `*_ldec.tif`, `*_toterr.tif` dosyalarını yerleştirin. "
+                        "Şu an için eğim analizi yapılamıyor; sadece krater metrikleri (IAU kataloğu) mevcut."
+                    )
+                else:
+                    st.success("✅ Gerçek LOLA DEM yüklendi; eğim analizi aktif.")
+
+    st.divider()
+    st.caption(
+        "Not: Eğim hesaplaması 5 m/piksel LOLA DEM'den merkezi farklar (central differences) ile yapılır. "
+        "Eğim eşikleri (5°/10°/15°/20°) sadece ham ölçüm; "
+        "'güvenli/güvensiz' ikili kararı verilmez. "
+        "Krater yoğunluğu IAU onaylı kataloğu (14 krater) ile hesaplanır. "
+        "DEM dosyaları `data/cache/lola/` altında aranır."
+    )
+
+
 def main() -> None:
     st.set_page_config(
         page_title="LUNA SIGHT · Ay İniş Alanı Navigatörü",
@@ -1914,8 +2036,8 @@ def main() -> None:
         "<div class='ls-step'>3 · Karşılaştırma ve görselleştirmeler</div>",
         unsafe_allow_html=True,
     )
-    globe_tab, horizon_tab, timeline_tab, data_tab = st.tabs(
-        ["3B Ay yüzeyi", "Ufuk görünümü", "Zaman çizelgesi", "Veri ve kaynak"]
+    globe_tab, horizon_tab, timeline_tab, data_tab, risk_tab = st.tabs(
+        ["3B Ay yüzeyi", "Ufuk görünümü", "Zaman çizelgesi", "Veri ve kaynak", "Arazi Riski"]
     )
 
     with globe_tab:
@@ -2032,6 +2154,9 @@ def main() -> None:
 
     with data_tab:
         render_data_tab(frame_a, frame_b, catalog[selected_a], catalog[selected_b])
+
+    with risk_tab:
+        render_risk_tab()
 
     st.divider()
     st.caption(
