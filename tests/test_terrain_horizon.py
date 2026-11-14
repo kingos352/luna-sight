@@ -39,8 +39,8 @@ def flat_dem(size: int = 200, value: float = 0.0, *, pixel_m: float = PIXEL_M) -
 
 def column_range(dem_size: int, pixel_m: float, x_center: float, half_width_m: float) -> range:
     xmin = -dem_size * pixel_m / 2.0
-    lo = int(math.floor((x_center - half_width_m - xmin) / pixel_m))
-    hi = int(math.ceil((x_center + half_width_m - xmin) / pixel_m))
+    lo = math.floor((x_center - half_width_m - xmin) / pixel_m)
+    hi = math.ceil((x_center + half_width_m - xmin) / pixel_m)
     return range(max(lo, 0), min(hi, dem_size))
 
 

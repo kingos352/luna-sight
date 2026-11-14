@@ -17,13 +17,13 @@ import csv
 import json
 import sys
 from dataclasses import replace
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from luna_sight.visibility import (  # noqa: E402
+from luna_sight.visibility import (
     BODY_EARTH,
     BODY_JOINT,
     BODY_SUN,
@@ -34,7 +34,7 @@ from luna_sight.visibility import (  # noqa: E402
     load_series_csv,
     summarize_windows,
 )
-from luna_sight.visibility.synthetic import synthetic_series  # noqa: E402
+from luna_sight.visibility.synthetic import synthetic_series
 
 
 def write_csv(path: Path, rows: list[dict[str, object]]) -> None:
@@ -85,8 +85,8 @@ def main() -> int:
         synthetic = False
         print(f"Seri: {args.series} ({len(samples)} örnek)")
     else:
-        start = datetime.fromisoformat(args.start.replace("Z", "+00:00")).astimezone(
-            timezone.utc
+        start = datetime.fromisoformat(args.start).astimezone(
+            UTC
         )
         samples = synthetic_series(
             start_utc=start,
@@ -158,7 +158,7 @@ def main() -> int:
             )
             for body in (BODY_SUN, BODY_EARTH, BODY_JOINT)
         },
-        "generated_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+        "generated_utc": datetime.now(UTC).replace(microsecond=0).isoformat(),
     }
 
     windows_path = out_dir / f"{site_id}_windows.json"

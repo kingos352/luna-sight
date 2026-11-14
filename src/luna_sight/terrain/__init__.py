@@ -21,12 +21,12 @@ from luna_sight.terrain.polar import (
 )
 
 __all__ = [
+    "R_MOON_M",
     "DemGrid",
     "DemMetadata",
     "GapReport",
     "HorizonConfig",
     "HorizonProfile",
-    "R_MOON_M",
     "azimuth_unit_vector",
     "compare_radii",
     "compute_horizon",

@@ -1,6 +1,5 @@
 """DEM okuma, LDEC boşluk maskesi ve projeksiyon doğrulaması (test_fixture)."""
 
-import math
 
 import numpy as np
 import pytest
@@ -8,10 +7,10 @@ import pytest
 from luna_sight.terrain.polar import R_MOON_M, lonlat_to_xy
 
 rasterio = pytest.importorskip("rasterio")
-from rasterio.transform import Affine  # noqa: E402
-from rasterio.warp import transform as warp_transform  # noqa: E402
+from rasterio.transform import Affine
+from rasterio.warp import transform as warp_transform
 
-from luna_sight.terrain.dem import load_lola_dem  # noqa: E402
+from luna_sight.terrain.dem import load_lola_dem
 
 SOUTH_POLAR_PROJ = (
     f"+proj=stere +lat_0=-90 +lat_ts=-90 +lon_0=0 +k=1 +x_0=0 +y_0=0 "

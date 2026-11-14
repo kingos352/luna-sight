@@ -1,6 +1,6 @@
 """Duyarlılık analizi testleri (test_fixture)."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -21,7 +21,7 @@ from luna_sight.visibility.states import (
     VisibilityConfig,
 )
 
-START = datetime(2026, 11, 15, tzinfo=timezone.utc)
+START = datetime(2026, 11, 15, tzinfo=UTC)
 FLAT = HorizonProfileLookup([0.0, 180.0], [0.0, 0.0])
 PATCHY = HorizonProfileLookup(
     [0.0, 180.0, 359.0], [float("nan"), 0.0, 0.0]

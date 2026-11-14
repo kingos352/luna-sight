@@ -18,7 +18,7 @@ import csv
 import hashlib
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import requests
@@ -26,13 +26,13 @@ import requests
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
-from luna_sight.terrain import (  # noqa: E402
+from luna_sight.terrain import (
     HorizonConfig,
     compare_radii,
     load_lola_dem,
     scan_coverage,
 )
-from luna_sight.terrain.horizon import compute_horizon  # noqa: E402
+from luna_sight.terrain.horizon import compute_horizon
 
 PGDA_BASE = "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp"
 PROVIDER = "NASA GSFC PGDA (LOLA Data Node)"
@@ -95,7 +95,7 @@ def download(url: str, target: Path) -> None:
 
 
 def manifest_rows(site: str, paths: dict[str, Path]) -> list[dict[str, str]]:
-    stamp = datetime.now(timezone.utc).replace(microsecond=0).isoformat()
+    stamp = datetime.now(UTC).replace(microsecond=0).isoformat()
     urls = remote_files(site)
     rows = []
     for kind, path in paths.items():
@@ -213,7 +213,7 @@ def main() -> int:
             "gap_scan": gaps.as_dict(),
             "profiles": [p.summary() for p in profiles],
             "radius_comparison": compare_radii(dem, x0, y0, radii, base),
-            "generated_utc": datetime.now(timezone.utc).replace(microsecond=0).isoformat(),
+            "generated_utc": datetime.now(UTC).replace(microsecond=0).isoformat(),
         }
         summary_path = out_dir / f"{site}_summary.json"
         summary_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
