@@ -1,0 +1,22 @@
+name: Governance
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  contract:
+    name: Kanonik sözleşme
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Denetleyici yalnızca standart kütüphane kullanır: bağımlılık kurulmaz,
+      # böylece bağımlılık dosyası bozuk olan bir dalda da kapı çalışır.
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Check canonical contract
+        run: python scripts/check_governance.py

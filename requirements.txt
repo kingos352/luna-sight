@@ -26,7 +26,7 @@ plotly==7.1.0
 # ÖNERİ - ekip onayı bekliyor (ADR-006, bkz. docs/GOVERNANCE.md bölüm 7).
 # docs/DATA_CONTRACT.md zorunlu alanlarını, enum değerlerini ve açı
 # aralıklarını kodda zorlamak için. K1-K3-K4 modül sınırında tek
-# doğrulama kapısı.
+# doğrulama kapısı. Reddedilirse bu satır ve ADR-006 geri alınır.
 #
 # Onaylanana kadar etkin satır olamaz: kanonik dosyayı kuran herkese
 # karar verilmemiş bir bağımlılık yüklenmiş olurdu. Issue #11 ve #18.

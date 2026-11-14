@@ -7,3 +7,7 @@
 /.github/ @kingos352
 /docs/ @kingos352
 
+# Entegrasyon sozlesmesi: degisiklik yalnizca otorite onayiyla (docs/GOVERNANCE.md)
+/governance/ @kingos352
+/docs/GOVERNANCE.md @kingos352
+/scripts/check_governance.py @kingos352
