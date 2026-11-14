@@ -7,20 +7,20 @@ name = "luna-sight"
 version = "0.1.0"
 description = "NASA Space Apps - Moon South Pole Landing Site & Visibility Tool"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 dependencies = [
-    "numpy>=2.0",
-    "pandas>=2.2",
-    "requests>=2.32",
-    "rasterio>=1.4",
-    "pyproj>=3.6",
-    "streamlit>=1.35.0",
-    "plotly>=5.20.0",
+    "numpy>=2.5",
+    "pandas>=3.1",
+    "requests>=2.34",
+    "rasterio>=1.5",
+    "pyproj>=3.8",
+    "streamlit>=1.67",
+    "plotly>=7.1",
 ]
 
 [project.optional-dependencies]
 test = [
-    "pytest>=8.0",
+    "pytest>=9.2",
 ]
 
 [tool.setuptools.packages.find]
