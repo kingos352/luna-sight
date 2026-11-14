@@ -138,6 +138,37 @@ OUTPUT_K2_DIR = REPO_ROOT / "outputs" / "k2"
 OUTPUT_K3_DIR = REPO_ROOT / "outputs" / "k3"
 
 
+# Batarya gösterimi: oranlar bir araç tasarımından türetilmemiştir. Tek yerde
+# tutulur ki grafik ile kullanıcıya gösterilen varsayım metni ayrışmasın.
+BATTERY_START_SOC = 90.0
+BATTERY_CHARGE_PER_HOUR = 4.0
+BATTERY_DISCHARGE_PER_HOUR = 1.5
+BATTERY_RESERVE_SOC = 20.0
+BATTERY_ASSUMPTIONS = (
+    f"Batarya eğrisi **gösterim amaçlıdır, güç bütçesi değildir.** Varsayımlar: "
+    f"başlangıç %{BATTERY_START_SOC:.0f} şarj, Güneş görünürken "
+    f"+%{BATTERY_CHARGE_PER_HOUR:.1f}/saat, görünmezken "
+    f"−%{BATTERY_DISCHARGE_PER_HOUR:.1f}/saat, kritik rezerv "
+    f"%{BATTERY_RESERVE_SOC:.0f}. Bu oranlar bir araç tasarımından veya kaynaktan "
+    f"türetilmemiştir; yalnızca görünürlük penceresinin enerji üzerindeki etkisini "
+    f"görselleştirir. Gerçek güç bütçesi panel verimi, termal yük ve görev yük "
+    f"profilini gerektirir."
+)
+
+
+def repo_relative(path: Path) -> str:
+    """Yolu depo köküne göre göster.
+
+    Arayüzde ve indirilen çıktıda mutlak yerel yol görünmemeli: ekran
+    görüntüsünde geliştiricinin dosya sistemini sızdırır ve başka bir
+    makinede tekrar üretilemez.
+    """
+    try:
+        return path.relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
 @dataclass(frozen=True)
 class SiteSpec:
     """Aday iniş bölgesi tanımı.
@@ -677,7 +708,7 @@ def load_real_site_data(site_id: str) -> pd.DataFrame:
         raise RealDataError(f"{path}: zaman damgaları okunamadı: {exc}") from exc
 
     frame = frame.sort_values("timestamp_utc").reset_index(drop=True)
-    frame.attrs["data_path"] = str(path)
+    frame.attrs["data_path"] = repo_relative(path)
     return frame
 
 
@@ -1077,13 +1108,18 @@ def build_timeline_figure(frame: pd.DataFrame, step_minutes: int, title: str) ->
 
 
 def build_battery_figure(frame: pd.DataFrame, step_minutes: int, title: str) -> go.Figure:
-    """Güneşlenme durumuna göre iniş aracı batarya seviyesini (% SoC) simüle eder."""
+    """Güneşlenme durumuna göre batarya seviyesini (% SoC) gösterim amaçlı çizer.
+
+    Oranlar bir araç tasarımından türetilmemiştir; `BATTERY_ASSUMPTIONS`
+    metninde açıkça beyan edilir ve grafiğin altında kullanıcıya gösterilir.
+    Bu eğri güç bütçesi değildir.
+    """
     step_hours = step_minutes / 60.0
-    charge_rate_per_hr = 4.0  # Güneş varken saatte +%4 şarj
-    discharge_rate_per_hr = 1.5  # Güneş yokken saatte -%1.5 tüketim
+    charge_rate_per_hr = BATTERY_CHARGE_PER_HOUR
+    discharge_rate_per_hr = BATTERY_DISCHARGE_PER_HOUR
 
     soc_values = []
-    current_soc = 90.0  # %90 başlangıç bataryası
+    current_soc = BATTERY_START_SOC
 
     for is_sun_vis in frame["sun_visible"].eq(VISIBLE):
         if is_sun_vis:
@@ -1107,10 +1143,10 @@ def build_battery_figure(frame: pd.DataFrame, step_minutes: int, title: str) -> 
     )
     # %20 Kritik rezerv çizgisi
     fig.add_hline(
-        y=20,
+        y=BATTERY_RESERVE_SOC,
         line_dash="dot",
         line_color="#ff5c5c",
-        annotation_text="Kritik Rezerv (%20)",
+        annotation_text=f"Kritik Rezerv (%{BATTERY_RESERVE_SOC:.0f})",
         annotation_position="bottom right",
     )
     fig.update_layout(
@@ -1297,7 +1333,7 @@ def _file_card(title: str, path: Path, ok: bool, detail: str = "") -> str:
     suffix = f"<br><span class='ls-card-detail'>{detail}</span>" if detail else ""
     return (
         f"<div class='ls-card'><div class='ls-card-title'>{icon} {title}</div>"
-        f"<div class='ls-card-path'>{path.as_posix()}</div>{suffix}</div>"
+        f"<div class='ls-card-path'>{repo_relative(path)}</div>{suffix}</div>"
     )
 
 
@@ -1342,7 +1378,7 @@ def render_sidebar_controls() -> tuple[int, int, dt.datetime, str]:
         key="source_mode",
     )
     if source_mode == SOURCE_REAL:
-        st.sidebar.caption(f"Kaynak: `{OUTPUT_K3_DIR.as_posix()}/<Site>_visibility.csv`")
+        st.sidebar.caption(f"Kaynak: `{repo_relative(OUTPUT_K3_DIR)}/<Site>_visibility.csv`")
         if not REAL_AVAILABLE:
             st.sidebar.warning("Gerçek çıktı bulunamadı; mock moda düşülecek.")
     else:
@@ -1438,8 +1474,9 @@ def render_sidebar_controls() -> tuple[int, int, dt.datetime, str]:
         st.markdown(
             "**Gerçek çıktı modu:** K3 motorunun ürettiği `outputs/k3` CSV'leri "
             "(5 dk adım, 168 saat) okunur; topoğrafik ufuk `outputs/k2` "
-            "profilinden gelir. Girdi efemerisi hâlâ sentetik senaryodur ve "
-            "`quality_flag=test_fixture` taşır.\n\n"
+            "profilinden gelir. Efemeris kaynağı, sürümü ve kalite bayrağı "
+            "sabit metin değildir: her satırdan okunup \"Veri ve kaynak\" "
+            "sekmesinde gösterilir.\n\n"
             "**Mock modu:** Güneş için 29,53 günlük sinodik dönem, Dünya için "
             "27,21 günlük librasyon salınımı ve azimuta bağlı analitik ufuk.\n\n"
             "Eksik veri görünür/engellenmiş sayılmaz; geçiş bandı `uncertain` "
@@ -1673,10 +1710,18 @@ def main() -> None:
             icon="⚠️",
         )
     elif actual_source == SOURCE_REAL:
+        # Köken sabit metin değil: yüklenen satırdan okunur, böylece çıktı
+        # yeniden üretildiğinde arayüz metni eskimez.
+        meta = probe.iloc[0] if len(probe) else None
+        provenance = (
+            f"Efemeris kaynağı: `{meta['source_id']}` · sürüm `{meta['source_version']}` · "
+            f"model `{meta['model_id']}` · kalite bayrağı `{meta['quality_flag']}`."
+            if meta is not None
+            else "Köken bilgisi okunamadı."
+        )
         st.caption(
             "Kaynak: `outputs/k3/*_visibility.csv` (K3 motoru) + "
-            "`outputs/k2/*_horizon_4000m.csv` (K2 ufuk profili). "
-            "Girdi efemerisi sentetik senaryodur → `quality_flag=test_fixture`."
+            f"`outputs/k2/*_horizon_4000m.csv` (K2 ufuk profili). {provenance}"
         )
     else:
         st.info(
@@ -1839,6 +1884,7 @@ def main() -> None:
                     frame_b, step_minutes, f"Bölge B · {catalog[selected_b].label}"
                 )
             )
+        st.caption(BATTERY_ASSUMPTIONS)
 
     with data_tab:
         render_data_tab(frame_a, frame_b, catalog[selected_a], catalog[selected_b])
