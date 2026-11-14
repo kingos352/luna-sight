@@ -24,6 +24,7 @@ bilimsel sınırları kaydeder.
 | `outputs/k3/<Site>_visibility.csv` | Örnek başına durum, gerekçe, ufuk, marj ve sözleşme alanları |
 | `outputs/k3/<Site>_windows.json` | Güneş, Dünya ve ortak görünürlük için kesintisiz pencereler |
 | `outputs/k3/<Site>_summary.json` | Yapılandırma, seri bilgisi, durum süreleri, en uzun pencere |
+| `outputs/k3/sensitivity.csv` | Profil yarıçapı × marj taraması: durum oranları, pencere sayısı, en uzun görünür pencere |
 
 ## 2. Durum modeli
 
@@ -152,9 +153,58 @@ blocked    2026-11-21T11:48:36Z → 2026-11-22T00:00:00Z   (12.19 sa)
 Bu sayılar yalnızca motorun uçtan uca çalıştığını gösterir. Gerçek görev
 analizi için K1'in JPL Horizons serisi (`--series`) kullanılmalıdır.
 
-## 7. Doğrulama
+## 7. Duyarlılık analizi
 
-`pytest --override-ini addopts=` → **80 test, hepsi geçiyor**. K3 ile ilgili
+`scripts/k3_sensitivity.py`, aynı seri üzerinde **profil yarıçapı** (K2:
+2 km / 4 km) ve **geçiş bandı** (`margin_deg`) seçimlerini tarar. Amaç, tek
+bir marj değerinin ürettiği sayıyı "kesin" gibi sunmamaktır.
+
+Yöntem:
+
+1. `outputs/k2/*_horizon_*m.csv` profilleri otomatik bulunur.
+2. Her bölge için seri **bir kez** üretilir; böylece fark yalnızca profil ve
+   marjdan kaynaklanır.
+3. Her kombinasyon için `visible` / `blocked` / `uncertain` süreleri ve
+   oranları, pencere sayısı, en uzun görünür pencere ve inceltilmiş sınır
+   sayısı `outputs/k3/sensitivity.csv` dosyasına yazılır.
+
+Ortak (`joint_visible`) görünürlük oranı, 168 saatlik senaryo serisi:
+
+| Bölge | Yarıçap | 0.02° | 0.05° | 0.10° | 0.20° |
+|---|---|---|---|---|---|
+| Site01 | 2 km | %15.5 | %15.3 | %15.1 | %14.6 |
+| Site01 | 4 km | %15.5 | %15.3 | %15.1 | %14.6 |
+| Site04 | 2 km | %30.6 | %30.6 | %30.5 | %30.4 |
+| Site04 | 4 km | %26.8 | %26.8 | %26.7 | %26.6 |
+
+En uzun kesintisiz ortak pencere (saat):
+
+| Bölge | Yarıçap | 0.02° | 0.05° | 0.10° | 0.20° |
+|---|---|---|---|---|---|
+| Site01 | 2 km | 26.00 | 25.78 | 25.40 | 24.55 |
+| Site01 | 4 km | 26.00 | 25.78 | 25.40 | 24.55 |
+| Site04 | 2 km | 51.44 | 51.42 | 51.29 | 51.13 |
+| Site04 | 4 km | 45.06 | 45.01 | 44.93 | 44.76 |
+
+Okuma:
+
+- **Yarıçap etkisi bölgeye bağlı.** Site01'de 2 km ve 4 km profilleri
+  birebir aynı sonucu verir; ufuk, gözlemcinin 210 m yakınındaki mikro-rölyef
+  tarafından belirleniyor (K2 bulgusu). Site04'te 4 km profil, 2 km'ye göre
+  ortak görünürlüğü **3.8 yüzde puan** düşürür ve en uzun pencereyi ~0.5 saat
+  kısaltır. Bu yüzden tek bir yarıçap seçmek Site04 için yanıltıcıdır.
+- **Marj etkisi senaryoda küçük görünür, gerçekte değildir.** Senaryo Güneş'i
+  168 saatte tam tur attırır; gerçekte bu ~27.3 gün sürer. Yükseklik değişim
+  hızı yaklaşık 10 kat fazla olduğu için 0.2°'lik bant senaryoda yalnızca
+  %0.4–3.8 belirsizlik üretir. Gerçek K1 serisinde aynı bant 15–40 saate
+  karşılık gelir; bu tablodaki **oranlar gerçek göreve taşınmamalıdır**.
+- Marj büyüdükçe görünür oran ve en uzun pencere **monoton** azalır; bu,
+  sınıflandırma ve pencere mantığının tutarlı olduğunu gösteren bir sanity
+  kontrolüdür.
+
+## 8. Doğrulama
+
+`pytest --override-ini addopts=` → **90 test, hepsi geçiyor**. K3 ile ilgili
 dosyalar:
 
 | Dosya | Kapsam |
@@ -163,6 +213,7 @@ dosyalar:
 | `tests/test_visibility_profile.py` | Nokta ve ara değer, 359°–0° dairesel geçiş, `NaN` bölgesi, gerçek K2 profili, hatalı CSV |
 | `tests/test_visibility_series.py` | UTC normalizasyonu, `Z`/`+03:00`, boş/`NaN` hücre → `None`, azalan zaman reddi, eksik sütun |
 | `tests/test_visibility_engine.py` | Ortak durum tablosu, eksik veri önceliği, marj, doğrudan ve bant kenarı inceltmesi, gövde bazlı pencereler, özet |
+| `tests/test_visibility_analysis.py` | Süre/oran toplamı, marj→belirsizlik geçişi, eksik ufuk oranı, pencere sayısı, üç gövdelik tablo satırı, marj farkı |
 
 Kabul ölçütleri karşılığı:
 
@@ -171,13 +222,14 @@ Kabul ölçütleri karşılığı:
 - **Geçiş sınırı inceltildi** → `refine_crossing_time` birim testleri + rapor çıktısında `*_refined: true`
 - **Normal / sınır / hata vakaları test edildi** → yukarıdaki dört dosya
 
-## 8. Bilimsel sınırlar
+## 9. Bilimsel sınırlar
 
 1. **`margin_deg = 0.1°` kutupta uzun bir zamana karşılık gelir.** Güney
    kutbunda Güneş yüksekliği saatte yaklaşık 0.005–0.015° değişir; 0.2°'lik
    bant 15–40 saatlik bir belirsizlik penceresi demektir. 168 saatlik bir
    görev penceresinde bu, görünürlük kararının büyük bölümünü `uncertain`
-   yapabilir. Duyarlılık analizi (`--margin 0.05 / 0.1 / 0.2`) zorunludur.
+   yapabilir. Bu yüzden `scripts/k3_sensitivity.py` ile marj taraması
+   yayımlanır (bkz. bölüm 7); tek bir marj değeri "kesin" sunulmaz.
 2. **Ufuk profili belirsizliği sayısallaştırılmadı.** K2 çıktısı `partial`
    kalite bayrağı ve yerel kapsam oranı taşır; `*_toterr.tif` ürünü
    indirilmedi. Bant genişliği bu nedenle sabit varsayıldı.
@@ -190,16 +242,20 @@ Kabul ölçütleri karşılığı:
 6. **Kırılma/atmosfer yok.** Ay'da atmosfer olmadığı için yükseklik tanımı
    geometriktir; bu bir varsayım değil, fiziksel gerçektir.
 
-## 9. Yeniden üretme
+## 10. Yeniden üretme
 
 ```bash
 python -m venv .venv
 .venv/Scripts/python -m pip install -r requirements.txt
-.venv/Scripts/python -m pytest --override-ini addopts= -q   # 80 passed
+.venv/Scripts/python -m pytest --override-ini addopts= -q   # 90 passed
 
 # K2 profili + senaryo serisi (test_fixture):
 .venv/Scripts/python scripts/k3_visibility_report.py \
   --profile outputs/k2/Site04_horizon_4000m.csv
+
+# Yarıçap × marj duyarlılık taraması:
+.venv/Scripts/python scripts/k3_sensitivity.py \
+  --margins 0.02,0.05,0.10,0.20
 
 # K1 gerçek serisi geldiğinde:
 .venv/Scripts/python scripts/k3_visibility_report.py \
@@ -208,13 +264,14 @@ python -m venv .venv
   --margin 0.10
 ```
 
-## 10. Sonraki adım
+## 11. Sonraki adım
 
 - **K1 entegrasyonu:** `--series` ile gerçek Horizons serisi; `latitude_deg`
   ve `longitude_deg_east` alanları K1 çıktısında dolu olmalı.
-- **Duyarlılık analizi:** `margin` ve ufuk yarıçapı (2 km / 4 km) için
-  görünürlük oranı taraması; K4'te "belirsizlik" olarak gösterilmeli.
+- **Gerçek seriyle duyarlılık:** `k3_sensitivity.py --series ...`; senaryo
+  yerine K1 serisi kullanıldığında marj→saat dönüşümü gerçek hızıyla görülür.
 - **K4:** `joint_visible` pencereleri zaman çizelgesinde; `uncertain` bantlar
-  ayrı renkte ve gerekçe etiketiyle gösterilmeli.
+  ayrı renkte ve gerekçe etiketiyle gösterilmeli; duyarlılık tablosu
+  "belirsizlik" göstergesi olarak sunulmalı.
 - **İsteğe bağlı:** `*_toterr.tif` ile ufuk belirsizliğini metre→derece
   dönüştürüp `margin_deg`'i azimuta göre değişken yapmak.
