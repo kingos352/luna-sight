@@ -30,7 +30,8 @@ def test_sites_use_east_positive_longitude() -> None:
     assert len({site.site_id for site in SITES}) == len(SITES)
     for site in SITES:
         assert -90.0 <= site.latitude_deg <= 90.0
-        assert 0.0 <= site.longitude_deg_east <= 360.0
+        # K2 boylamı [-180, 180] aralığında raporluyor; doğu-pozitif yön aynı.
+        assert -180.0 <= site.longitude_deg_east <= 360.0
 
 
 @responses.activate

@@ -26,7 +26,9 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 
 API_URL = "https://ssd.jpl.nasa.gov/api/horizons.api"
-SOURCE_ID = "jpl_horizons"
+#: Köken kimliği. Tireli yazım ekip genelinde ortaktır: K2 `pgda-lola-5mpp`,
+#: K3 motoru `jpl-horizons` bekliyor.
+SOURCE_ID = "jpl-horizons"
 PROVIDER = "NASA/JPL"
 PRODUCT = "horizons_observer_ephemeris"
 

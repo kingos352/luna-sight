@@ -21,10 +21,15 @@ from pathlib import Path
 from luna_sight.ephemeris.horizons import Site, build_session
 from luna_sight.ephemeris.series import append_manifest_row, build_site_timeseries, write_cache
 
-#: Geçici örnek noktalar. Boylam doğu-pozitif. K2 kesinleştirecek.
+#: Aday noktalar K2'den gelir: `docs/K2_HORIZON.md` bölüm 2 ve
+#: `outputs/k2/Site0X_summary.json` içindeki `coordinate` alanı. Koordinat,
+#: PGDA karosunun merkezinden ters stereografik dönüşümle hesaplanmıştır.
+#: `site_id` değerleri K2 ve K3 çıktılarıyla birebir aynı tutulur, yoksa
+#: bölge bazlı birleştirme sessizce boş kalır. Boylam doğu-pozitif; K2
+#: değerleri [-180, 180] aralığında raporluyor.
 SITES = [
-    Site(site_id="shackleton_rim_a", latitude_deg=-89.45, longitude_deg_east=0.0),
-    Site(site_id="connecting_ridge_a", latitude_deg=-89.45, longitude_deg_east=222.7),
+    Site(site_id="Site01", latitude_deg=-89.463163, longitude_deg_east=-137.489553),
+    Site(site_id="Site04", latitude_deg=-89.766811, longitude_deg_east=-171.869898),
 ]
 
 DEFAULT_HOURS = 168
