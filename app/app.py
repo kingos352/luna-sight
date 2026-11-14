@@ -31,7 +31,7 @@ import json
 import os
 import sys
 import zlib
-from dataclasses import dataclass, fields
+from dataclasses import dataclass, fields, replace
 from pathlib import Path
 
 import numpy as np
@@ -125,31 +125,54 @@ STATE_LABELS = {
     UNCERTAIN: "Belirsiz",
 }
 
+# Veri kaynağı modları
+SOURCE_REAL = "real"
+SOURCE_MOCK = "mock"
+SOURCE_LABELS = {
+    SOURCE_REAL: "Gerçek Ekip Çıktısı (K2/K3)",
+    SOURCE_MOCK: "Çevrimdışı Mock Modu (Test Verisi)",
+}
+
+# Ekip çıktıları
+OUTPUT_K2_DIR = REPO_ROOT / "outputs" / "k2"
+OUTPUT_K3_DIR = REPO_ROOT / "outputs" / "k3"
+
 
 @dataclass(frozen=True)
 class SiteSpec:
-    """Aday iniş bölgesi tanımı."""
+    """Aday iniş bölgesi tanımı.
+
+    Sentetik modda analitik ufuk/Güneş parametreleri kullanılır. Gerçek ekip
+    çıktısı modunda bu alanlar kullanılmaz; ufuk profili ``horizon_csv``
+    dosyasından, görünürlük ise K3 CSV'sinden gelir.
+    """
 
     site_id: str
     name: str
     latitude_deg: float
     longitude_deg_east: float
-    sun_offset_deg: float
-    sun_amplitude_deg: float
-    sun_phase: float
-    earth_phase: float
-    earth_az_deg: float
-    horizon_base_deg: float
-    horizon_amp1_deg: float
-    horizon_phase1_deg: float
-    horizon_amp2_deg: float
-    horizon_phase2_deg: float
+    sun_offset_deg: float = 0.0
+    sun_amplitude_deg: float = 0.0
+    sun_phase: float = 0.0
+    earth_phase: float = 0.0
+    earth_az_deg: float = 0.0
+    horizon_base_deg: float = 0.0
+    horizon_amp1_deg: float = 0.0
+    horizon_phase1_deg: float = 0.0
+    horizon_amp2_deg: float = 0.0
+    horizon_phase2_deg: float = 0.0
+    horizon_csv: Path | None = None
+    origin: str = "synthetic"
 
     @property
     def coordinates(self) -> str:
         return (
             f"{self.latitude_deg:.2f}°, {self.longitude_deg_east:+.2f}° (doğu-pozitif)"
         )
+
+    @property
+    def label(self) -> str:
+        return f"{self.site_id} · {self.name}" if self.origin == "real" else self.name
 
 
 # Koordinatlar yaklaşıktır; nihai değerler K2 (LOLA) doğrulamasından gelecektir.
@@ -208,10 +231,99 @@ SITE_NAMES = {key: spec.name for key, spec in SITES.items()}
 DEFAULT_SITE_A = "shackleton"
 DEFAULT_SITE_B = "malapert"
 
+
+def _read_json(path: Path) -> dict:
+    """JSON dosyasını okur; hata durumunda boş sözlük döndürür."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except Exception:  # noqa: BLE001 - bozuk/eksik çıktı
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _discover_real_sites() -> dict[str, SiteSpec]:
+    """``outputs/k3/*_summary.json`` dosyalarından gerçek bölgeleri keşfeder.
+
+    Koordinat ve özet K3'ten, bölge adı ile ufuk profili K2 çıktılarından
+    alınır. Hiç dosya yoksa boş sözlük döner ve arayüz mock moda düşer.
+    """
+    discovered: dict[str, SiteSpec] = {}
+    for summary_path in sorted(OUTPUT_K3_DIR.glob("*_summary.json")):
+        payload = _read_json(summary_path)
+        site_id = str(payload.get("site_id") or "").strip()
+        coordinate = payload.get("coordinate") or {}
+        try:
+            latitude = float(coordinate["latitude_deg"])
+            longitude = float(coordinate["longitude_deg_east"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if not site_id:
+            continue
+
+        k2_summary = _read_json(OUTPUT_K2_DIR / f"{site_id}_summary.json")
+        name = str(k2_summary.get("site_name") or site_id)
+
+        horizon_csv = OUTPUT_K2_DIR / f"{site_id}_horizon_4000m.csv"
+        if not horizon_csv.is_file():
+            horizon_csv = OUTPUT_K2_DIR / f"{site_id}_horizon_2000m.csv"
+        discovered[site_id] = SiteSpec(
+            site_id=site_id,
+            name=name,
+            latitude_deg=latitude,
+            longitude_deg_east=longitude,
+            horizon_csv=horizon_csv if horizon_csv.is_file() else None,
+            origin="real",
+        )
+    return discovered
+
+
+REAL_SITES = _discover_real_sites()
+REAL_AVAILABLE = bool(REAL_SITES)
+DEFAULT_REAL_SITE_A = "Site01" if "Site01" in REAL_SITES else next(iter(REAL_SITES), "")
+DEFAULT_REAL_SITE_B = (
+    "Site04"
+    if "Site04" in REAL_SITES
+    else next((key for key in REAL_SITES if key != DEFAULT_REAL_SITE_A), "")
+)
+
+
+def _site_catalog(source_mode: str) -> dict[str, SiteSpec]:
+    """Seçili moda göre bölge kataloğu (gerçek çıktı yoksa mock)."""
+    if source_mode == SOURCE_REAL and REAL_SITES:
+        return REAL_SITES
+    return SITES
+
+
+def _site_defaults(source_mode: str) -> tuple[str, str]:
+    """Moda göre varsayılan A/B bölgeleri."""
+    if source_mode == SOURCE_REAL and REAL_SITES:
+        return (
+            DEFAULT_REAL_SITE_A,
+            DEFAULT_REAL_SITE_B or DEFAULT_REAL_SITE_A,
+        )
+    return DEFAULT_SITE_A, DEFAULT_SITE_B
+
+
 # Sentetik model sabitleri (gerçek efemeris yerine kullanılan analitik yaklaşım)
 SOLAR_SYNODIC_DAYS = 29.53059
 EARTH_LIBRATION_DAYS = 27.21222
 TERRAIN_JITTER_DEG = 0.12
+
+# Gerçek çıktı okunamazsa kullanılan analitik yedek parametreleri. Bu değerler
+# Shackleton kenarı için kalibre edilmiş sentetik profildir; yalnızca çevrimdışı
+# modda ve `test_fixture` etiketiyle kullanılır.
+SYNTHETIC_FALLBACK_PARAMS: dict[str, float] = {
+    "sun_offset_deg": 1.7,
+    "sun_amplitude_deg": 1.8,
+    "sun_phase": 0.35,
+    "earth_phase": 0.20,
+    "earth_az_deg": 6.0,
+    "horizon_base_deg": 2.0,
+    "horizon_amp1_deg": 1.4,
+    "horizon_phase1_deg": 40.0,
+    "horizon_amp2_deg": 0.7,
+    "horizon_phase2_deg": 130.0,
+}
 
 
 # ---------------------------------------------------------------------------
@@ -422,15 +534,35 @@ def _k1_series(
     return frame
 
 
+def _load_horizon_csv(path: Path) -> tuple[np.ndarray, np.ndarray] | None:
+    """K2 ufuk profil CSV'sini (``azimuth_deg``, ``horizon_deg``) okur."""
+    try:
+        table = pd.read_csv(path)
+        azimuths = pd.to_numeric(table["azimuth_deg"], errors="coerce").to_numpy(
+            dtype=float
+        )
+        horizons = pd.to_numeric(table["horizon_deg"], errors="coerce").to_numpy(
+            dtype=float
+        )
+    except Exception:  # noqa: BLE001 - bozuk/eksik profil dosyası
+        return None
+    if azimuths.size < 2 or not np.isfinite(azimuths).all():
+        return None
+    return azimuths, horizons
+
+
 def _horizon_arrays(site: SiteSpec) -> tuple[np.ndarray, np.ndarray, str]:
     """Ufuk profilini K2 çıktısından ya da analitik modelden üretir.
 
-    K2 dosyası şu sırayla aranır:
-        ``$LUNA_SIGHT_HORIZON_DIR/horizon_<site_id>.csv``
-        ``data/derived/horizon_<site_id>.csv``
-    Beklenen sütunlar: ``azimuth_deg``, ``horizon_deg``. Dosya yoksa analitik
-    profil kullanılır ve dönen kaynak etiketi ``synthetic`` olur.
+    Sıra: ``site.horizon_csv`` (gerçek K2 çıktısı) → ``$LUNA_SIGHT_HORIZON_DIR``
+    → ``data/derived`` → analitik profil. Dönen etiket ``K2`` ya da
+    ``synthetic`` olur ve çıktının ``parameters`` alanına yazılır.
     """
+    if site.horizon_csv is not None:
+        loaded = _load_horizon_csv(site.horizon_csv)
+        if loaded is not None:
+            return loaded[0], loaded[1], "K2"
+
     names = [f"horizon_{site.site_id.lower()}.csv", f"horizon_{site.site_id}.csv"]
     directories = [HORIZON_DIR]
     override = os.environ.get("LUNA_SIGHT_HORIZON_DIR")
@@ -442,21 +574,17 @@ def _horizon_arrays(site: SiteSpec) -> tuple[np.ndarray, np.ndarray, str]:
             path = directory / name
             if not path.is_file():
                 continue
-            try:
-                table = pd.read_csv(path)
-                azimuths = pd.to_numeric(
-                    table["azimuth_deg"], errors="coerce"
-                ).to_numpy(dtype=float)
-                horizons = pd.to_numeric(
-                    table["horizon_deg"], errors="coerce"
-                ).to_numpy(dtype=float)
-            except Exception:  # noqa: BLE001, S112 - bozuk profil dosyası
-                continue
-            if azimuths.size >= 2 and np.isfinite(azimuths).all():
-                return azimuths, horizons, "K2"
+            loaded = _load_horizon_csv(path)
+            if loaded is not None:
+                return loaded[0], loaded[1], "K2"
 
     azimuths = np.arange(0.0, 360.0, 1.0)
     return azimuths, _terrain_horizon_deg(azimuths, site), "synthetic"
+
+
+def _site_horizon_profile(site: SiteSpec) -> tuple[np.ndarray, np.ndarray, str]:
+    """Polar grafik için ufuk profili (gerçek K2 dosyası varsa ondan)."""
+    return _horizon_arrays(site)
 
 
 def _build_samples(frame: pd.DataFrame, module, sample_type):
@@ -539,21 +667,137 @@ def _evaluate_with_engine(frame: pd.DataFrame, site: SiteSpec) -> pd.DataFrame |
     return evaluated
 
 
+class RealDataError(RuntimeError):
+    """Gerçek ekip çıktısı okunamadığında fırlatılır (mock moda düşülür)."""
+
+
+@st.cache_data(show_spinner=False)
+def load_real_site_data(site_id: str) -> pd.DataFrame:
+    """``outputs/k3/<site_id>_visibility.csv`` dosyasını okur (önbellekli).
+
+    Dosya yoksa, zorunlu sütunlar eksikse ya da zaman damgaları okunamıyorsa
+    :class:`RealDataError` fırlatır; çağıran taraf güvenli mock moda düşer.
+    """
+    path = OUTPUT_K3_DIR / f"{site_id}_visibility.csv"
+    if not path.is_file():
+        raise RealDataError(f"Gerçek çıktı bulunamadı: {path}")
+
+    try:
+        frame = pd.read_csv(path)
+    except Exception as exc:  # bozuk dosya
+        raise RealDataError(f"{path} okunamadı: {exc}") from exc
+
+    missing = [
+        column for column in DATA_CONTRACT_COLUMNS if column not in frame.columns
+    ]
+    if missing:
+        raise RealDataError(f"{path}: eksik sütunlar: {', '.join(missing)}")
+
+    try:
+        frame["timestamp_utc"] = pd.to_datetime(
+            frame["timestamp_utc"], utc=True, errors="raise"
+        )
+    except Exception as exc:  # bozuk zaman damgası
+        raise RealDataError(f"{path}: zaman damgaları okunamadı: {exc}") from exc
+
+    frame = frame.sort_values("timestamp_utc").reset_index(drop=True)
+    frame.attrs["data_path"] = str(path)
+    return frame
+
+
+def _slice_real_frame(
+    frame: pd.DataFrame,
+    start_utc: dt.datetime,
+    days: int,
+    step_minutes: int,
+) -> pd.DataFrame:
+    """Gerçek seriyi istenen pencereye kırpar ve istenen adıma örnekler.
+
+    İstenen başlangıç kullanılabilir pencerenin dışındaysa başlangıç verinin
+    ilk anına çekilir; pencere veri sonunu aşarsa kırpılır. Bu durumlar
+    ``attrs`` üzerinden arayüze bildirilir.
+    """
+    if frame.empty:
+        raise RealDataError("Gerçek seri boş.")
+
+    start = pd.Timestamp(start_utc)
+    if start.tzinfo is None:
+        start = start.tz_localize("UTC")
+    start = start.tz_convert("UTC")
+
+    available_start = frame["timestamp_utc"].iloc[0]
+    available_end = frame["timestamp_utc"].iloc[-1]
+    step = pd.Timedelta(minutes=step_minutes)
+
+    clamped = start < available_start or start > available_end - step
+    if clamped:
+        start = available_start
+    requested_end = start + pd.Timedelta(days=days)
+    truncated = requested_end > available_end
+    end = min(requested_end, available_end)
+
+    window = frame.loc[
+        (frame["timestamp_utc"] >= start) & (frame["timestamp_utc"] <= end)
+    ].copy()
+    if len(window) < 2:
+        raise RealDataError(
+            f"Seçilen pencere için yeterli gerçek örnek yok ({len(window)} satır)."
+        )
+
+    offsets_min = (
+        (window["timestamp_utc"] - window["timestamp_utc"].iloc[0]).dt.total_seconds()
+        / 60.0
+    ).to_numpy()
+    nearest = np.round(offsets_min / step_minutes) * step_minutes
+    keep = np.isclose(offsets_min, nearest, atol=2.5)
+    window = window.loc[keep].reset_index(drop=True)
+
+    window.attrs["data_source"] = SOURCE_REAL
+    window.attrs["data_path"] = frame.attrs.get("data_path", "")
+    window.attrs["window_clamped"] = bool(clamped)
+    window.attrs["window_truncated"] = bool(truncated)
+    window.attrs["available_start"] = available_start.isoformat()
+    window.attrs["available_end"] = available_end.isoformat()
+    return window
+
+
 @st.cache_data(show_spinner=False)
 def load_site_series(
     site_id: str,
     start_iso: str,
     days: int,
     step_minutes: int,
+    source_mode: str = SOURCE_REAL,
 ) -> pd.DataFrame:
-    """Tek giriş noktası: K1 → K3 → sentetik yedek.
+    """Tek giriş noktası: gerçek ekip çıktısı → K1/K3 → sentetik yedek.
 
-    Dönen çerçeve her zaman ``docs/DATA_CONTRACT.md`` şemasına uyar. Gerçek
-    efemeris yoksa ``quality_flag=test_fixture`` olarak kalır; K3 motoru varsa
-    sınıflandırma yine gerçek motorla yapılır ve ``uncertain`` korunur.
+    ``source_mode=real`` iken ``outputs/k3/<site_id>_visibility.csv`` okunur.
+    Dosya yoksa ya da bozuksa uygulama çökmez: ``attrs["fallback_reason"]``
+    ile işaretlenmiş sentetik çerçeve döner (Güvenli Çevrimdışı Mod).
+    ``source_mode=mock`` iken doğrudan analitik sentetik hat kullanılır.
     """
-    site = SITES[site_id]
     start_utc = dt.datetime.fromisoformat(start_iso)
+    catalog = _site_catalog(source_mode)
+    site = catalog.get(site_id) or SITES[site_id]
+
+    if source_mode == SOURCE_REAL:
+        try:
+            real = load_real_site_data(site.site_id)
+            sliced = _slice_real_frame(real, start_utc, days, step_minutes)
+            normalized = normalize_contract_frame(sliced)
+            normalized.attrs.update(sliced.attrs)
+            normalized.attrs["data_source"] = SOURCE_REAL
+            return normalized
+        except Exception as exc:  # noqa: BLE001 - her hata mock moda düşer
+            reason = str(exc) or exc.__class__.__name__
+            fallback_site = replace(site, **SYNTHETIC_FALLBACK_PARAMS)
+            frame = generate_synthetic_series(
+                fallback_site, start_utc, days, step_minutes
+            )
+            normalized = normalize_contract_frame(frame)
+            normalized.attrs["data_source"] = SOURCE_MOCK
+            normalized.attrs["fallback_reason"] = reason
+            return normalized
 
     frame = _k1_series(site, start_utc, days, step_minutes)
     if frame is None:
@@ -562,7 +806,9 @@ def load_site_series(
     evaluated = _evaluate_with_engine(frame, site)
     if evaluated is not None:
         frame = evaluated
-    return normalize_contract_frame(frame)
+    normalized = normalize_contract_frame(frame)
+    normalized.attrs["data_source"] = SOURCE_MOCK
+    return normalized
 
 
 # ---------------------------------------------------------------------------
@@ -639,12 +885,16 @@ def compute_metrics(frame: pd.DataFrame, step_minutes: int) -> SiteMetrics:
 
 
 def build_horizon_figure(
-    frame: pd.DataFrame, current_index: int, site: SiteSpec
+    frame: pd.DataFrame,
+    current_index: int,
+    site: SiteSpec,
+    horizon_profile: tuple[np.ndarray, np.ndarray] | None = None,
 ) -> go.Figure:
     """Güneş ve Dünya'nın azimut/yükseklik değişimini polar düzlemde çizer.
 
     Dönüşüm: r = 90 - yükseklik. Böylece ufuk (0°) dış çemberde, zenit (90°)
-    merkezde yer alır. Topoğrafik ufuk çizgisinin içinde kalan noktalar görünür.
+    merkezde yer alır. ``horizon_profile`` verilirse (K2 çıktısı) gerçek
+    topoğrafik ufuk çizgisi, verilmezse analitik profil çizilir.
     """
     current = frame.iloc[current_index]
 
@@ -677,16 +927,22 @@ def build_horizon_figure(
         )
     )
 
-    # Topoğrafik ufuk profili
-    horizon_theta = np.linspace(0.0, 360.0, 181)
-    horizon_radius = 90.0 - _terrain_horizon_deg(horizon_theta, site)
+    # Topoğrafik ufuk profili: gerçek K2 çıktısı varsa ondan.
+    if horizon_profile is not None:
+        horizon_theta, horizon_deg = horizon_profile
+        horizon_source = "K2 ufuk profili"
+    else:
+        horizon_theta = np.linspace(0.0, 360.0, 361)
+        horizon_deg = _terrain_horizon_deg(horizon_theta, site)
+        horizon_source = "Analitik ufuk (mock)"
+    horizon_radius = 90.0 - np.asarray(horizon_deg, dtype=float)
     figure.add_trace(
         go.Scatterpolar(
             r=horizon_radius,
-            theta=horizon_theta,
+            theta=np.asarray(horizon_theta, dtype=float),
             mode="lines",
-            name="Topoğrafik ufuk",
-            line={"color": "#9aa4bf", "width": 2, "dash": "dot"},
+            name=f"Topoğrafik ufuk · {horizon_source}",
+            line={"color": "#9aa4bf", "width": 2.2, "dash": "dot"},
             hovertemplate="Azimut %{theta:.0f}°<br>Ufuk yüksekliği %{customdata:.1f}°<extra></extra>",
             customdata=90.0 - horizon_radius,
         )
@@ -858,6 +1114,19 @@ def inject_theme() -> None:
         }
         .ls-chip-warn {border-color: rgba(245,185,66,0.45); color: #f5c76a; background: rgba(245,185,66,0.08);}
         .ls-chip-ok {border-color: rgba(61,220,151,0.45); color: #7ff0bd; background: rgba(61,220,151,0.10);}
+        .ls-step {
+            display: inline-block; padding: 0.22rem 0.7rem; border-radius: 8px;
+            background: rgba(90,169,255,0.12); border: 1px solid rgba(90,169,255,0.35);
+            color: #a9c8ff; font-size: 0.78rem; font-weight: 600; letter-spacing: 0.03em;
+            margin: 0.2rem 0 0.7rem 0;
+        }
+        .ls-card {
+            background: rgba(20,26,46,0.7); border: 1px solid rgba(90,169,255,0.16);
+            border-radius: 10px; padding: 0.55rem 0.7rem; margin-bottom: 0.5rem;
+        }
+        .ls-card-title {font-size: 0.8rem; color: #e8ecf8; font-weight: 600;}
+        .ls-card-path {font-size: 0.7rem; color: #7fb4ff; word-break: break-all; margin-top: 0.15rem;}
+        .ls-card-detail {font-size: 0.7rem; color: #b9c3dc;}
         div[data-testid="stMetric"] {background: rgba(20,26,46,0.65); border: 1px solid rgba(90,169,255,0.16);
             border-radius: 12px; padding: 0.65rem 0.8rem;}
         </style>
@@ -866,20 +1135,30 @@ def inject_theme() -> None:
     )
 
 
-def render_header(synthetic: bool, engine_active: bool = False) -> None:
+def render_header(
+    source_mode: str,
+    engine_active: bool,
+    fallback_reason: str | None = None,
+) -> None:
     """Başlık ve durum rozetleri."""
-    chips = ['<span class="ls-chip">JPL Horizons · K1</span>']
-    if synthetic:
+    chips = []
+    if source_mode == SOURCE_REAL:
         chips.append(
-            '<span class="ls-chip ls-chip-warn">Sentetik efemeris · test_fixture</span>'
+            '<span class="ls-chip ls-chip-ok">K2/K3 ekip çıktısı · outputs/</span>'
         )
-    chips.append('<span class="ls-chip">LOLA DEM · K2</span>')
+    else:
+        chips.append(
+            '<span class="ls-chip ls-chip-warn">Çevrimdışı mock · test_fixture</span>'
+        )
+    chips.append('<span class="ls-chip">JPL Horizons · K1</span>')
     if engine_active:
         chips.append(
             '<span class="ls-chip ls-chip-ok">Görünürlük motoru · K3 etkin</span>'
         )
     else:
         chips.append('<span class="ls-chip">Görünürlük motoru · K3</span>')
+    if fallback_reason:
+        chips.append('<span class="ls-chip ls-chip-warn">Güvenli çevrimdışı mod</span>')
     st.markdown(
         f"""
         <div class="ls-hero">
@@ -893,9 +1172,53 @@ def render_header(synthetic: bool, engine_active: bool = False) -> None:
     )
 
 
-def render_sidebar_controls() -> tuple[int, int, dt.datetime]:
-    """Görev parametreleri: süre, örnekleme aralığı, başlangıç zamanı."""
-    st.sidebar.header("Görev parametreleri")
+@st.cache_data(show_spinner=False)
+def real_output_window() -> tuple[str, str] | None:
+    """``outputs/k3`` özetlerinden gerçek çıktının zaman penceresini okur."""
+    for path in sorted(OUTPUT_K3_DIR.glob("*_summary.json")):
+        series = _read_json(path).get("series") or {}
+        start = series.get("start_utc")
+        end = series.get("end_utc")
+        if start and end:
+            return str(start), str(end)
+    return None
+
+
+def _file_card(title: str, path: Path, ok: bool, detail: str = "") -> str:
+    """Bilimsel kaynak kartı için kısa HTML üretir."""
+    icon = "✅" if ok else "⚠️"
+    suffix = f"<br><span class='ls-card-detail'>{detail}</span>" if detail else ""
+    return (
+        f"<div class='ls-card'><div class='ls-card-title'>{icon} {title}</div>"
+        f"<div class='ls-card-path'>{path.as_posix()}</div>{suffix}</div>"
+    )
+
+
+def render_sidebar_controls() -> tuple[int, int, dt.datetime, str]:
+    """Adım 2: veri kaynağı, görev süresi, örnekleme ve başlangıç zamanı."""
+    st.sidebar.markdown(
+        "<div class='ls-step'>2 · Görev parametreleri</div>", unsafe_allow_html=True
+    )
+
+    source_mode = st.sidebar.selectbox(
+        "Veri Kaynağı",
+        options=[SOURCE_REAL, SOURCE_MOCK],
+        index=0 if REAL_AVAILABLE else 1,
+        format_func=lambda key: SOURCE_LABELS[key],
+        help=(
+            "Gerçek ekip çıktısı: outputs/k3 altındaki K3 CSV'leri. "
+            "Dosya yoksa uygulama çökmeden çevrimdışı mock moda düşer."
+        ),
+        key="source_mode",
+    )
+    if source_mode == SOURCE_REAL:
+        st.sidebar.caption(
+            f"Kaynak: `{OUTPUT_K3_DIR.as_posix()}/<Site>_visibility.csv`"
+        )
+        if not REAL_AVAILABLE:
+            st.sidebar.warning("Gerçek çıktı bulunamadı; mock moda düşülecek.")
+    else:
+        st.sidebar.caption("Analitik sentetik hat · `quality_flag=test_fixture`")
 
     days = st.sidebar.slider(
         "Görev süresi (gün)",
@@ -903,7 +1226,7 @@ def render_sidebar_controls() -> tuple[int, int, dt.datetime]:
         max_value=30,
         value=7,
         step=1,
-        help="Varsayılan 7 gün. Simülasyon penceresi bu süreye göre üretilir.",
+        help="Varsayılan 7 gün. Gerçek çıktı 168 saatlik pencereyi kapsar.",
     )
     step_label = st.sidebar.selectbox(
         "Zaman örnekleme aralığı",
@@ -913,51 +1236,89 @@ def render_sidebar_controls() -> tuple[int, int, dt.datetime]:
     )
     step_minutes = SAMPLE_STEP_OPTIONS[step_label]
 
+    default_start = dt.datetime.now(dt.UTC).replace(minute=0, second=0, microsecond=0)
+    if source_mode == SOURCE_REAL:
+        window = real_output_window()
+        if window is not None:
+            default_start = dt.datetime.fromisoformat(window[0])
+
     start_utc = st.sidebar.datetime_input(
         "Görev başlangıcı (UTC)",
-        value=dt.datetime.now(dt.UTC).replace(minute=0, second=0, microsecond=0),
+        value=default_start,
         step=dt.timedelta(hours=1),
         help="Tüm zamanlar UTC ve ISO 8601 biçimindedir.",
+        key=f"start_{source_mode}",
     )
+    # st.datetime_input saat dilimi bilgisi döndürmez; alan UTC olarak
+    # etiketlendiği için naif değerler UTC kabul edilir.
+    if start_utc.tzinfo is None:
+        start_utc = start_utc.replace(tzinfo=dt.UTC)
+    else:
+        start_utc = start_utc.astimezone(dt.UTC)
     st.sidebar.caption(
         f"Pencere: {days} gün × {step_label} = {days * 24 * 60 // step_minutes} adım"
     )
+    if source_mode == SOURCE_REAL:
+        window = real_output_window()
+        if window is not None:
+            start_text = window[0][:16].replace("T", " ")
+            end_text = window[1][:16].replace("T", " ")
+            st.sidebar.caption(f"Gerçek çıktı aralığı: {start_text} → {end_text} UTC")
+        st.sidebar.caption(
+            "Pencere dışı seçimlerde başlangıç verinin ilk anına çekilir; "
+            "veri sonu aşılırsa grafik kırpılır."
+        )
 
     st.sidebar.divider()
-    st.sidebar.subheader("Veri kaynağı durumu")
+    st.sidebar.subheader("Bilimsel kaynaklar")
     k1_ready = _module_implemented("luna_sight.ephemeris")
     k2_ready = _module_implemented("luna_sight.terrain")
     k3_ready = _engine_available()
-    if k1_ready and k3_ready:
-        st.sidebar.success("JPL Horizons & LOLA DEM Entegrasyonu: Aktif")
-    elif k3_ready:
-        st.sidebar.warning("K3 motoru etkin · sentetik efemeris (test_fixture)")
-        st.sidebar.caption(
-            "Sınıflandırmayı gerçek K3 motoru yapıyor; Güneş/Dünya efemerisi "
-            "K1 bağlanana kadar sentetik."
-        )
-    else:
-        st.sidebar.warning("Sentetik veri hattı (test_fixture) etkin")
-        st.sidebar.caption(
-            "K1 efemeris ve K3 görünürlük modülleri bağlanınca bu uyarı kaybolur."
-        )
-    marks = {True: "hazır", False: "bekliyor"}
     st.sidebar.markdown(
-        f"- JPL Horizons (K1): **{marks[k1_ready]}**\n"
-        f"- LOLA DEM / ufuk (K2): **{marks[k2_ready]}**\n"
-        f"- Görünürlük motoru (K3): **{marks[k3_ready]}**"
+        _file_card(
+            "K1 · JPL Horizons efemerisi",
+            SRC_DIR / "luna_sight" / "ephemeris",
+            k1_ready,
+            "Modül hazır; API bağlandığında gerçek Güneş/Dünya serisi kullanılır."
+            if k1_ready
+            else "Henüz yok; efemeris sentetik (test_fixture).",
+        ),
+        unsafe_allow_html=True,
+    )
+    st.sidebar.markdown(
+        _file_card(
+            "K2 · LOLA DEM ufuk profili",
+            OUTPUT_K2_DIR,
+            k2_ready,
+            "outputs/k2/*_horizon_4000m.csv (azimuth_deg, horizon_deg)",
+        ),
+        unsafe_allow_html=True,
+    )
+    st.sidebar.markdown(
+        _file_card(
+            "K3 · Görünürlük motoru",
+            OUTPUT_K3_DIR,
+            k3_ready,
+            "evaluate_series + outputs/k3/*_visibility.csv ve *_summary.json",
+        ),
+        unsafe_allow_html=True,
+    )
+    st.sidebar.caption(
+        "Veri sözleşmesi: `docs/DATA_CONTRACT.md` (UTC, doğu-pozitif, 3 durum)"
     )
 
-    st.sidebar.divider()
     with st.sidebar.expander("Yöntem ve sınırlar"):
         st.markdown(
-            "Veriler analitik bir modelle üretilir: Güneş için 29,53 günlük sinodik "
-            "dönem, Dünya için 27,21 günlük librasyon salınımı ve azimuta bağlı "
-            "topoğrafik ufuk profili.\n\n"
-            "Bu ekran iniş güvenliği kararı vermez; yalnızca bölgeleri "
-            "karşılaştırmalı olarak ön değerlendirmeye sunar."
+            "**Gerçek çıktı modu:** K3 motorunun ürettiği `outputs/k3` CSV'leri "
+            "(5 dk adım, 168 saat) okunur; topoğrafik ufuk `outputs/k2` "
+            "profilinden gelir. Girdi efemerisi hâlâ sentetik senaryodur ve "
+            "`quality_flag=test_fixture` taşır.\n\n"
+            "**Mock modu:** Güneş için 29,53 günlük sinodik dönem, Dünya için "
+            "27,21 günlük librasyon salınımı ve azimuta bağlı analitik ufuk.\n\n"
+            "Eksik veri görünür/engellenmiş sayılmaz; geçiş bandı `uncertain` "
+            "olarak raporlanır. Bu ekran iniş güvenliği kararı vermez."
         )
-    return days, step_minutes, start_utc
+    return days, step_minutes, start_utc, source_mode
 
 
 def render_site_panel(
@@ -969,9 +1330,10 @@ def render_site_panel(
 ) -> None:
     """Tek bir bölgenin metrik ve engel özetini sütuna çizer."""
     with column:
-        st.caption(
-            f"Koordinat: {spec.coordinates} · yaklaşık (K2 doğrulaması bekliyor)"
+        source_note = (
+            "K2/LOLA ufuk profili" if spec.origin == "real" else "yaklaşık · mock"
         )
+        st.caption(f"Koordinat: {spec.coordinates} · {source_note}")
 
         sun_delta = metrics.sun_hours - compare.sun_hours
         earth_delta = metrics.earth_hours - compare.earth_hours
@@ -1024,26 +1386,87 @@ def render_site_panel(
             )
 
 
-def render_data_tab(frame_a: pd.DataFrame, frame_b: pd.DataFrame) -> None:
-    """Veri sözleşmesi çıktısını ve indirme seçeneğini gösterir."""
-    st.subheader("Veri sözleşmesi çıktısı")
-    st.caption(
-        "Aşağıdaki tablolar `docs/DATA_CONTRACT.md` alanlarıyla birebir uyumludur; "
-        "K1/K2/K3 modülleri bağlandığında aynı şema korunur."
+def render_source_cards(
+    spec_a: SiteSpec, spec_b: SiteSpec, frame_a: pd.DataFrame
+) -> None:
+    """K1/K2/K3 kaynaklarını, dosya yollarını ve sözleşme durumunu gösterir."""
+    k1_ready = _module_implemented("luna_sight.ephemeris")
+    k2_ready = spec_a.horizon_csv is not None and spec_a.horizon_csv.is_file()
+    k3_path = OUTPUT_K3_DIR / f"{spec_a.site_id}_visibility.csv"
+    k3_ready = k3_path.is_file()
+    contract_missing = [
+        column for column in DATA_CONTRACT_COLUMNS if column not in frame_a.columns
+    ]
+
+    first, second, third = st.columns(3)
+    with first:
+        st.markdown(
+            _file_card(
+                "K1 · JPL Horizons",
+                SRC_DIR / "luna_sight" / "ephemeris",
+                k1_ready,
+                "Gerçek efemeris modülü bağlandığında otomatik kullanılır."
+                if k1_ready
+                else "Modül yok: efemeris sentetik senaryo (test_fixture).",
+            ),
+            unsafe_allow_html=True,
+        )
+    with second:
+        st.markdown(
+            _file_card(
+                "K2 · LOLA DEM ufuk profili",
+                spec_a.horizon_csv or OUTPUT_K2_DIR,
+                k2_ready,
+                f"{spec_a.site_id}: {spec_a.name} · {spec_a.coordinates}",
+            ),
+            unsafe_allow_html=True,
+        )
+    with third:
+        st.markdown(
+            _file_card(
+                "K3 · Görünürlük motoru",
+                k3_path,
+                k3_ready,
+                f"A: `{spec_a.site_id}` · B: `{spec_b.site_id}` · 3 durum + gerekçe kodu",
+            ),
+            unsafe_allow_html=True,
+        )
+
+    status = "✅ tam" if not contract_missing else "⚠️ eksik"
+    missing_text = (
+        "tüm zorunlu alanlar mevcut"
+        if not contract_missing
+        else "eksik: " + ", ".join(contract_missing)
+    )
+    st.markdown(
+        f"**Veri sözleşmesi** (`docs/DATA_CONTRACT.md`): {status} · "
+        f"{len(DATA_CONTRACT_COLUMNS)} zorunlu alan · {missing_text}"
     )
 
+
+def render_data_tab(
+    frame_a: pd.DataFrame,
+    frame_b: pd.DataFrame,
+    spec_a: SiteSpec,
+    spec_b: SiteSpec,
+) -> None:
+    """Veri sözleşmesi çıktısını, kaynak kartlarını ve indirme seçeneğini gösterir."""
+    st.subheader("Veri ve kaynak")
+    render_source_cards(spec_a, spec_b, frame_a)
+    st.divider()
+
     left, right = st.columns(2)
-    for column, title, frame in (
-        (left, "Bölge A", frame_a),
-        (right, "Bölge B", frame_b),
+    for column, title, spec, frame in (
+        (left, "Bölge A", spec_a, frame_a),
+        (right, "Bölge B", spec_b, frame_b),
     ):
         with column:
-            st.markdown(f"**{title}** · {len(frame)} satır")
+            st.markdown(f"**{title}** · {spec.label} · {len(frame)} satır")
             st.dataframe(frame.head(50), height=260, hide_index=True)
             st.download_button(
                 f"{title} CSV indir",
                 data=frame.to_csv(index=False).encode("utf-8-sig"),
-                file_name=f"luna_sight_{title.replace(' ', '_').lower()}.csv",
+                file_name=f"luna_sight_{spec.site_id.lower()}_{title.lower()}.csv",
                 mime="text/csv",
                 key=f"download_{title}",
             )
@@ -1055,12 +1478,13 @@ def render_data_tab(frame_a: pd.DataFrame, frame_b: pd.DataFrame) -> None:
         f"- Kaynak: `{meta['source_id']}` · sürüm `{meta['source_version']}`\n"
         f"- Model: `{meta['model_id']}`\n"
         f"- Kalite bayrağı: `{meta['quality_flag']}`\n"
+        f"- Dosya: `{frame_a.attrs.get('data_path', '—')}`\n"
         f"- Parametreler: `{meta['parameters']}`"
     )
     if (frame_a["quality_flag"] == "test_fixture").any():
         st.warning(
-            "Bu çıktı `test_fixture` etiketlidir: sentetik veridir, bilimsel sonuç "
-            "olarak kullanılamaz.",
+            "Bu çıktı `test_fixture` etiketlidir: Güneş/Dünya efemerisi sentetik "
+            "senaryodur, bilimsel sonuç olarak kullanılamaz.",
             icon="⚠️",
         )
 
@@ -1074,59 +1498,89 @@ def main() -> None:
     )
     inject_theme()
 
-    days, step_minutes, start_utc = render_sidebar_controls()
+    days, step_minutes, start_utc, source_mode = render_sidebar_controls()
     start_iso = start_utc.astimezone(dt.UTC).isoformat()
 
-    k1_ready = _module_implemented("luna_sight.ephemeris")
     engine_active = _engine_available()
-    synthetic = not k1_ready
-    render_header(synthetic=synthetic, engine_active=engine_active)
+    catalog = _site_catalog(source_mode)
+    default_a, default_b = _site_defaults(source_mode)
 
-    if synthetic:
-        if engine_active:
-            st.info(
-                "Sınıflandırma **K3 görünürlük motoruyla** (`evaluate_series`) yapılıyor. "
-                "Güneş/Dünya efemerisi K1 bağlanana kadar sentetiktir; çıktılar "
-                "`test_fixture` etiketlidir ve bilimsel sonuç olarak kullanılamaz.",
-                icon="ℹ️",
-            )
-        else:
-            st.info(
-                "Bilimsel modüller (K1/K2/K3) henüz bağlı değil. Arayüz, veri sözleşmesine "
-                "uygun **sentetik** veriyle çalışıyor; sonuçlar `test_fixture` etiketlidir.",
-                icon="ℹ️",
-            )
+    # Başlıktaki mod bilgisi için ilk bölgeyi yükle (önbellekli).
+    probe = load_site_series(default_a, start_iso, days, step_minutes, source_mode)
+    fallback_reason = probe.attrs.get("fallback_reason")
+    actual_source = probe.attrs.get("data_source", source_mode)
 
-    # --- A/B karşılaştırma panelleri -------------------------------------
-    st.subheader("A/B aday iniş bölgesi karşılaştırması")
+    render_header(actual_source, engine_active, fallback_reason)
+
+    if fallback_reason:
+        st.warning(
+            "**Güvenli Çevrimdışı Mod (Test Verisi).** Gerçek ekip çıktısı "
+            f"okunamadı: {fallback_reason}",
+            icon="⚠️",
+        )
+    elif actual_source == SOURCE_REAL:
+        st.caption(
+            "Kaynak: `outputs/k3/*_visibility.csv` (K3 motoru) + "
+            "`outputs/k2/*_horizon_4000m.csv` (K2 ufuk profili). "
+            "Girdi efemerisi sentetik senaryodur → `quality_flag=test_fixture`."
+        )
+    else:
+        st.info(
+            "Çevrimdışı mock modu etkin: analitik sentetik hat kullanılıyor. "
+            "Sonuçlar `test_fixture` etiketlidir.",
+            icon="ℹ️",
+        )
+
+    # --- Adım 1: A/B aday bölge seçimi -----------------------------------
+    st.markdown(
+        "<div class='ls-step'>1 · Aday bölge seçimi</div>", unsafe_allow_html=True
+    )
     column_a, column_b = st.columns(2, gap="large")
 
+    options = list(catalog)
     with column_a:
         selected_a = st.selectbox(
             "Bölge A — aday iniş bölgesi",
-            options=list(SITES),
-            format_func=lambda key: SITES[key].name,
-            index=list(SITES).index(DEFAULT_SITE_A),
-            key="site_a",
+            options=options,
+            format_func=lambda key: catalog[key].label,
+            index=options.index(default_a) if default_a in options else 0,
+            key=f"site_a_{source_mode}",
         )
     with column_b:
         selected_b = st.selectbox(
             "Bölge B — aday iniş bölgesi",
-            options=list(SITES),
-            format_func=lambda key: SITES[key].name,
-            index=list(SITES).index(DEFAULT_SITE_B),
-            key="site_b",
+            options=options,
+            format_func=lambda key: catalog[key].label,
+            index=options.index(default_b) if default_b in options else 0,
+            key=f"site_b_{source_mode}",
         )
 
-    frame_a = load_site_series(selected_a, start_iso, days, step_minutes)
-    frame_b = load_site_series(selected_b, start_iso, days, step_minutes)
+    frame_a = load_site_series(selected_a, start_iso, days, step_minutes, source_mode)
+    frame_b = load_site_series(selected_b, start_iso, days, step_minutes, source_mode)
     metrics_a = compute_metrics(frame_a, step_minutes)
     metrics_b = compute_metrics(frame_b, step_minutes)
 
-    render_site_panel(column_a, "Bölge A", SITES[selected_a], metrics_a, metrics_b)
-    render_site_panel(column_b, "Bölge B", SITES[selected_b], metrics_b, metrics_a)
+    if actual_source == SOURCE_REAL and frame_a.attrs.get("window_truncated"):
+        st.warning(
+            "Seçilen görev süresi gerçek çıktının sonunu aşıyor; grafikler "
+            "mevcut 168 saatlik pencereyle sınırlandı.",
+            icon="⚠️",
+        )
+    if actual_source == SOURCE_REAL and frame_a.attrs.get("window_clamped"):
+        st.info(
+            "Seçilen başlangıç gerçek çıktı aralığının dışında; başlangıç verinin "
+            "ilk anına çekildi.",
+            icon="ℹ️",
+        )
 
-    # --- Görselleştirmeler ------------------------------------------------
+    render_site_panel(column_a, "Bölge A", catalog[selected_a], metrics_a, metrics_b)
+    render_site_panel(column_b, "Bölge B", catalog[selected_b], metrics_b, metrics_a)
+
+    # --- Adım 3: görselleştirmeler ----------------------------------------
+    st.markdown(
+        "<div class='ls-step'>3 · Karşılaştırma ve ufuk grafikleri</div>",
+        unsafe_allow_html=True,
+    )
     horizon_tab, timeline_tab, data_tab = st.tabs(
         ["Ufuk görünümü", "Zaman çizelgesi", "Veri ve kaynak"]
     )
@@ -1134,22 +1588,24 @@ def main() -> None:
     with horizon_tab:
         st.caption(
             "Polar düzlemde merkez zenit (90°), dış çember ufuktur (0°). "
-            "Noktalar topoğrafik ufuk çizgisinin içinde kaldığında görünür."
+            "☀ Güneş ve ◆ Dünya ayrı sembollerle gösterilir; kesikli çizgi "
+            "topoğrafik ufku çizer. Nokta ufuk çizgisinin içinde kaldığında görünür."
         )
         control_left, control_right = st.columns([1, 2])
         with control_left:
             site_options = list(dict.fromkeys([selected_a, selected_b]))
-            if st.session_state.get("horizon_site") not in site_options:
-                st.session_state.pop("horizon_site", None)
+            horizon_key = f"horizon_site_{source_mode}"
+            if st.session_state.get(horizon_key) not in site_options:
+                st.session_state.pop(horizon_key, None)
             horizon_site = st.radio(
                 "Bölge",
                 options=site_options,
-                format_func=lambda key: SITES[key].name,
+                format_func=lambda key: catalog[key].label,
                 horizontal=True,
-                key="horizon_site",
+                key=horizon_key,
             )
         frame = frame_a if horizon_site == selected_a else frame_b
-        spec = SITES[horizon_site]
+        spec = catalog[horizon_site]
 
         max_index = len(frame) - 1
         with control_right:
@@ -1168,7 +1624,19 @@ def main() -> None:
             f"(adım {current_index}/{max_index}, aralık {step_minutes} dk)"
         )
 
-        st.plotly_chart(build_horizon_figure(frame, current_index, spec))
+        profile_az, profile_hz, profile_source = _site_horizon_profile(spec)
+        st.plotly_chart(
+            build_horizon_figure(
+                frame,
+                current_index,
+                spec,
+                horizon_profile=(profile_az, profile_hz),
+            )
+        )
+        st.caption(
+            f"Ufuk profili kaynağı: **{profile_source}** · "
+            f"{len(profile_az)} azimut örneği · semboller: ☀ Güneş, ◆ Dünya"
+        )
 
         badge_a, badge_b, badge_c = st.columns(3)
         badge_a.metric(
@@ -1200,18 +1668,18 @@ def main() -> None:
         with left:
             st.plotly_chart(
                 build_timeline_figure(
-                    frame_a, step_minutes, f"Bölge A · {SITES[selected_a].name}"
+                    frame_a, step_minutes, f"Bölge A · {catalog[selected_a].label}"
                 )
             )
         with right:
             st.plotly_chart(
                 build_timeline_figure(
-                    frame_b, step_minutes, f"Bölge B · {SITES[selected_b].name}"
+                    frame_b, step_minutes, f"Bölge B · {catalog[selected_b].label}"
                 )
             )
 
     with data_tab:
-        render_data_tab(frame_a, frame_b)
+        render_data_tab(frame_a, frame_b, catalog[selected_a], catalog[selected_b])
 
     st.divider()
     st.caption(
