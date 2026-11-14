@@ -57,7 +57,7 @@ def test_resolve_site_uses_k2_catalog():
     site = resolve_site("Site01")
     assert site.site_id == "Site01"
     assert site.latitude_deg == pytest.approx(-89.463163)
-    assert site.longitude_deg_east == pytest.approx(222.510447)
+    assert site.longitude_deg_east == pytest.approx(-137.489553)
 
 
 def test_profile_discovery_finds_all_k2_radii():
@@ -102,7 +102,7 @@ def test_build_site_series_matches_k4_signature():
     assert str(frame["timestamp_utc"].dt.tz) == "UTC"
     assert set(frame["quality_flag"]) == {"test_fixture"}
     assert set(frame["source_id"]) == {"synthetic-scenario"}
-    assert frame["longitude_deg_east"].iloc[0] == pytest.approx(188.130102)
+    assert frame["longitude_deg_east"].iloc[0] == pytest.approx(-171.869898)
 
 
 def test_build_site_series_accepts_naive_start():

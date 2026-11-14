@@ -14,7 +14,7 @@ def test_candidate_sites_structure():
     assert isinstance(site1, CandidateSite)
     assert site1.site_name == "Connecting ridge"
     assert -90.0 <= site1.latitude_deg <= 0.0
-    assert 0.0 <= site1.longitude_deg_east < 360.0
+    assert -180.0 <= site1.longitude_deg_east <= 180.0
 
     # X, Y koordinatlarının lon/lat ile tutarlılığı (±50 m tolerans)
     calc_x, calc_y = lonlat_to_xy(site1.longitude_deg_east, site1.latitude_deg)
