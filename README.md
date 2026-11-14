@@ -27,7 +27,7 @@ tests/               Otomatik doğrulamalar
 data/                Yalnızca küçük manifestler ve örnek şemalar
 docs/                Yöntem, kararlar, çalışma kuralları
 artifacts/           Demo ve teslim manifestleri
-outputs/             Ekip uygulama planı
+outputs/             Ekip uygulama planı, K2 ufuk profilleri ve K3 görünürlük çıktıları
 ```
 
 NASA veri dosyaları, DEM parçaları, videolar ve önbellekler Git deposuna eklenmez. Kaynak adresi, sürüm, parametre ve dosya özeti `data/manifest.csv` içinde tutulur.
