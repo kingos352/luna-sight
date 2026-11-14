@@ -194,3 +194,84 @@ def test_table_rejects_duplicate_site_timestamps():
 
     with pytest.raises(ValueError, match="birden fazla"):
         validate_table(duplicated)
+
+
+K1_HEADER = (
+    "site_id,latitude_deg,longitude_deg_east,timestamp_utc,"
+    "sun_az_deg,sun_alt_deg,earth_az_deg,earth_alt_deg,"
+    "quality_flag,source_id,source_version,model_id,parameters"
+)
+
+
+def write_k1_series(path, *, site_id="Site04", latitude=-89.766811, longitude=-171.869898):
+    """K1 `EPHEMERIS_COLUMNS` sırasıyla küçük bir sözleşme CSV'si yazar."""
+    import csv
+
+    rows = [
+        ["2026-11-15T00:00:00Z", 10.0, -1.2, 65.0, -0.4, "valid"],
+        ["2026-11-15T01:00:00Z", 12.0, -0.8, 67.0, -0.2, "valid"],
+        ["2026-11-15T02:00:00Z", 14.0, -0.4, 69.0, 0.0, "partial"],
+    ]
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        handle.write(K1_HEADER + "\n")
+        writer = csv.writer(handle)
+        for timestamp, sun_az, sun_alt, earth_az, earth_alt, quality in rows:
+            writer.writerow(
+                [
+                    site_id,
+                    latitude,
+                    longitude,
+                    timestamp,
+                    sun_az,
+                    sun_alt,
+                    earth_az,
+                    earth_alt,
+                    quality,
+                    "jpl-horizons",
+                    "v1",
+                    "horizons-observer-table",
+                    '{"step": "1 h"}',
+                ]
+            )
+
+
+def test_k1_series_columns_run_through_cli(tmp_path, capsys):
+    from luna_sight.visibility.__main__ import main
+
+    series = tmp_path / "k1_series.csv"
+    profile = tmp_path / "profile.csv"
+    write_k1_series(series)
+    pd.DataFrame({"azimuth_deg": [0, 90, 180, 270], "horizon_deg": [0, 0, 0, 0]}).to_csv(
+        profile, index=False
+    )
+    output = tmp_path / "visibility.csv"
+
+    exit_code = main(
+        [
+            "--series",
+            str(series),
+            "--profile",
+            str(profile),
+            "--csv",
+            str(output),
+        ]
+    )
+
+    assert exit_code == 0
+    assert output.exists()
+    frame = pd.read_csv(output)
+    assert len(frame) == 3
+    assert set(frame["site_id"]) == {"Site04"}
+    assert set(frame["source_id"]) == {"jpl-horizons"}
+    assert frame["joint_visible"].isin({VISIBLE, BLOCKED, UNCERTAIN}).all()
+    assert "Seri: 3 örnek" in capsys.readouterr().out
+
+
+def test_series_without_coordinates_requires_cli_site(tmp_path):
+    from luna_sight.visibility.__main__ import main
+
+    series = tmp_path / "no_site.csv"
+    write_k1_series(series, site_id="", latitude="", longitude="")
+
+    with pytest.raises(SystemExit, match="latitude"):
+        main(["--series", str(series)])
