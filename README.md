@@ -42,6 +42,20 @@ python3.12 -m venv .venv
 Doğrulama: `.venv\Scripts\python.exe -m pip check` ve `.venv\Scripts\python.exe -m pytest`.
 `.venv`, `.env`, ham NASA verisi ve önbellekler Git tarafından izlenmez.
 
+## K3 görünürlük motoru
+
+K2 ufuk profili + K1 efemeris serisinden `visible` / `blocked` / `uncertain`
+durumları, gerekçe kodları ve kesintisiz pencereler üretir. Yöntem ve bilimsel
+sınırlar: `docs/K3_VISIBILITY.md`.
+
+```powershell
+$env:PYTHONPATH = "src"
+.\.venv\Scripts\python.exe -m luna_sight.visibility `
+  --profile outputs\k2\Site04_horizon_4000m.csv `
+  --site-id Site04 --latitude -89.766811 --longitude -171.869898 `
+  --hours 168 --csv outputs\k3\Site04_rover_visibility.csv
+```
+
 ## Depo haritası
 
 ```text
@@ -51,7 +65,7 @@ tests/               Otomatik doğrulamalar
 data/                Yalnızca küçük manifestler ve örnek şemalar
 docs/                Yöntem, kararlar, çalışma kuralları
 artifacts/           Demo ve teslim manifestleri
-outputs/             Ekip uygulama planı
+outputs/             Ekip uygulama planı ve K2 ufuk profilleri
 ```
 
 NASA veri dosyaları, DEM parçaları, videolar ve önbellekler Git deposuna eklenmez. Kaynak adresi, sürüm, parametre ve dosya özeti `data/manifest.csv` içinde tutulur.

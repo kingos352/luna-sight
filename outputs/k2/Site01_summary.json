@@ -1,0 +1,162 @@
+{
+  "site_id": "Site01",
+  "site_name": "Connecting ridge",
+  "coordinate": {
+    "lon_deg_east": -137.489553,
+    "lat_deg": -89.463163
+  },
+  "dem": {
+    "site_id": "Site01",
+    "site_name": "Connecting ridge",
+    "product": "LRO/LOLA bölgesel DEM (LDEM, 5 m/piksel)",
+    "source_id": "pgda-lola-5mpp",
+    "source_version": "Barker et al. 2021, düzeltilmiş 5 m/piksel (PSS 203:105119)",
+    "datum": "MOON_ME (JPL DE421)",
+    "pixel_size_m": 5.0,
+    "width": 3200,
+    "height": 3200,
+    "bounds_xy_m": [
+      -19000.0,
+      -20000.0,
+      -3000.0,
+      -4000.0
+    ],
+    "units": "m",
+    "crs": "PROJCS[\"unnamed\",GEOGCS[\"unnamed ellipse\",DATUM[\"unknown\",SPHEROID[\"unnamed\",1737400,0]],PRIMEM[\"Greenwich\",0],UNIT[\"degree\",0.0174532925199433,AUTHORITY[\"EPSG\",\"9122\"]]],PROJECTION[\"Polar_Stereographic\"],PARAMETER[\"latitude_of_origin\",-90],PARAMETER[\"central_meridian\",0],PARAMETER[\"false_easting\",0],PARAMETER[\"false_northing\",0],UNIT[\"metre\",1],AXIS[\"Easting\",NORTH],AXIS[\"Northing\",NORTH]]"
+  },
+  "tile_extent_m": 16000.0,
+  "gap_scan": {
+    "x_m": -11000.0,
+    "y_m": -12000.0,
+    "radii_m": [
+      2000.0,
+      4000.0
+    ],
+    "surface_gap_fraction": [
+      0.0,
+      0.0
+    ],
+    "native_coverage_fraction": [
+      0.09356,
+      0.107094
+    ],
+    "pixel_count": [
+      55857,
+      223401
+    ],
+    "uncertainty_median_m": [
+      null,
+      null
+    ],
+    "quality_flag": "valid",
+    "sample_stride": 3
+  },
+  "profiles": [
+    {
+      "site_id": "Site01",
+      "x_m": -11000.0,
+      "y_m": -12000.0,
+      "lon_deg_east": -137.489553,
+      "lat_deg": -89.463163,
+      "quality_flag": "valid",
+      "azimuth_count": 360,
+      "horizon_min_deg": -4.615128,
+      "horizon_max_deg": 2.215202,
+      "horizon_mean_deg": -0.372568,
+      "mean_gap_fraction": 0.0,
+      "mean_native_coverage": 0.092819,
+      "parameters": {
+        "azimuth_step_deg": 1.0,
+        "radial_step_m": 10.0,
+        "max_radius_m": 2000.0,
+        "observer_height_m": 2.0,
+        "gap_tolerance": 0.02,
+        "coverage_tolerance": 0.05
+      },
+      "notes": [
+        "Aday bölge: Connecting ridge (LRO/LOLA bölgesel DEM (LDEM, 5 m/piksel))."
+      ]
+    },
+    {
+      "site_id": "Site01",
+      "x_m": -11000.0,
+      "y_m": -12000.0,
+      "lon_deg_east": -137.489553,
+      "lat_deg": -89.463163,
+      "quality_flag": "valid",
+      "azimuth_count": 360,
+      "horizon_min_deg": -4.615128,
+      "horizon_max_deg": 2.215202,
+      "horizon_mean_deg": -0.372568,
+      "mean_gap_fraction": 0.0,
+      "mean_native_coverage": 0.102507,
+      "parameters": {
+        "azimuth_step_deg": 1.0,
+        "radial_step_m": 10.0,
+        "max_radius_m": 4000.0,
+        "observer_height_m": 2.0,
+        "gap_tolerance": 0.02,
+        "coverage_tolerance": 0.05
+      },
+      "notes": [
+        "Aday bölge: Connecting ridge (LRO/LOLA bölgesel DEM (LDEM, 5 m/piksel))."
+      ]
+    }
+  ],
+  "radius_comparison": {
+    "radii_m": [
+      2000.0,
+      4000.0
+    ],
+    "profiles": [
+      {
+        "site_id": "",
+        "x_m": -11000.0,
+        "y_m": -12000.0,
+        "lon_deg_east": -137.489553,
+        "lat_deg": -89.463163,
+        "quality_flag": "valid",
+        "azimuth_count": 360,
+        "horizon_min_deg": -4.615128,
+        "horizon_max_deg": 2.215202,
+        "horizon_mean_deg": -0.372568,
+        "mean_gap_fraction": 0.0,
+        "mean_native_coverage": 0.092819,
+        "parameters": {
+          "azimuth_step_deg": 1.0,
+          "radial_step_m": 10.0,
+          "max_radius_m": 2000.0,
+          "observer_height_m": 2.0,
+          "gap_tolerance": 0.02,
+          "coverage_tolerance": 0.05
+        },
+        "notes": []
+      },
+      {
+        "site_id": "",
+        "x_m": -11000.0,
+        "y_m": -12000.0,
+        "lon_deg_east": -137.489553,
+        "lat_deg": -89.463163,
+        "quality_flag": "valid",
+        "azimuth_count": 360,
+        "horizon_min_deg": -4.615128,
+        "horizon_max_deg": 2.215202,
+        "horizon_mean_deg": -0.372568,
+        "mean_gap_fraction": 0.0,
+        "mean_native_coverage": 0.102507,
+        "parameters": {
+          "azimuth_step_deg": 1.0,
+          "radial_step_m": 10.0,
+          "max_radius_m": 4000.0,
+          "observer_height_m": 2.0,
+          "gap_tolerance": 0.02,
+          "coverage_tolerance": 0.05
+        },
+        "notes": []
+      }
+    ],
+    "max_horizon_delta_deg": 0.0
+  },
+  "generated_utc": "2026-11-14T09:19:13+00:00"
+}

@@ -1,0 +1,38 @@
+{
+  "sun": [
+    {
+      "body": "sun",
+      "state": "visible",
+      "start_utc": "2026-11-14T00:00:00+00:00",
+      "end_utc": "2026-11-21T00:00:00+00:00",
+      "duration_hours": 168.0,
+      "start_refined": false,
+      "end_refined": false,
+      "reason": "clear"
+    }
+  ],
+  "earth": [
+    {
+      "body": "earth",
+      "state": "blocked",
+      "start_utc": "2026-11-14T00:00:00+00:00",
+      "end_utc": "2026-11-21T00:00:00+00:00",
+      "duration_hours": 168.0,
+      "start_refined": false,
+      "end_refined": false,
+      "reason": "occluded"
+    }
+  ],
+  "joint": [
+    {
+      "body": "joint",
+      "state": "blocked",
+      "start_utc": "2026-11-14T00:00:00+00:00",
+      "end_utc": "2026-11-21T00:00:00+00:00",
+      "duration_hours": 168.0,
+      "start_refined": false,
+      "end_refined": false,
+      "reason": "occluded"
+    }
+  ]
+}
