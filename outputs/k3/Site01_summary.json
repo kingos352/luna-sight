@@ -1,83 +1,71 @@
 {
   "site_id": "Site01",
-  "latitude_deg": -89.463163,
-  "longitude_deg_east": -137.489553,
-  "synthetic_test_fixture": true,
-  "site": {
-    "site_id": "Site01",
+  "coordinate": {
     "latitude_deg": -89.463163,
     "longitude_deg_east": -137.489553
   },
+  "profile": "outputs\\k2\\Site01_horizon_4000m.csv",
+  "profile_summary": {
+    "points": 360,
+    "valid_points": 360,
+    "valid_fraction": 1.0,
+    "horizon_min_deg": -4.6151,
+    "horizon_max_deg": 2.2152
+  },
   "config": {
-    "start_utc": "2026-11-14T00:00:00Z",
-    "hours": 168.0,
-    "step_minutes": 5.0,
     "margin_deg": 0.1,
     "refine_boundaries": true,
     "quality_flag_missing": "missing"
   },
   "series": {
-    "samples": 2016,
+    "source": "data/cache/ephemeris_Site01_20261114T0000_168h.csv",
+    "synthetic_test_fixture": false,
+    "samples": 2017,
     "start_utc": "2026-11-14T00:00:00+00:00",
-    "end_utc": "2026-11-20T23:55:00+00:00",
-    "quality_flags": [
-      "test_fixture"
-    ],
-    "source_ids": [
-      "synthetic-scenario"
-    ]
-  },
-  "table": {
-    "samples": 2016,
-    "step_minutes": 5.0,
-    "total_hours": 167.916667,
-    "visible_hours": 25.416667,
-    "blocked_hours": 139.5,
-    "uncertain_hours": 3.0,
-    "visible_fraction": 0.151365,
-    "visible_window_count": 1,
-    "longest_visible_hours": 25.416667,
-    "margin_deg": 0.1
+    "end_utc": "2026-11-21T00:00:00+00:00",
+    "span_hours": 168.0,
+    "quality_flag": "valid"
   },
   "bodies": {
     "sun": {
-      "body": "sun",
-      "total_hours": 167.9167,
-      "visible_hours": 48.1784,
-      "visible_fraction": 0.286919,
-      "blocked_hours": 116.4357,
-      "blocked_fraction": 0.693414,
-      "uncertain_hours": 3.3026,
-      "uncertain_fraction": 0.019668,
-      "window_count": 5,
-      "longest_visible_hours": 48.1784,
-      "refined_boundaries": 5
+      "window_count": 1,
+      "total_hours": 168.0,
+      "state_hours": {
+        "visible": 168.0,
+        "blocked": 0.0,
+        "uncertain": 0.0
+      },
+      "visible_fraction": 1.0,
+      "longest_visible_hours": 168.0,
+      "longest_visible_start_utc": "2026-11-14T00:00:00+00:00",
+      "refined_boundaries": 0
     },
     "earth": {
-      "body": "earth",
-      "total_hours": 167.9167,
-      "visible_hours": 60.6313,
-      "visible_fraction": 0.36108,
-      "blocked_hours": 104.4662,
-      "blocked_fraction": 0.622131,
-      "uncertain_hours": 2.8191,
-      "uncertain_fraction": 0.016789,
-      "window_count": 5,
-      "longest_visible_hours": 60.6313,
-      "refined_boundaries": 5
+      "window_count": 3,
+      "total_hours": 168.0,
+      "state_hours": {
+        "visible": 53.6848,
+        "blocked": 110.8729,
+        "uncertain": 3.4424
+      },
+      "visible_fraction": 0.319552,
+      "longest_visible_hours": 53.6848,
+      "longest_visible_start_utc": "2026-11-18T18:18:54.871009+00:00",
+      "refined_boundaries": 3
     },
     "joint": {
-      "body": "joint",
-      "total_hours": 167.9167,
-      "visible_hours": 25.3884,
-      "visible_fraction": 0.151196,
-      "blocked_hours": 139.549,
-      "blocked_fraction": 0.831061,
-      "uncertain_hours": 2.9792,
-      "uncertain_fraction": 0.017742,
-      "window_count": 5,
-      "longest_visible_hours": 25.3884,
-      "refined_boundaries": 5
+      "window_count": 3,
+      "total_hours": 168.0,
+      "state_hours": {
+        "visible": 53.6848,
+        "blocked": 110.8729,
+        "uncertain": 3.4424
+      },
+      "visible_fraction": 0.319552,
+      "longest_visible_hours": 53.6848,
+      "longest_visible_start_utc": "2026-11-18T18:18:54.871009+00:00",
+      "refined_boundaries": 3
     }
-  }
+  },
+  "generated_utc": "2026-11-14T12:23:24+00:00"
 }

@@ -2,53 +2,13 @@
   "sun": [
     {
       "body": "sun",
-      "state": "blocked",
-      "start_utc": "2026-11-14T00:00:00+00:00",
-      "end_utc": "2026-11-18T03:44:53.239138+00:00",
-      "duration_hours": 99.7481,
-      "start_refined": false,
-      "end_refined": true,
-      "reason": "occluded"
-    },
-    {
-      "body": "sun",
-      "state": "uncertain",
-      "start_utc": "2026-11-18T03:44:53.239138+00:00",
-      "end_utc": "2026-11-18T06:06:53.132471+00:00",
-      "duration_hours": 2.3666,
-      "start_refined": true,
-      "end_refined": true,
-      "reason": "transition_band"
-    },
-    {
-      "body": "sun",
       "state": "visible",
-      "start_utc": "2026-11-18T06:06:53.132471+00:00",
-      "end_utc": "2026-11-20T06:17:35.270128+00:00",
-      "duration_hours": 48.1784,
-      "start_refined": true,
-      "end_refined": true,
-      "reason": "clear"
-    },
-    {
-      "body": "sun",
-      "state": "uncertain",
-      "start_utc": "2026-11-20T06:17:35.270128+00:00",
-      "end_utc": "2026-11-20T07:13:44.703975+00:00",
-      "duration_hours": 0.936,
-      "start_refined": true,
-      "end_refined": true,
-      "reason": "transition_band"
-    },
-    {
-      "body": "sun",
-      "state": "blocked",
-      "start_utc": "2026-11-20T07:13:44.703975+00:00",
-      "end_utc": "2026-11-20T23:55:00+00:00",
-      "duration_hours": 16.6876,
-      "start_refined": true,
+      "start_utc": "2026-11-14T00:00:00+00:00",
+      "end_utc": "2026-11-21T00:00:00+00:00",
+      "duration_hours": 168.0,
+      "start_refined": false,
       "end_refined": false,
-      "reason": "occluded"
+      "reason": "clear"
     }
   ],
   "earth": [
@@ -56,8 +16,8 @@
       "body": "earth",
       "state": "blocked",
       "start_utc": "2026-11-14T00:00:00+00:00",
-      "end_utc": "2026-11-16T16:39:55.125226+00:00",
-      "duration_hours": 64.6653,
+      "end_utc": "2026-11-18T14:52:22.352833+00:00",
+      "duration_hours": 110.8729,
       "start_refined": false,
       "end_refined": true,
       "reason": "occluded"
@@ -65,9 +25,9 @@
     {
       "body": "earth",
       "state": "uncertain",
-      "start_utc": "2026-11-16T16:39:55.125226+00:00",
-      "end_utc": "2026-11-16T18:52:18.570214+00:00",
-      "duration_hours": 2.2065,
+      "start_utc": "2026-11-18T14:52:22.352833+00:00",
+      "end_utc": "2026-11-18T18:18:54.871009+00:00",
+      "duration_hours": 3.4424,
       "start_refined": true,
       "end_refined": true,
       "reason": "transition_band"
@@ -75,32 +35,12 @@
     {
       "body": "earth",
       "state": "visible",
-      "start_utc": "2026-11-16T18:52:18.570214+00:00",
-      "end_utc": "2026-11-19T07:30:11.369534+00:00",
-      "duration_hours": 60.6313,
-      "start_refined": true,
-      "end_refined": true,
-      "reason": "clear"
-    },
-    {
-      "body": "earth",
-      "state": "uncertain",
-      "start_utc": "2026-11-19T07:30:11.369534+00:00",
-      "end_utc": "2026-11-19T08:06:56.673657+00:00",
-      "duration_hours": 0.6126,
-      "start_refined": true,
-      "end_refined": true,
-      "reason": "transition_band"
-    },
-    {
-      "body": "earth",
-      "state": "blocked",
-      "start_utc": "2026-11-19T08:06:56.673657+00:00",
-      "end_utc": "2026-11-20T23:55:00+00:00",
-      "duration_hours": 39.8009,
+      "start_utc": "2026-11-18T18:18:54.871009+00:00",
+      "end_utc": "2026-11-21T00:00:00+00:00",
+      "duration_hours": 53.6848,
       "start_refined": true,
       "end_refined": false,
-      "reason": "occluded"
+      "reason": "clear"
     }
   ],
   "joint": [
@@ -108,8 +48,8 @@
       "body": "joint",
       "state": "blocked",
       "start_utc": "2026-11-14T00:00:00+00:00",
-      "end_utc": "2026-11-18T03:44:53.239138+00:00",
-      "duration_hours": 99.7481,
+      "end_utc": "2026-11-18T14:52:22.352833+00:00",
+      "duration_hours": 110.8729,
       "start_refined": false,
       "end_refined": true,
       "reason": "occluded"
@@ -117,9 +57,9 @@
     {
       "body": "joint",
       "state": "uncertain",
-      "start_utc": "2026-11-18T03:44:53.239138+00:00",
-      "end_utc": "2026-11-18T06:06:53.132471+00:00",
-      "duration_hours": 2.3666,
+      "start_utc": "2026-11-18T14:52:22.352833+00:00",
+      "end_utc": "2026-11-18T18:18:54.871009+00:00",
+      "duration_hours": 3.4424,
       "start_refined": true,
       "end_refined": true,
       "reason": "transition_band"
@@ -127,32 +67,12 @@
     {
       "body": "joint",
       "state": "visible",
-      "start_utc": "2026-11-18T06:06:53.132471+00:00",
-      "end_utc": "2026-11-19T07:30:11.369534+00:00",
-      "duration_hours": 25.3884,
-      "start_refined": true,
-      "end_refined": true,
-      "reason": "clear"
-    },
-    {
-      "body": "joint",
-      "state": "uncertain",
-      "start_utc": "2026-11-19T07:30:11.369534+00:00",
-      "end_utc": "2026-11-19T08:06:56.673657+00:00",
-      "duration_hours": 0.6126,
-      "start_refined": true,
-      "end_refined": true,
-      "reason": "transition_band"
-    },
-    {
-      "body": "joint",
-      "state": "blocked",
-      "start_utc": "2026-11-19T08:06:56.673657+00:00",
-      "end_utc": "2026-11-20T23:55:00+00:00",
-      "duration_hours": 39.8009,
+      "start_utc": "2026-11-18T18:18:54.871009+00:00",
+      "end_utc": "2026-11-21T00:00:00+00:00",
+      "duration_hours": 53.6848,
       "start_refined": true,
       "end_refined": false,
-      "reason": "occluded"
+      "reason": "clear"
     }
   ]
 }

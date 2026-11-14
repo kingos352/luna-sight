@@ -8,6 +8,13 @@ Bu belge, Güneş/Dünya geometrisini K2 ufuk profiliyle birleştiren görünür
 motorunu, durum modelini, geçiş sınırı inceltmesini, doğrulama kanıtını ve
 bilimsel sınırları kaydeder.
 
+> **Güncel çıktılar gerçek veriyle üretildi.** `outputs/k3/` altındaki
+> dosyalar artık sentetik senaryo değil, JPL Horizons efemerisi
+> (`jpl-horizons`, DE441, `quality_flag=valid`) kullanıyor. Bu belgedeki
+> sayısal sonuçlar sentetik koşudan kalmıştır; güncel sonuçlar ve A/B
+> karşılaştırması `docs/REAL_RUN.md` içindedir. Motor kodu ve yöntem
+> açıklamaları geçerliliğini korur.
+
 ## 0. Bu dal neyi birleştirir
 
 Repoda iki ayrı K3 uygulaması gelişmişti. `k3/visibility-merged` bunları tek
