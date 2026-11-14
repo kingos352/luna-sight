@@ -1,0 +1,30 @@
+# LUNA SIGHT - ortak çalışma zamanı bağımlılıkları
+#
+# Python 3.12 (bkz. .python-version). numpy, rasterio ve pyproj 3.12+ ister.
+# Sürümler 2026-11-14'te Windows 11 + CPython 3.12 üzerinde kurulup doğrulandı.
+# Windows, Linux ve macOS için cp312 ya da py3-none-any tekerlekleri mevcut;
+# kaynaktan derleme ve sistem GDAL kurulumu gerekmez.
+#
+# Rol başına ayrı dosya yoktur: her ekip üyesi bu dosyayı kurar.
+# Doğrudan bağımlılıklar sabitlenmiştir; alt bağımlılıklar pip tarafından çözülür.
+
+# Ortak sayısal çekirdek (K2, K3, K4)
+numpy==2.5.4
+pandas==3.1.1
+
+# K1 - JPL Horizons HTTP sorguları
+requests==2.34.2
+
+# K2 - LRO/LOLA DEM okuma, raster hesapları, koordinat dönüşümü
+rasterio==1.5.2
+pyproj==3.8.0
+
+# K4 - Streamlit uygulaması ve grafikler
+streamlit==1.67.0
+plotly==7.1.0
+
+# İhtiyaç doğduğunda açılacak adaylar.
+# Açmadan önce docs/DECISIONS.md içine karar satırı ekleyin.
+# scipy          # K3: yalnızca seçilen sayısal yöntem gerektiriyorsa
+# astropy        # K1: yalnızca zaman veya koordinat dönüşümü gerekiyorsa
+# astroquery     # K1: Horizons'a requests yerine astroquery ile gidilirse
