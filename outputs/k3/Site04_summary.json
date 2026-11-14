@@ -1,12 +1,12 @@
 {
   "site_id": "Site04",
   "latitude_deg": -89.766811,
-  "longitude_deg_east": 188.130102,
+  "longitude_deg_east": -171.869898,
   "synthetic_test_fixture": true,
   "site": {
     "site_id": "Site04",
     "latitude_deg": -89.766811,
-    "longitude_deg_east": 188.130102
+    "longitude_deg_east": -171.869898
   },
   "config": {
     "start_utc": "2026-11-14T00:00:00Z",
