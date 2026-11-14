@@ -347,6 +347,9 @@ def compute_lunar_elevation(
     teraslı karmaşık kraterler), Güney Kutbu-Aitken (SPA) havzasını, Malapert Masifi
     ve Bağlantı Sırtı (Connecting Ridge) gibi resmi Artemis iniş adaylarını kapsar.
     
+    Not: Bu bir **temsili matematiksel modeldir** (gerçek LRO/LOLA DEM verisi değil).
+    Gerçek LOLA DEM GeoTIFF sağlandığında doğrudan o veri kullanılır.
+    
     Parametreler:
         lat_deg: Enlem derecesi [-90.0, +90.0]
         lon_deg: Doğu-pozitif boylam derecesi [-180.0, +180.0]
@@ -381,7 +384,7 @@ def compute_lunar_elevation(
     dist_spa = np.arccos(np.clip(cos_spa, -1.0, 1.0))
     elev += -5.5 * np.exp(-((dist_spa / math.radians(28.0)) ** 2))
     
-    # 2. Doğrulanmış IAU Kraterleri - gelişmiş morfoloji
+    # 2. Doğrulanmış IAU Kraterleri - keskin çanak profilleri
     for crater in IAU_CRATERS:
         c_phi = math.radians(crater["lat_deg"])
         c_th = math.radians(crater["lon_deg"])
@@ -397,43 +400,53 @@ def compute_lunar_elevation(
         rim = crater["rim_km"]
         
         if not crater["is_complex"]:
-            # Basit çanak krater (Shackleton): parabolik iç duvar ve taban
+            # Basit çanak krater (Shackleton): keskin parabolik çanak
+            # Rim çok keskin: u=1.05'te tamamen sıfırlanır
             in_c = u < 1.0
+            # Çanak derinliği: u=0 taban, u=1 kenar
             elev[in_c] += -depth + (depth + rim) * (u[in_c] ** 2)
+            # Keskin rim: u=1..1.05'te hızla sıfıra düşer
+            sharp_rim = (u >= 1.0) & (u < 1.05)
+            rim_falloff = 1.0 - ((u[sharp_rim] - 1.0) / 0.05)
+            elev[sharp_rim] += rim * rim_falloff
         else:
-            # Karmaşık krater: düz taban + Hermite S-eğrisi dik iç duvar + merkezi tepe
-            floor = u < 0.45
-            wall = (u >= 0.45) & (u < 1.0)
-            rim_zone = (u >= 1.0) & (u < 1.15)
+            # Karmaşık krater: düz taban + dik iç duvar + keskin rim
+            floor = u < 0.4
+            wall = (u >= 0.4) & (u < 1.0)
+            rim_zone = (u >= 1.0) & (u < 1.08)  # Daha dar, keskin rim
             
-            # Düz taban (hafif yamuk)
-            elev[floor] += -depth + 0.12 * depth * ((u[floor] / 0.45) ** 2)
+            # Düz taban - neredeyse tam düz
+            elev[floor] += -depth + 0.05 * depth * ((u[floor] / 0.4) ** 2)
             
-            # İç duvar - Hermite S-eğrisi (pürüzsüz geçiş)
-            t = (u[wall] - 0.45) / 0.55
-            s = 3.0 * (t**2) - 2.0 * (t**3)  # Smoothstep
-            elev[wall] += (-0.82 * depth) + (0.82 * depth + rim) * s
+            # İç duvar - lineer + keskin geçiş
+            t = (u[wall] - 0.4) / 0.6
+            s = t * t * (3.0 - 2.0 * t)  # Smoothstep
+            elev[wall] += (-0.9 * depth) + (0.9 * depth + rim) * s
             
-            # Kenar (rim) - hafif yamuk
-            elev[rim_zone] += rim * np.exp(-(((u[rim_zone] - 1.0) / 0.08) ** 2))
+            # Çok keskin rim (u=1.0..1.08)
+            rim_t = (u[rim_zone] - 1.0) / 0.08
+            rim_falloff = 1.0 - rim_t**2  # Kare düşüş - çok keskin
+            elev[rim_zone] += rim * rim_falloff
             
             # Merkezi tepe (büyük karmaşık kraterlerde)
             if crater["diameter_km"] > 60.0:
-                center_peak = u < 0.12
-                elev[center_peak] += 0.18 * depth * np.exp(-((u[center_peak] / 0.12) ** 2))
+                center_peak = u < 0.1
+                elev[center_peak] += 0.2 * depth * np.exp(-((u[center_peak] / 0.1) ** 2))
         
-        # Yükseltilmiş krater kenarı ve fırlatma örtüsü (ejecta blanket) - güç kanunu
-        out = (u >= 1.15) & (u < 3.0)
-        ejecta_thickness = rim * 1.5 * (1.15 / u[out])**3 * np.exp(-((u[out] - 1.15) / 0.5)**2)
-        elev[out] += ejecta_thickness
+        # Ejecta blanket - çok ince, krater kenarını bulandırmaz
+        out = (u >= 1.08) & (u < 2.0)
+        if np.any(out):
+            ejecta = rim * 0.3 * (1.08 / u[out])**2.5 * np.exp(-((u[out] - 1.08) / 0.3)**2)
+            elev[out] += ejecta
         
-        # Işınlı fırlatma malzemesi (Copernican kraterler için - Tycho vb)
+        # Işınlı fırlatma malzemesi (Copernican - sadece Tycho vb)
         if crater["age_category"] == "Copernican":
-            ray_zone = (u >= 3.0) & (u < 10.0)
-            ray_thickness = 0.08 * rim * (3.0 / u[ray_zone])**2.5
-            elev[ray_zone] += ray_thickness
+            ray_zone = (u >= 2.0) & (u < 5.0)
+            if np.any(ray_zone):
+                ray_thickness = 0.04 * rim * (2.0 / u[ray_zone])**3
+                elev[ray_zone] += ray_thickness
     
-    # 3. Malapert Masifi Dağ Sırtı (-86.0° G, 0.0° D) - Artemis III aday bölgesi
+    # 3. Malapert Masifi Dağ Sırtı (-86.0° G, 0.0° D)
     m_lat = math.radians(-86.0)
     m_lon = math.radians(0.0)
     dist_m = (
@@ -447,9 +460,9 @@ def compute_lunar_elevation(
         )
         * R_MOON_KM
     )
-    elev += 4.8 * np.exp(-((dist_m / 28.0) ** 2))
+    elev += 4.8 * np.exp(-((dist_m / 30.0) ** 2))
     
-    # 4. Bağlantı Sırtı (Connecting Ridge / Site01: -89.463163° G, -137.489553° D)
+    # 4. Bağlantı Sırtı (Connecting Ridge / Site01)
     cr_lat = math.radians(-89.463163)
     cr_lon = math.radians(-137.489553)
     dist_cr = (
@@ -463,38 +476,12 @@ def compute_lunar_elevation(
         )
         * R_MOON_KM
     )
-    elev += 2.5 * np.exp(-((dist_cr / 16.0) ** 2))
+    elev += 2.5 * np.exp(-((dist_cr / 18.0) ** 2))
     
-    # 5. Shackleton krater kenarı (Site04: -89.766811° G, -171.869898° D)
-    sh_lat = math.radians(-89.766811)
-    sh_lon = math.radians(-171.869898)
-    dist_sh = (
-        np.arccos(
-            np.clip(
-                np.sin(lat) * math.sin(sh_lat)
-                + np.cos(lat) * np.cos(sh_lat) * np.cos(lon - sh_lon),
-                -1.0,
-                1.0,
-            )
-        )
-        * R_MOON_KM
-    )
-    elev += 1.8 * np.exp(-((dist_sh / 8.0) ** 2))
+    # 5. Shackleton krater kenarı (Site04) - zaten IAU kraterler içinde
+    # Ekstra vurgulama gerekmez
     
-    # 6. Kuzeybatı Ay denizleri (Oceanus Procellarum / Imbrium) - düşük albedo mare bazalt
-    mare_lat = math.radians(20.0)
-    mare_lon = math.radians(-30.0)
-    dist_mare = np.arccos(
-        np.clip(
-            np.sin(lat) * math.sin(mare_lat)
-            + np.cos(lat) * np.cos(mare_lat) * np.cos(lon - mare_lon),
-            -1.0,
-            1.0,
-        )
-    )
-    elev += -2.8 * np.exp(-((dist_mare / math.radians(48.0)) ** 2))
-    
-    # 7. Orientale Havzası (güneybatı limb) - çok halikalı çarpma havzası
+    # 5. Orientale Havzası (güneybatı limb) - çok halikalı çarpma havzası
     or_lat = math.radians(-19.0)
     or_lon = math.radians(-95.0)
     dist_or = np.arccos(
@@ -508,12 +495,13 @@ def compute_lunar_elevation(
     elev += -1.5 * np.exp(-((dist_or / math.radians(25.0)) ** 2))
     elev += 1.2 * np.exp(-((dist_or / math.radians(12.0)) ** 2))  # İç halka (Inner Rook Mountains)
     
-    # 8. Fraktal regolith pürüzlülüğü - çoklu oktav Perlin-benzeri gürültü
-    # Bu, LRO/LOLA verisindeki ~100m-1km ölçekli yüzey dokusunu taklit eder
-    elev += 0.45 * np.sin(16 * lat) * np.cos(16 * lon)
-    elev += 0.22 * np.sin(32 * lat + 0.4) * np.cos(32 * lon - 0.4)
-    elev += 0.11 * np.sin(64 * lat) * np.cos(64 * lon)
-    elev += 0.05 * np.sin(128 * lat - 0.2) * np.cos(128 * lon + 0.3)
+    # 6. Hafif yüzey pürüzlülüğü - ÇOK DÜŞÜK GENLİK, kraterleri bulandırmaz
+    # Sadece çok küçük ölçekli (~1-5 km) doku
+    micro_roughness = (
+        0.02 * np.sin(120 * lat) * np.cos(120 * lon) +
+        0.01 * np.sin(240 * lat + 0.4) * np.cos(240 * lon - 0.4)
+    )
+    elev += micro_roughness
     
     # Skaler giriş ise skaler döndür
     if scalar_input:
