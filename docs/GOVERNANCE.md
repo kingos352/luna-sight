@@ -189,7 +189,14 @@ yeniden çözülür.
 
 Çıkış kodu 0 = sözleşme korunuyor. Kural kodları: `PY-01/02` sürüm,
 `ENC-01` kodlama, `DEP-01…04` kurulum dosyaları, `ADR-01/02` karar kaydı,
-`ID-01/02` kimlik sözlüğü, `GEO-01` boylam aralığı, `OUT-01/02` çıktı şeması.
+`ID-01/02` kimlik sözlüğü, `GEO-01` kaynak kodda boylam aralığı,
+`GEO-02` çıktı JSON'larında boylam aralığı, `OUT-01/02` çıktı şeması,
+`OUT-03` bozuk JSON.
+
+`GEO-01` yalnızca `.py` dosyalarını tarar. Boylam üretilmiş özet
+dosyalarına da yazılır; kaynak kod düzeltilip çıktı yeniden üretilmezse
+tutarsızlık görünmez kalır. `GEO-02` bu boşluğu kapatır ve `outputs/**/*.json`
+içindeki `lon_deg_east` / `longitude_deg_east` değerlerini doğrular.
 
 Denetleyici standart kütüphaneyle çalışır; bağımlılık kurulmadan da koşar.
 Kurulum dosyası bulunmayan bir dalda ilgili kurallar atlanır, böylece boş

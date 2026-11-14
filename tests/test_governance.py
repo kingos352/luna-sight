@@ -158,3 +158,41 @@ def test_non_json_parameters_is_warning_only(repo: Path) -> None:
         ",".join(header) + "\n" + ",".join(row) + "\n", encoding="utf-8"
     )
     assert run(repo) == 0
+
+
+def test_output_json_longitude_out_of_range_fails(repo: Path) -> None:
+    """GEO-01 yalnızca kaynak kodu tarar; üretilmiş özet de kanonik olmalı."""
+    outputs = repo / "outputs" / "k2"
+    outputs.mkdir(parents=True)
+    (outputs / "Site01_summary_20000m.json").write_text(
+        json.dumps({"site_id": "Site01", "lon_deg_east": 222.510447, "lat_deg": -89.46}),
+        encoding="utf-8",
+    )
+    assert run(repo) == 1
+
+
+def test_output_json_longitude_in_range_passes(repo: Path) -> None:
+    outputs = repo / "outputs" / "k2"
+    outputs.mkdir(parents=True)
+    (outputs / "Site01_summary.json").write_text(
+        json.dumps({"site_id": "Site01", "lon_deg_east": -137.489553, "lat_deg": -89.46}),
+        encoding="utf-8",
+    )
+    assert run(repo) == 0
+
+
+def test_output_json_longitude_nested_in_list_is_found(repo: Path) -> None:
+    outputs = repo / "outputs" / "k3"
+    outputs.mkdir(parents=True)
+    (outputs / "windows.json").write_text(
+        json.dumps({"sites": [{"id": "a", "longitude_deg_east": 188.130102}]}),
+        encoding="utf-8",
+    )
+    assert run(repo) == 1
+
+
+def test_malformed_output_json_fails(repo: Path) -> None:
+    outputs = repo / "outputs" / "k3"
+    outputs.mkdir(parents=True)
+    (outputs / "broken.json").write_text("{not json", encoding="utf-8")
+    assert run(repo) == 1
