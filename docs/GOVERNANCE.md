@@ -194,3 +194,32 @@ yeniden çözülür.
 Denetleyici standart kütüphaneyle çalışır; bağımlılık kurulmadan da koşar.
 Kurulum dosyası bulunmayan bir dalda ilgili kurallar atlanır, böylece boş
 `main` üzerinde de geçer.
+
+## 10. Dal koruması
+
+Kapının bağlayıcı olması, iş akışının koşmasına değil **zorunlu kontrol**
+listesine bağlıdır. Koşan ama zorunlu olmayan bir kontrol, kırmızıyken
+birleşmeyi engellemez; yalnızca kırmızı bir ikon gösterir.
+
+`main` üzerinde zorunlu dört kontrol (ADR-500):
+
+| Kontrol | Ne doğrular |
+|---|---|
+| `structure` | Zorunlu işbirliği dosyaları, gizli dosya ve 20 MB üstü dosya taraması |
+| `Kanonik sözleşme` | Bu belgedeki kurallar (`scripts/check_governance.py`) |
+| `ubuntu-latest / Python 3.12` | `pip check`, `ruff`, `pytest`, kapsam — Linux |
+| `windows-latest / Python 3.12` | Aynı adımlar — Windows |
+
+Diğer ayarlar:
+
+- `strict: true` — dal `main` ile güncel değilse birleşmez. Bu yüzden
+  birleştirme treninde her vagon sırası gelince `git merge origin/main` yapar.
+- 1 onay + CODEOWNERS incelemesi zorunlu, eski onaylar yeni push'ta düşer.
+- `allow_force_pushes: false`, `allow_deletions: false`.
+- `enforce_admins: false` — entegrasyon otoritesi kendi PR'ını onaylayamadığı
+  için birleştirme yönetici atlamasıyla yapılır. Atlama **kontrolleri
+  atlamak değildir**: dört kontrol yeşil olmadan hiçbir dal birleştirilmez,
+  bu kural otorite için de geçerlidir.
+
+Zorunlu kontrol listesi değişirse bu bölüm ve `docs/DECISIONS.md` aynı PR'da
+güncellenir.
