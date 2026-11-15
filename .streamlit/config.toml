@@ -14,3 +14,7 @@ gatherUsageStats = false
 
 [server]
 headless = true
+# `static/` klasörünü /app/static/ altında sunar. 3B Ay küresi (Moon Trek
+# dokuları + LOLA bump/normal haritaları) buradan yüklenir; ayrı bir sunucu
+# süreci gerekmez, tek `streamlit run` komutu yeterlidir.
+enableStaticServing = true
