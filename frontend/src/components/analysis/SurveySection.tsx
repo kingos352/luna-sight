@@ -16,25 +16,25 @@ export const SurveySection: React.FC = () => {
   const patch = sceneData?.proposed_survey_patch;
 
   return (
-    <div className="bg-space-950 rounded-lg border border-slate-800 p-3 select-none flex flex-col gap-3">
+    <div className="bg-gmat-bg rounded-lg border border-gmat-border p-3 select-none flex flex-col gap-2.5">
       {/* Başlık ve Durum */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <Sparkles className="w-4 h-4 text-amber-400" />
-          <span className="text-xs font-bold text-slate-100">
+          <Sparkles className="w-4 h-4 text-gmat-amber" />
+          <span className="text-xs font-bold text-gmat-text">
             Ölçüm Planla — Ayırt Edici Akış
           </span>
         </div>
         <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold ${
-          isCaseActive ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'bg-space-900 text-slate-400 border border-slate-800'
+          isCaseActive ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40' : 'bg-gmat-elevated text-gmat-textMuted border border-gmat-border'
         }`}>
           {isCaseActive ? 'Vaka Açık' : 'Hazır'}
         </span>
       </div>
 
       {!isCaseActive ? (
-        <div className="bg-space-900/60 rounded p-3 border border-slate-800/80 text-xs text-slate-300 flex flex-col gap-2">
-          <p className="text-[11px] text-slate-400 leading-relaxed">
+        <div className="bg-gmat-elevated/70 rounded p-3 border border-gmat-border text-xs text-gmat-text flex flex-col gap-2">
+          <p className="text-[11px] text-gmat-textMuted leading-relaxed">
             Connecting Ridge sahasında 18–19 Kasım 2026 UTC 12 saatlik operasyonel penceresinde,
             yerel topoğrafik belirsizliğin karar sınıfını nasıl değiştirdiğini kanıtlayan doğrulanmış vaka.
           </p>
@@ -49,30 +49,30 @@ export const SurveySection: React.FC = () => {
       ) : (
         <div className="flex flex-col gap-3">
           {/* Vaka Özet Kartı */}
-          <div className="bg-space-900 p-2.5 rounded border border-slate-800 text-[11px] font-mono space-y-1">
-            <div className="flex justify-between text-slate-400 border-b border-slate-800/80 pb-1 mb-1">
+          <div className="bg-gmat-elevated p-2.5 rounded border border-gmat-border text-[11px] font-mono space-y-1">
+            <div className="flex justify-between text-gmat-textMuted border-b border-gmat-border pb-1 mb-1">
               <span>Operasyon Penceresi:</span>
-              <span className="text-slate-200 font-bold">18 Kas 16:55 → 19 Kas 04:55 UTC (12 sa)</span>
+              <span className="text-gmat-text font-bold">18 Kas 16:55 → 19 Kas 04:55 UTC (12 sa)</span>
             </div>
-            <div className="flex justify-between text-slate-400">
+            <div className="flex justify-between text-gmat-textMuted">
               <span>Tetikleyici An:</span>
               <span className="text-amber-300 font-bold">18 Kasım 2026 16:55 UTC</span>
             </div>
-            <div className="flex justify-between text-slate-400">
+            <div className="flex justify-between text-gmat-textMuted">
               <span>Dünya Azimut / İrtifa:</span>
-              <span className="text-slate-200">130.730898° / +1.074733°</span>
+              <span className="text-gmat-text">130.730898° / +1.074733°</span>
             </div>
-            <div className="flex justify-between text-slate-400">
+            <div className="flex justify-between text-gmat-textMuted">
               <span>Modelleme Bandı Eşiği:</span>
-              <span className="text-slate-200">±0.100000° (Geçiş Eşiği)</span>
+              <span className="text-gmat-text">±0.100000° (Geçiş Eşiği)</span>
             </div>
           </div>
 
           {/* Sanal Ölçüm Uygulama Anahtarı (Clone 1 Yaması) */}
-          <div className="bg-space-900 p-2.5 rounded border border-slate-800 flex items-center justify-between">
+          <div className="bg-gmat-elevated p-2.5 rounded border border-gmat-border flex items-center justify-between">
             <div>
-              <div className="text-xs font-semibold text-slate-200">Sanal Ölçümü Uygula</div>
-              <div className="text-[10px] text-slate-400 font-mono">
+              <div className="text-xs font-semibold text-gmat-text">Sanal Ölçümü Uygula</div>
+              <div className="text-[10px] text-gmat-textMuted font-mono">
                 {isVirtualPatchApplied ? 'Clone 1 Yaması Devrede (Kot Sabit)' : 'Nominal Deney Yüzeyi'}
               </div>
             </div>
@@ -81,7 +81,7 @@ export const SurveySection: React.FC = () => {
               className={`px-3 py-1.5 rounded text-xs font-bold transition-all ${
                 isVirtualPatchApplied
                   ? 'bg-amber-500 text-slate-950 shadow-md shadow-amber-950/40'
-                  : 'bg-space-800 text-slate-300 hover:bg-space-700 border border-slate-700'
+                  : 'bg-gmat-bg text-gmat-textMuted hover:text-gmat-text border border-gmat-border'
               }`}
             >
               {isVirtualPatchApplied ? 'Aktif (Clone 1)' : 'Pasif (Nominal)'}

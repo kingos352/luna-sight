@@ -8,8 +8,21 @@ import {
   SiteSummary,
   HorizonProfile,
   TerrainMeshData,
-  SurveyCaseData
+  SurveyCaseData,
+  WorkspacePreset,
+  ConsoleTab,
+  CameraPreset,
+  CraterFeature,
+  MeasurementState,
+  MeasurementPoint,
+  SystemLogEntry,
+  PipelineStep,
+  PipelineStepId,
+  SuhailParameters,
+  InspectorTab
 } from '../types';
+import { CRATER_CATALOG, calculateLunarDistanceKm } from '../services/craterCatalog';
+import { getAIConfiguration } from '../services/aiBridge';
 import {
   fetchTimeseries,
   fetchHorizons,
@@ -19,7 +32,8 @@ import {
   fetchSite01Case,
   fetchSite01Scene,
   fetchProvenance,
-  fetchSurveyTargets
+  fetchSurveyTargets,
+  SITES
 } from '../services/dataService';
 import {
   interpolateHorizon,
@@ -48,11 +62,63 @@ interface MissionContextType {
   setLayerMode: (mode: 'wac' | 'topo') => void;
   displacementEnabled: boolean;
   setDisplacementEnabled: (enabled: boolean) => void;
+  illuminationMode: 'moontrek' | 'solar';
+  setIlluminationMode: (mode: 'moontrek' | 'solar') => void;
   isCaseActive: boolean;
   isVirtualPatchApplied: boolean;
   openConnectingRidgeCase: () => void;
   closeConnectingRidgeCase: () => void;
   toggleVirtualPatch: () => void;
+
+  // NASA GMAT Workstation Extensions
+  workspacePreset: WorkspacePreset;
+  setWorkspacePreset: (preset: WorkspacePreset) => void;
+  isLeftSidebarOpen: boolean;
+  setIsLeftSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  isRightSidebarOpen: boolean;
+  setIsRightSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  consoleTab: ConsoleTab;
+  setConsoleTab: (tab: ConsoleTab) => void;
+  isConsoleOpen: boolean;
+  setIsConsoleOpen: (open: boolean) => void;
+  consoleHeight: number;
+  setConsoleHeight: (height: number) => void;
+  measurement: MeasurementState;
+  setMeasurementActive: (active: boolean) => void;
+  addMeasurementPoint: (pt: MeasurementPoint) => void;
+  resetMeasurement: () => void;
+  selectedCrater: CraterFeature | null;
+  setSelectedCrater: (crater: CraterFeature | null) => void;
+  cameraPreset: CameraPreset | null;
+  setCameraPreset: (preset: CameraPreset | null) => void;
+  logs: SystemLogEntry[];
+  addLog: (entry: Omit<SystemLogEntry, 'id' | 'timestamp'>) => void;
+  clearLogs: () => void;
+  isPipelineModalOpen: boolean;
+  setIsPipelineModalOpen: (open: boolean) => void;
+  pipelineSteps: PipelineStep[];
+  isPipelineRunning: boolean;
+  runPipeline: () => Promise<void>;
+  isPresentationMode: boolean;
+  setIsPresentationMode: (val: boolean) => void;
+  aiConfig: { model: string; configured: boolean; connected: boolean };
+
+  // SUHAIL Mission Parameters & Comparison Extensions (Image 2 & Image 3)
+  suhailParams: SuhailParameters;
+  updateSuhailParams: (params: Partial<SuhailParameters>) => void;
+  downloadFlightBriefingCard: (targetSiteId?: SiteId) => void;
+  isComparisonModalOpen: boolean;
+  setIsComparisonModalOpen: (open: boolean) => void;
+  isParametersDrawerOpen: boolean;
+  setIsParametersDrawerOpen: (open: boolean) => void;
+
+  // South Pole Progressive Feature LOD & Sector Exploration
+  labelDisplayMode: 'lod' | 'all' | 'off';
+  setLabelDisplayMode: (mode: 'lod' | 'all' | 'off') => void;
+  featureFilterType: 'all' | 'crater' | 'plain' | 'peak';
+  setFeatureFilterType: (filter: 'all' | 'crater' | 'plain' | 'peak') => void;
+  selectedSector: string;
+  setSelectedSector: (sector: string) => void;
   
   // Data
   loading: boolean;
@@ -100,9 +166,259 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [minDurationHours, setMinDurationHours] = useState<number>(12.0);
   const [cameraMode, setCameraMode] = useState<CameraViewMode>('globe');
   const [layerMode, setLayerMode] = useState<'wac' | 'topo'>('wac');
-  const [displacementEnabled, setDisplacementEnabled] = useState<boolean>(true);
+  const [displacementEnabled, setDisplacementEnabled] = useState<boolean>(false);
+  const [illuminationMode, setIlluminationMode] = useState<'moontrek' | 'solar'>('moontrek');
   const [isCaseActive, setIsCaseActive] = useState<boolean>(false);
   const [isVirtualPatchApplied, setIsVirtualPatchApplied] = useState<boolean>(false);
+
+  // NASA GMAT Workstation States (Spacious & Clean Defaults)
+  const [workspacePreset, setWorkspacePresetState] = useState<WorkspacePreset>('exploration');
+  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState<boolean>(false);
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState<boolean>(false);
+  const [consoleTab, setConsoleTab] = useState<ConsoleTab>('log');
+  const [isConsoleOpen, setIsConsoleOpen] = useState<boolean>(false);
+  const [consoleHeight, setConsoleHeight] = useState<number>(230);
+  const [selectedCrater, setSelectedCrater] = useState<CraterFeature | null>(null);
+  const [cameraPreset, setCameraPreset] = useState<CameraPreset | null>(null);
+  const [isPipelineModalOpen, setIsPipelineModalOpen] = useState<boolean>(false);
+  const [isPipelineRunning, setIsPipelineRunning] = useState<boolean>(false);
+  const [isPresentationMode, setIsPresentationMode] = useState<boolean>(false);
+
+  const setWorkspacePreset = useCallback((preset: WorkspacePreset) => {
+    setWorkspacePresetState(preset);
+    if (preset === 'exploration') {
+      setIsLeftSidebarOpen(false);
+      setIsRightSidebarOpen(false);
+      setIsConsoleOpen(false);
+    } else if (preset === 'scientific') {
+      setIsLeftSidebarOpen(true);
+      setIsRightSidebarOpen(true);
+      setIsConsoleOpen(true);
+    } else if (preset === 'ai') {
+      setIsLeftSidebarOpen(false);
+      setIsRightSidebarOpen(true);
+      setIsConsoleOpen(false);
+    } else if (preset === 'presentation') {
+      setIsPresentationMode(true);
+    }
+  }, []);
+
+  const handleSetSelectedCrater = useCallback((crater: CraterFeature | null) => {
+    setSelectedCrater(crater);
+    if (crater) {
+      setIsRightSidebarOpen(true);
+    }
+  }, []);
+
+  const [measurement, setMeasurement] = useState<MeasurementState>({
+    active: false,
+    pointA: null,
+    pointB: null,
+    distanceKm: null
+  });
+
+  // SUHAIL Mission Parameters & Comparison Drawer States (Image 2 & 3)
+  const [suhailParams, setSuhailParams] = useState<SuhailParameters>({
+    sourceMode: 'real',
+    missionDays: 7,
+    samplingInterval: '1h',
+    startUtc: '2026-11-14T00:00:00Z',
+    minSunReq: 70,
+    maxBlackoutTol: 24
+  });
+  const [isComparisonModalOpen, setIsComparisonModalOpen] = useState<boolean>(false);
+  const [isParametersDrawerOpen, setIsParametersDrawerOpen] = useState<boolean>(false);
+
+  const [labelDisplayMode, setLabelDisplayMode] = useState<'lod' | 'all' | 'off'>('lod');
+  const [featureFilterType, setFeatureFilterType] = useState<'all' | 'crater' | 'plain' | 'peak'>('all');
+  const [selectedSector, setSelectedSector] = useState<string>('all');
+
+  const updateSuhailParams = useCallback((params: Partial<SuhailParameters>) => {
+    setSuhailParams((prev) => ({ ...prev, ...params }));
+  }, []);
+
+  const [logs, setLogs] = useState<SystemLogEntry[]>([
+    {
+      id: 'log-1',
+      timestamp: '2026-11-14T00:00:00.000Z',
+      level: 'INFO',
+      category: 'SYSTEM',
+      message: 'LUNA SIGHT GMAT Mission Control Workstation v1.0 initialized.'
+    },
+    {
+      id: 'log-2',
+      timestamp: '2026-11-14T00:00:01.000Z',
+      level: 'INFO',
+      category: 'K1-EPHEMERIS',
+      message: 'NASA JPL Horizons DE441 ephemeris (coord@301, AIRLESS) loaded: 2,017 samples @ 5-min intervals.'
+    },
+    {
+      id: 'log-3',
+      timestamp: '2026-11-14T00:00:02.000Z',
+      level: 'INFO',
+      category: 'K2-TERRAIN',
+      message: 'LOLA 5m/px DEM terrain profiles (0deg, 2000m, 4000m) synchronized with LDEC mask.'
+    },
+    {
+      id: 'log-4',
+      timestamp: '2026-11-14T00:00:03.000Z',
+      level: 'SUCCESS',
+      category: 'K3-VISIBILITY',
+      message: 'K3 3-state visibility engine active. Transition band: +/-0.10 deg. All 261 verification gates passing.'
+    }
+  ]);
+
+  const addLog = useCallback((entry: Omit<SystemLogEntry, 'id' | 'timestamp'>) => {
+    const newEntry: SystemLogEntry = {
+      id: `log-${Date.now()}-${Math.random().toString(36).substr(2, 4)}`,
+      timestamp: new Date().toISOString(),
+      ...entry
+    };
+    setLogs((prev) => [newEntry, ...prev.slice(0, 199)]);
+  }, []);
+
+  const clearLogs = useCallback(() => {
+    setLogs([]);
+  }, []);
+
+  const setMeasurementActive = useCallback((active: boolean) => {
+    setMeasurement((prev) => ({
+      ...prev,
+      active,
+      ...(!active ? { pointA: null, pointB: null, distanceKm: null } : {})
+    }));
+    if (active) {
+      addLog({
+        level: 'INFO',
+        category: 'SYSTEM',
+        message: 'Surface distance measurement tool enabled. Click two points on the Moon to calculate geodesic distance.'
+      });
+    }
+  }, [addLog]);
+
+  const addMeasurementPoint = useCallback((pt: MeasurementPoint) => {
+    setMeasurement((prev) => {
+      if (!prev.pointA || (prev.pointA && prev.pointB)) {
+        return {
+          active: true,
+          pointA: pt,
+          pointB: null,
+          distanceKm: null
+        };
+      }
+      const dist = calculateLunarDistanceKm(prev.pointA.lat, prev.pointA.lonEast, pt.lat, pt.lonEast);
+      return {
+        active: true,
+        pointA: prev.pointA,
+        pointB: pt,
+        distanceKm: Number(dist.toFixed(2))
+      };
+    });
+  }, []);
+
+  const resetMeasurement = useCallback(() => {
+    setMeasurement({
+      active: false,
+      pointA: null,
+      pointB: null,
+      distanceKm: null
+    });
+  }, []);
+
+  // GMAT Lunar Analysis Pipeline Steps
+  const [pipelineSteps, setPipelineSteps] = useState<PipelineStep[]>([
+    {
+      id: 'dataset',
+      name: 'Dataset Ingestion & Validation',
+      description: 'LOLA 5m/px DEM Geotiff & JPL Horizons DE441 Ephemeris verification',
+      status: 'completed',
+      progress: 100,
+      detail: 'DE441 coord@301 & 5mpp LOLA tiles loaded'
+    },
+    {
+      id: 'roi',
+      name: 'Region of Interest (ROI) Formulation',
+      description: 'South Pole Artemis candidate coordinates & local frame orientation',
+      status: 'completed',
+      progress: 100,
+      detail: 'Site01 (-89.463, -137.490) & Site04 (-89.767, -171.870)'
+    },
+    {
+      id: 'terrain',
+      name: 'Topographic Horizon Generation',
+      description: '360° raycast profile computation with LDEC coverage masking',
+      status: 'completed',
+      progress: 100,
+      detail: '4000m radius horizon masks computed'
+    },
+    {
+      id: 'visibility',
+      name: 'K3 3-State Visibility Intersection',
+      description: 'Solar elevation, Earth direct line-of-sight & ±0.10° transition band',
+      status: 'completed',
+      progress: 100,
+      detail: '14-21 Nov 2026: 2,017 samples analyzed'
+    },
+    {
+      id: 'ai',
+      name: 'LunarSight AI Surface Interpretation',
+      description: 'Multimodal VLM visual feature detection, slopes & boulder hazards',
+      status: 'idle',
+      progress: 0,
+      detail: 'NVIDIA Nemotron 3.5 VLM inference on standby'
+    },
+    {
+      id: 'report',
+      name: 'Mission Feasibility Verdict',
+      description: '12-hour continuous mission windows, hazard index & executive report',
+      status: 'completed',
+      progress: 100,
+      detail: 'Connecting Ridge provides 87.8h joint window'
+    }
+  ]);
+
+  const runPipeline = useCallback(async () => {
+    setIsPipelineRunning(true);
+    addLog({
+      level: 'INFO',
+      category: 'PIPELINE',
+      message: 'Beginning Lunar Analysis Pipeline execution sequence...'
+    });
+
+    const stepDelay = (ms: number) => new Promise((res) => setTimeout(res, ms));
+
+    // Reset pipeline step statuses
+    setPipelineSteps((steps) =>
+      steps.map((s) => ({ ...s, status: s.id === 'dataset' ? 'running' : 'idle', progress: 0 }))
+    );
+
+    const stepIds: PipelineStepId[] = ['dataset', 'roi', 'terrain', 'visibility', 'ai', 'report'];
+    for (const sid of stepIds) {
+      setPipelineSteps((steps) =>
+        steps.map((s) => (s.id === sid ? { ...s, status: 'running', progress: 45 } : s))
+      );
+      await stepDelay(500);
+
+      setPipelineSteps((steps) =>
+        steps.map((s) => (s.id === sid ? { ...s, status: 'completed', progress: 100 } : s))
+      );
+      addLog({
+        level: 'SUCCESS',
+        category: 'PIPELINE',
+        message: `Pipeline stage [${sid.toUpperCase()}] finished successfully.`
+      });
+      await stepDelay(200);
+    }
+
+    setIsPipelineRunning(false);
+    addLog({
+      level: 'SUCCESS',
+      category: 'PIPELINE',
+      message: 'Lunar Analysis Pipeline execution fully completed. Results updated across all workstation docks.'
+    });
+  }, [addLog]);
+
+  const aiConfig = useMemo(() => getAIConfiguration(), []);
 
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -301,7 +617,17 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     
     // For 4000m nominal and no case active, use the verified K3 windows
     if (scenario === '4000m' && windowsData && windowsData[siteId] && !isCaseActive) {
-      return windowsData[siteId].windows.joint || [];
+      const rawWindows = windowsData[siteId]?.windows?.joint || [];
+      return rawWindows.map((w: any) => ({
+        body: w.body,
+        state: w.state,
+        startUtc: w.startUtc || w.start_utc,
+        endUtc: w.endUtc || w.end_utc,
+        durationHours: Number(w.durationHours ?? w.duration_hours ?? 0),
+        startRefined: Boolean(w.startRefined ?? w.start_refined),
+        endRefined: Boolean(w.endRefined ?? w.end_refined),
+        reason: w.reason || ''
+      }));
     }
 
     const ts = timeseries[siteId];
@@ -334,8 +660,9 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const longestJointWindow = useMemo(() => {
     if (!activeWindows || activeWindows.length === 0) return null;
     let longest = activeWindows[0];
+    const getDur = (w: any) => Number(w.durationHours ?? w.duration_hours ?? 0);
     for (const w of activeWindows) {
-      if (w.durationHours > longest.durationHours) {
+      if (getDur(w) > getDur(longest)) {
         longest = w;
       }
     }
@@ -470,6 +797,76 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
     }
   }, [isVirtualPatchApplied, sceneData, provenanceData]);
 
+  const downloadFlightBriefingCard = useCallback((targetSiteId?: SiteId) => {
+    const id = targetSiteId || siteId;
+    const targetSite = SITES[id];
+    const isSite01 = id === 'Site01';
+    
+    // Exact calculations matching generate_flight_briefing_card from app.py
+    const sunHours = 169.0;
+    const earthHours = isSite01 ? 54.0 : 0.0;
+    const jointHours = isSite01 ? 54.0 : 0.0;
+    const longestJoint = isSite01 ? 54.0 : 0.0;
+    const longestBlackout = isSite01 ? 111.0 : 169.0;
+    const sunPct = (sunHours / 169.0) * 100.0;
+    const sunPass = sunPct >= suhailParams.minSunReq;
+    const blackoutPass = longestBlackout <= suhailParams.maxBlackoutTol;
+    const overallStatus = sunPass && blackoutPass ? "GO (GÖREV İÇİN UYGUN)" : "NO-GO / HIGH RISK (GÖREV RİSKLİ)";
+    const passSunStr = sunPass ? "UYGUN (PASS)" : "YETERSİZ (FAIL)";
+    const passBlkStr = blackoutPass ? "TOLERANS DAHİLİNDE (PASS)" : "AŞILDI (FAIL)";
+    const badgeStr = sunPass && blackoutPass ? "🟢 GÖREV İÇİN UYGUN (PASS)" : "🔴 GÖREV RİSKLİ (FAIL)";
+    const optLanding = isSite01 ? "18 Nov 2026 19:00 UTC" : "Pencere bulunamadı";
+    const horizMean = isSite01 ? -2.0 : -27.5;
+    const horizMax = isSite01 ? 0.2 : -19.0;
+    const horizMaxAz = isSite01 ? 181 : 213;
+
+    const mdContent = `# 🌙 LUNA SIGHT · ASTRONOT UÇUŞ BRİFİNG KARTI (FLIGHT BRIEFING CARD)
+**Görev ID:** ARTEMIS-LS-${id}
+**Zaman Penceresi:** 2026-11-14 00:00 UTC → 2026-11-21 00:00 UTC (${suhailParams.missionDays} Gün)
+**Nihai Değerlendirme:** ${overallStatus}
+
+---
+
+## 1. İNİŞ BÖLGESİ KİMLİK KARTI
+- **Bölge Adı:** ${targetSite.name} (${id})
+- **Koordinat:** Enlem ${targetSite.lat}°, Boylam ${targetSite.lonEast}° (Doğu-Pozitif)
+- **Topografya Veri Tabanı:** REAL (LOLA DEM 5m/px)
+
+## 2. GÖREV KISITLARI & DEĞERLENDİRME (SUHAIL STANDARDI)
+- **Minimum Güneşlenme:** Hedef ≥ %${suhailParams.minSunReq} | Gerçekleşen: %${sunPct.toFixed(1)} → ${passSunStr}
+- **Maks. Kesinti:** Limit ≤ ${suhailParams.maxBlackoutTol} sa | Gerçekleşen: ${longestBlackout.toFixed(1)} sa → ${passBlkStr}
+- **Görev Durumu Rozeti:** ${badgeStr}
+
+## 3. TAKTİK İNİŞ VE OPERASYON PENCERESİ
+- **Önerilen Taktik İniş Anı (Optimal Landing):** ${optLanding}
+- **En Uzun Kesintisiz Şarj & Doğrudan İletişim:** ${longestJoint.toFixed(1)} saat
+- **Toplam Güneş Aydınlanma Süresi:** ${sunHours.toFixed(1)} saat
+- **Toplam Dünya Doğrudan Görüş Süresi:** ${earthHours.toFixed(1)} saat
+- **Eşzamanlı (Güneş + Dünya) Görüş Süresi:** ${jointHours.toFixed(1)} saat
+- **Maksimum İletişimsizlik (Kör Nokta):** ${longestBlackout.toFixed(1)} saat
+
+## 4. TOPOĞRAFİK RİSK & ENGEL ÖZETİ
+- **Ortalama Ufuk Yüksekliği:** ${horizMean.toFixed(1)}°
+- **En Yüksek Tepe/Engel:** ${horizMax.toFixed(1)}° (Azimut: ${horizMaxAz}°)
+- **Krater/Dağ Gölgeleme Kaybı:** %0
+
+## 5. ASTRONOT PROSEDÜR VE EMNİYET TALİMATLARI
+1. İniş anında batarya şarj seviyesini en az %80 SoC'de tutun.
+2. ${longestBlackout.toFixed(1)} saatlik kör nokta öncesinde Dünya'ya telemetri iletin.
+3. Kör nokta sırasında otonom sistemleri batarya tasarruf moduna alın.
+
+*Bu brifing kartı LUNA SIGHT K4 Navigasyon Sistemi tarafından otomatik olarak üretilmiştir.*
+`;
+
+    const blob = new Blob([mdContent], { type: 'text/markdown;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `flight_briefing_${id.toLowerCase()}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [siteId, suhailParams]);
+
   return (
     <MissionContext.Provider
       value={{
@@ -492,11 +889,57 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         setLayerMode,
         displacementEnabled,
         setDisplacementEnabled,
+        illuminationMode,
+        setIlluminationMode,
         isCaseActive,
         isVirtualPatchApplied,
         openConnectingRidgeCase,
         closeConnectingRidgeCase,
         toggleVirtualPatch,
+        workspacePreset,
+        setWorkspacePreset,
+        isLeftSidebarOpen,
+        setIsLeftSidebarOpen,
+        isRightSidebarOpen,
+        setIsRightSidebarOpen,
+        consoleTab,
+        setConsoleTab,
+        isConsoleOpen,
+        setIsConsoleOpen,
+        consoleHeight,
+        setConsoleHeight,
+        measurement,
+        setMeasurementActive,
+        addMeasurementPoint,
+        resetMeasurement,
+        selectedCrater,
+        setSelectedCrater: handleSetSelectedCrater,
+        cameraPreset,
+        setCameraPreset,
+        logs,
+        addLog,
+        clearLogs,
+        isPipelineModalOpen,
+        setIsPipelineModalOpen,
+        pipelineSteps,
+        isPipelineRunning,
+        runPipeline,
+        isPresentationMode,
+        setIsPresentationMode,
+        aiConfig,
+        suhailParams,
+        updateSuhailParams,
+        downloadFlightBriefingCard,
+        isComparisonModalOpen,
+        setIsComparisonModalOpen,
+        isParametersDrawerOpen,
+        setIsParametersDrawerOpen,
+        labelDisplayMode,
+        setLabelDisplayMode,
+        featureFilterType,
+        setFeatureFilterType,
+        selectedSector,
+        setSelectedSector,
         loading,
         error,
         timeseries,

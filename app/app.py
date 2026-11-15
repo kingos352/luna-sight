@@ -1373,6 +1373,34 @@ def inject_theme() -> None:
     st.markdown(
         """
         <style>
+        /* LUNA SIGHT GMAT Mission Control Workstation - Fullscreen Takeover */
+        header[data-testid="stHeader"] {
+            display: none !important;
+        }
+        section[data-testid="stSidebar"] {
+            display: none !important;
+        }
+        footer {
+            display: none !important;
+        }
+        .main, .block-container {
+            padding: 0 !important;
+            max-width: 100vw !important;
+            width: 100vw !important;
+            margin: 0 !important;
+            overflow: hidden !important;
+        }
+        iframe[title*="lunar_sight"], iframe[title*="component"] {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            min-height: 100vh !important;
+            z-index: 99999 !important;
+            border: none !important;
+        }
+
         /* Tasarım belirteçleri. Bileşenlerde ham hex yerine bunlar kullanılır;
            tek yerden değiştirilir ve açık/koyu ayrımı tutarlı kalır. */
         :root {
@@ -1968,8 +1996,7 @@ def render_source_cards(spec_a: SiteSpec, spec_b: SiteSpec, frame_a: pd.DataFram
 #: 3B küre, frontend/ kaynaklarından derlenir. Streamlit component protokolü
 #: LunarSight AI isteklerini aynı oturumdaki Python sunucusuna taşır.
 GLOBE_DIR = Path(__file__).resolve().parent / "components" / "lunar"
-GLOBE_URL = "/app/static/moon/index.html"
-GLOBE_HEIGHT = 760
+GLOBE_HEIGHT = 840
 
 
 def render_verdict_band(
@@ -2115,7 +2142,7 @@ def main() -> None:
         page_title="LUNA SIGHT · Ay İniş Alanı Navigatörü",
         page_icon="🌙",
         layout="wide",
-        initial_sidebar_state="expanded",
+        initial_sidebar_state="collapsed",
     )
     inject_theme()
 

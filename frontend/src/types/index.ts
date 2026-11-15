@@ -28,10 +28,10 @@ export type MapLayerMode = 'wac' | 'topo';
 export type WorkspacePreset = 'exploration' | 'scientific' | 'ai' | 'presentation';
 
 // Mission Console Tabs
-export type ConsoleTab = 'log' | 'analysis' | 'comparison' | 'simulation' | 'telemetry' | 'queue' | 'data' | 'ai';
+export type ConsoleTab = 'log' | 'analysis' | 'comparison' | 'telemetry' | 'queue' | 'data' | 'ai';
 
 // Inspector Tabs
-export type InspectorTab = 'telemetry' | 'comparison' | 'simulation' | 'terrain' | 'crater' | 'ai';
+export type InspectorTab = 'telemetry' | 'comparison' | 'terrain' | 'crater' | 'ai';
 
 // Camera Presets
 export type CameraPreset =
@@ -69,9 +69,6 @@ export interface CraterFeature {
   lat: number;
   lonEast: number;
   diameterKm?: number;
-  depthM?: number;
-  rimHeightM?: number;
-  elevationM?: number;
   hazardRisk: 'Low' | 'Moderate' | 'High' | 'Severe';
   permanentlyShadowed: boolean;
   scientificInterest: string;

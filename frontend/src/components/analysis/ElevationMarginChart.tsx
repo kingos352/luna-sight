@@ -48,19 +48,19 @@ export const ElevationMarginChart: React.FC = () => {
   };
 
   return (
-    <div className="bg-space-950 rounded-lg border border-slate-800 p-3 select-none flex flex-col gap-3">
+    <div className="bg-gmat-bg rounded-lg border border-gmat-border p-3 select-none flex flex-col gap-2.5">
       <div className="flex items-center justify-between">
-        <span className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
-          <Activity className="w-3.5 h-3.5 text-sky-400" />
+        <span className="text-xs font-semibold text-gmat-text flex items-center gap-1.5">
+          <Activity className="w-3.5 h-3.5 text-gmat-accent" />
           Açı & Marj Grafiği
         </span>
-        <span className="text-[10px] font-mono text-slate-400">
+        <span className="text-[10px] font-mono text-gmat-textMuted">
           {isZoomCase ? 'Büyütülmüş Eşik Modu' : 'Ölçek: [−6°, +6°]'}
         </span>
       </div>
 
       {/* SVG Bar / Karşılaştırma Grafiği */}
-      <div className="relative bg-space-900 rounded border border-slate-800/80 p-2">
+      <div className="relative bg-gmat-elevated rounded border border-gmat-border p-2">
         <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-32 overflow-visible">
           {/* Arka plan ızgarası */}
           <line x1="0" y1={zeroY} x2={width} y2={zeroY} stroke="#334155" strokeDasharray="3 3" />

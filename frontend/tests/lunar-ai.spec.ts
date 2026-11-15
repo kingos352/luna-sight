@@ -4,7 +4,10 @@ import { resolve } from 'node:path';
 async function openAI(page: Page) {
   await page.goto('/');
   if ((page.viewportSize()?.width ?? 1600) < 768) {
-    await page.getByRole('button', { name: 'Collapse sidebar', exact: true }).click();
+    const collapseBtn = page.getByRole('button', { name: 'Collapse sidebar', exact: true });
+    if (await collapseBtn.isVisible()) {
+      await collapseBtn.click();
+    }
   }
   await page.getByRole('tab', { name: '3B Ay küresi', exact: true }).click();
   await page.locator('iframe[title$=".lunar_sight"]').scrollIntoViewIfNeeded({ timeout: 45_000 });

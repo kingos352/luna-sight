@@ -12,14 +12,13 @@ import {
   CraterFeature
 } from '../types';
 
-export const SITES: Record<string, { id: any; name: string; nameTr: string; lat: number; lonEast: number; elevationM: number; description: string }> = {
+export const SITES: Record<string, { id: any; name: string; nameTr: string; lat: number; lonEast: number; description: string }> = {
   Site01: {
     id: 'Site01',
     name: 'Connecting ridge',
     nameTr: 'Connecting Ridge',
     lat: -89.463163,
     lonEast: -137.489553,
-    elevationM: 1944.77,
     description: 'Shackleton ve de Gerlache kraterleri arasındaki tepe sırtı. Güneş ve Dünya erişimi dengeli.'
   },
   Site04: {
@@ -28,7 +27,6 @@ export const SITES: Record<string, { id: any; name: string; nameTr: string; lat:
     nameTr: 'Shackleton Rim',
     lat: -89.766811,
     lonEast: -171.869898,
-    elevationM: 1980.50,
     description: 'Shackleton krater kenarı. Sürekli Güneş ışığı yüksek ancak Dünya görüşü krater duvarı ile engelli.'
   },
   MALAPERT_MASSIF: {
@@ -37,7 +35,6 @@ export const SITES: Record<string, { id: any; name: string; nameTr: string; lat:
     nameTr: 'Malapert Massif',
     lat: -86.04,
     lonEast: 2.7,
-    elevationM: 2150.0,
     description: 'Artemis III 1 numaralı öncelikli zirve platosu. Kesintisiz güneş (%92) ve Dünya (%94) görüşü.'
   },
   CONNECTING_RIDGE_EXT: {
@@ -46,7 +43,6 @@ export const SITES: Record<string, { id: any; name: string; nameTr: string; lat:
     nameTr: 'Connecting Ridge Uzantısı',
     lat: -89.47,
     lonEast: -136.2,
-    elevationM: 1880.0,
     description: 'Connecting Ridge batı uzantısındaki yüksek irtifa hattı. Mükemmel görüş koridoru.'
   },
   LEIBNITZ_BETA: {
@@ -55,7 +51,6 @@ export const SITES: Record<string, { id: any; name: string; nameTr: string; lat:
     nameTr: 'Leibnitz Beta Platosu',
     lat: -85.82,
     lonEast: 29.5,
-    elevationM: 1850.0,
     description: 'Geniş, düşük eğimli (2.8°) plato alanı. Yüksek iniş güvenliği.'
   },
   DE_GERLACHE_RIM_1: {
@@ -64,7 +59,6 @@ export const SITES: Record<string, { id: any; name: string; nameTr: string; lat:
     nameTr: 'de Gerlache Kenarı 1',
     lat: -88.71,
     lonEast: -68.7,
-    elevationM: 1620.0,
     description: 'de Gerlache kraterinin doğu sırt hattı. PSR soğuk kapanlarına yakın iniş sahası.'
   },
   DE_GERLACHE_RIM_2: {
@@ -73,7 +67,6 @@ export const SITES: Record<string, { id: any; name: string; nameTr: string; lat:
     nameTr: 'de Gerlache Kenarı 2',
     lat: -88.35,
     lonEast: -67.8,
-    elevationM: 1580.0,
     description: 'de Gerlache kraterinin kuzeydoğu kenar platosu.'
   },
   AMUNDSEN_RIM: {
@@ -82,7 +75,6 @@ export const SITES: Record<string, { id: any; name: string; nameTr: string; lat:
     nameTr: 'Amundsen Kenar Sırtı',
     lat: -84.45,
     lonEast: 85.6,
-    elevationM: 1420.0,
     description: 'Devasa Amundsen kraterinin güneybatı sırtı; teraslı duvar ve merkezi dağ manzarası.'
   },
   NOBILE_RIM_2: {
@@ -91,7 +83,6 @@ export const SITES: Record<string, { id: any; name: string; nameTr: string; lat:
     nameTr: 'Nobile Kenar Platosu',
     lat: -85.28,
     lonEast: 36.15,
-    elevationM: 1750.0,
     description: 'Nobile kraterinin batı kenar platosu; VIPER rover rotası ile entegre iniş alanı.'
   },
   DE_GERLACHE_KOCHER: {
@@ -100,7 +91,6 @@ export const SITES: Record<string, { id: any; name: string; nameTr: string; lat:
     nameTr: 'de Gerlache-Kocher Masifi',
     lat: -85.78,
     lonEast: -123.35,
-    elevationM: 1920.0,
     description: 'Yüksek irtifa radyo röle istasyonu ve gözlem masifi.'
   },
   HAWORTH: {
@@ -109,7 +99,6 @@ export const SITES: Record<string, { id: any; name: string; nameTr: string; lat:
     nameTr: 'Haworth Kenarı',
     lat: -87.87,
     lonEast: -5.1,
-    elevationM: 1350.0,
     description: 'Haworth krateri kuzey kenarı; aşırı düşük sıcaklık bilimsel araştırma alanı.'
   },
   FAUSTINI_RIM: {
@@ -118,7 +107,6 @@ export const SITES: Record<string, { id: any; name: string; nameTr: string; lat:
     nameTr: 'Faustini Kenar Sırtı',
     lat: -86.4925,
     lonEast: 80.7183,
-    elevationM: 1680.0,
     description: 'Faustini kraterinin yüksek kuzey sırtı; düşük yamaç eğimi ve stabil radyo penceresi.'
   },
   CABEUS_RIDGE: {
@@ -127,7 +115,6 @@ export const SITES: Record<string, { id: any; name: string; nameTr: string; lat:
     nameTr: 'Cabeus Kenar Sırtı',
     lat: -83.7961,
     lonEast: -41.0726,
-    elevationM: 1450.0,
     description: 'LCROSS çarpma krateri kenarı; Dünya ile kesintisiz görüş hattı.'
   },
   SVERDRUP_RIM: {
@@ -136,7 +123,6 @@ export const SITES: Record<string, { id: any; name: string; nameTr: string; lat:
     nameTr: 'Sverdrup Platosu',
     lat: -89.4455,
     lonEast: -137.3137,
-    elevationM: 1954.3,
     description: '1.45° son derece düşük yamaç eğimli, en güvenli ayak basma platosu.'
   }
 };
@@ -215,28 +201,5 @@ export async function fetchSurveyTargets(): Promise<any> {
 let cachedSimulations: any = null;
 let cachedArtemis: any = null;
 
-export async function fetchFlightSimulations(): Promise<Record<string, any>> {
-  if (cachedSimulations) return cachedSimulations;
-  try {
-    const res = await fetch(assetUrl('data/flight_simulations.json'));
-    cachedSimulations = await res.json();
-  } catch (err) {
-    console.warn('Flight simulations load error:', err);
-    cachedSimulations = {};
-  }
-  return cachedSimulations;
-}
-
-export async function fetchArtemisCandidates(): Promise<any> {
-  if (cachedArtemis) return cachedArtemis;
-  try {
-    const res = await fetch(assetUrl('data/artemis_candidates.json'));
-    cachedArtemis = await res.json();
-  } catch (err) {
-    console.warn('Artemis candidates load error:', err);
-    cachedArtemis = { candidate_sites: [] };
-  }
-  return cachedArtemis;
-}
 
 export { CRATER_CATALOG, calculateLunarDistanceKm } from './craterCatalog';

@@ -32,7 +32,6 @@ export const AnalysisPanel: React.FC<{ onOpenAI?: () => void }> = ({ onOpenAI })
         <div className="grid grid-cols-2 gap-1.5 text-[10px] font-mono bg-space-900/60 p-2 rounded border border-slate-800/80 mb-2">
           <div>Enlem: <span className="text-slate-200">{site.lat}°</span></div>
           <div>Boylam (D): <span className="text-slate-200">{site.lonEast}°</span></div>
-          <div>Referans İrtifa: <span className="text-slate-200">{site.elevationM} m</span></div>
           <div>Tarama: <span className="text-sky-300 font-bold">{scenario}</span></div>
         </div>
 

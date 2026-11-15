@@ -28,18 +28,18 @@ export class ErrorBoundary extends Component<Props, State> {
   public render() {
     if (this.state.hasError) {
       return (
-        <div className="w-full h-full min-h-[300px] flex flex-col items-center justify-center p-6 bg-space-900 border border-slate-800 rounded-lg text-slate-300 text-center">
-          <AlertTriangle className="w-10 h-10 text-amber-500 mb-3" />
-          <h3 className="text-base font-semibold text-slate-100 mb-1">
+        <div className="w-full h-full min-h-[300px] flex flex-col items-center justify-center p-6 bg-gmat-panel border border-gmat-border rounded-lg text-gmat-textMuted text-center select-none">
+          <AlertTriangle className="w-10 h-10 text-gmat-amber mb-3" />
+          <h3 className="text-base font-semibold text-gmat-text mb-1 font-sans">
             {this.props.fallbackTitle || 'Görsel Bileşen Yüklenemedi (WebGL Fallback)'}
           </h3>
-          <p className="text-xs text-slate-400 max-w-md mb-4">
+          <p className="text-xs text-gmat-textMuted max-w-md mb-4 font-mono">
             Tarayıcınızda WebGL donanım hızlandırma kapalı olabilir veya bir render hatası oluştu.
-            Analiz paneli, zaman çizelgesi ve grafikler tam işlevsel kalmaya devam etmektedir.
+            Analiz paneli, zaman çizelgesi ve telemetri tam işlevsel kalmaya devam etmektedir.
           </p>
           <button
             onClick={() => this.setState({ hasError: false, error: null })}
-            className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-space-800 hover:bg-space-700 border border-slate-700 rounded transition-colors text-slate-200"
+            className="flex items-center gap-2 px-3 py-1.5 text-xs font-medium bg-gmat-elevated hover:bg-gmat-border border border-gmat-border rounded transition-colors text-gmat-text"
           >
             <RefreshCw className="w-3.5 h-3.5" />
             Yeniden Dene

@@ -42,6 +42,11 @@ const waiting = new Map<string, {
   timer: ReturnType<typeof setTimeout>;
 }>();
 
+function notifyHeight() {
+  const h = Math.max(window.innerHeight || 0, document.documentElement.clientHeight || 0, 960);
+  Streamlit.setFrameHeight(h);
+}
+
 Streamlit.events.addEventListener(Streamlit.RENDER_EVENT, (event) => {
   const { args } = (event as CustomEvent<RenderData>).detail;
   connected = true;
@@ -54,11 +59,12 @@ Streamlit.events.addEventListener(Streamlit.RENDER_EVENT, (event) => {
     if (reply.ok) pending.resolve(reply);
     else pending.reject(new Error(reply.error || 'Analiz tamamlanamadı.'));
   }
-  Streamlit.setFrameHeight(760);
+  notifyHeight();
 });
 
 Streamlit.setComponentReady();
-Streamlit.setFrameHeight(760);
+notifyHeight();
+window.addEventListener('resize', notifyHeight);
 
 export function getAIConfiguration() { return { ...configuration, connected }; }
 
