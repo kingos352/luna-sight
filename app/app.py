@@ -94,6 +94,9 @@ NUMERIC_COLUMNS = [
     "earth_alt_deg",
     "terrain_horizon_sun_deg",
     "terrain_horizon_earth_deg",
+    "sun_margin_deg",
+    "earth_margin_deg",
+    "joint_margin_deg",
 ]
 
 # K3 motoru bağlandığında gelen isteğe bağlı tanılama sütunları.
@@ -477,7 +480,8 @@ def normalize_contract_frame(frame: pd.DataFrame) -> pd.DataFrame:
         normalized["timestamp_utc"], utc=True, errors="raise"
     )
     for column in NUMERIC_COLUMNS:
-        normalized[column] = pd.to_numeric(normalized[column], errors="coerce")
+        if column in normalized.columns:
+            normalized[column] = pd.to_numeric(normalized[column], errors="coerce")
 
     for column in ("sun_visible", "earth_visible", "joint_visible"):
         normalized[column] = (
@@ -681,7 +685,8 @@ def _evaluate_with_engine(frame: pd.DataFrame, site: SiteSpec) -> pd.DataFrame |
         lambda raw: _merge_parameters(raw, engine_info)
     )
     evaluated["source_id"] = evaluated["source_id"].astype(str) + "+K3"
-    return evaluated
+    normalized = normalize_contract_frame(evaluated)
+    return normalized
 
 
 class RealDataError(RuntimeError):
