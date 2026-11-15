@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Yerel Ay İniş Sahası Navigasyon ve Yörünge Simülasyonu - v3.0.0 Aviyonik</title>
+  <link rel="stylesheet" href="/static/styles.css?v=3.0.0">
+  <!-- 100% Offline Three.js & OrbitControls -->
+  <script src="/static/vendor/three.min.js"></script>
+  <script src="/static/vendor/OrbitControls.js"></script>
+</head>
+<body>
+  <!-- 3D WebGL Canvas Container -->
+  <div id="canvas-container"></div>
+
+  <!-- 3D Harita Aktif Arazi Topografyası HUD Rozeti -->
+  <div class="terrain-hud-badge" id="terrain-active-badge">
+    <div class="terrain-hud-dot"></div>
+    <span id="terrain-active-title">Aktif Arazi Topografyası: Malapert Massif (LOLA 240m)</span>
+  </div>
+
+  <!-- Üst Başlık & Durum Çubuğu -->
+  <header class="top-header">
+    <div class="brand-badge">
+      <svg class="brand-icon" viewBox="0 0 24 24">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
+      </svg>
+      <div>
+        <div class="brand-title">LUNAR LANDING SITE NAVIGATOR</div>
+        <div class="brand-subtitle">MOON_ME ÇERÇEVESİ &bull; LRO LOLA DEM &bull; v3.0.0 AVİYONİK KOKPİT</div>
+      </div>
+    </div>
+
+    <!-- MERKEZ: Hızlı Bölge / Krater Seçim Çubuğu -->
+    <div class="header-region-bar">
+      <label for="header-region-select" class="header-region-label">
+        <svg style="width:14px; height:14px; fill:var(--accent-cyan);" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+        Bölge / Krater:
+      </label>
+      <select id="header-region-select" class="header-region-dropdown" title="Ay İniş Bölgesi / Krater Seçimi">
+        <option value="" disabled selected>Aday bölgeler yükleniyor...</option>
+      </select>
+    </div>
+
+    <!-- Master Caution & Warning (MC&W) Kokpit Buton Kümesi -->
+    <div class="mcw-cluster" title="Master Caution & Warning (MC&W) Uçuş Alarm Paneli">
+      <button id="btn-master-warning" class="mcw-lamp-btn warning" title="Master Warning (Kritik Alarm Göstergesi)">MASTER WARN</button>
+      <button id="btn-master-caution" class="mcw-lamp-btn caution" title="Master Caution (İkaz Göstergesi)">MASTER CAUT</button>
+      <button id="btn-mcw-test" class="mcw-test-btn" title="NASA Quindar Tonu (2525Hz) ve Alarm Testi">MC&amp;W Test</button>
+    </div>
+
+    <!-- Üst Başlık Hızlı Eylemler (NVG ve Aviyonik Kokpit) -->
+    <div class="header-actions-group">
+      <button id="btn-toggle-nvg" class="header-action-btn nvg-btn" title="Taktik OLED Kırmızı Gece Görüş Modu (PSR Karanlık Adaptasyonu)">
+        <span>🔴 NVG Gece Görüşü</span>
+      </button>
+      <button id="btn-open-avionics" class="header-action-btn avionics-btn" title="Aviyonik Kokpit ve Fizik Telemetri Paneli">
+        <svg style="width:13px; height:13px; fill:currentColor;" viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
+        <span>Aviyonik Kokpit</span>
+      </button>
+    </div>
+
+    <div class="status-pill">
+      <div class="status-dot" id="status-dot"></div>
+      <span id="status-text">MOTOR HAZIR (MOON_ME)</span>
+    </div>
+  </header>
+
+  <!-- Master Caution & Warning (MC&W) Canlı Alarm Şeridi -->
+  <div id="mcw-banner" class="mcw-banner hidden warning">
+    <div class="mcw-banner-inner">
+      <div class="mcw-icon-pulse">⚠️</div>
+      <div class="mcw-content">
+        <div class="mcw-title" id="mcw-title">MASTER WARNING</div>
+        <div class="mcw-msg" id="mcw-msg">Kalan Yakıt &lt; %20 | İniş Marjı Kritik!</div>
+      </div>
+      <button class="mcw-ack-btn" id="btn-mcw-ack">ACK (SUSTUR)</button>
+    </div>
+  </div>
+
+  <!-- Sol Kontrol ve Katman Paneli -->
+  <aside class="left-panel">
+    <div class="panel-header">
+      <span>Bölge, Arazi & Katman Kontrolü</span>
+      <span style="font-size: 10px; color: var(--accent-cyan);" id="grid-dim-text">256x256</span>
+    </div>
+    <div class="panel-body">
+      <!-- 1. HEDEF BÖLGE VE KRATER SEÇİMİ (EN ÜSTTE) -->
+      <div class="region-selection-card">
+        <div class="section-label" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+          <span style="color:var(--accent-cyan); display:flex; align-items:center; gap:6px;">
+            <svg style="width:13px; height:13px; fill:currentColor;" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+            İniş Bölgesi / Krater Seçimi
+          </span>
+          <span style="font-size:9px; color:var(--accent-emerald); font-weight:700; text-transform:none;" id="total-sites-count">18 AKTİF SAHA</span>
+        </div>
+
+        <select id="left-region-select" class="styled-region-dropdown">
+          <option value="" disabled selected>Aday bölgeler yükleniyor...</option>
+        </select>
+
+        <div class="candidates-list" id="candidates-container" style="max-height: 220px; overflow-y: auto; margin-top: 8px;">
+          <!-- Dinamik olarak JS ile doldurulacak -->
+          <div style="font-size: 11px; color: var(--text-muted);">Aday bölgeler yükleniyor...</div>
+        </div>
+
+        <!-- Filtrelenen Robotik Sahalar Akordeon Bilgi Kartı (P3) -->
+        <div class="filtered-sites-accordion">
+          <button class="filtered-toggle-btn" id="btn-toggle-filtered" type="button">
+            <span>⚠️ Filtrelenen Robotik Sahalar (2)</span>
+            <span id="filtered-arrow">▼</span>
+          </button>
+          <div class="filtered-sites-content hidden" id="filtered-sites-box">
+            <div class="filtered-site-item">
+              <strong>Mons Mouton (-84.50° S, 31.00° E):</strong> NASA VIPER gezgini ve Griffin CLPS robotik iniş sahasıdır. Artemis III insanlı 13 bölge listesinde yer almaz.
+            </div>
+            <div class="filtered-site-item" style="margin-top:6px;">
+              <strong>Malapert A (-80.13° S, 1.44° E):</strong> Intuitive Machines IM-1 (Odysseus) robotik CLPS sahasıdır. Artemis III insanlı ana hedefi Malapert Massif'tir.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-label">Katman Seçimi</div>
+        <div class="layer-grid">
+          <button class="layer-btn active" data-layer="elevation">
+            <span class="color-indicator" style="background: #94a3b8;"></span> Yükseklik (DEM)
+          </button>
+          <button class="layer-btn" data-layer="moontrek">
+            <span class="color-indicator" style="background: linear-gradient(135deg, #f59e0b, #ec4899, #38bdf8);"></span> MoonTrek (LOLA)
+          </button>
+          <button class="layer-btn" data-layer="slope">
+            <span class="color-indicator" style="background: #10b981;"></span> Eğim (Slope &deg;)
+          </button>
+          <button class="layer-btn" data-layer="roughness">
+            <span class="color-indicator" style="background: #f59e0b;"></span> Pürüzlülük (TRI)
+          </button>
+          <button class="layer-btn" data-layer="illumination">
+            <span class="color-indicator" style="background: #38bdf8;"></span> Güneşlenme %
+          </button>
+          <button class="layer-btn" data-layer="dte">
+            <span class="color-indicator" style="background: #6366f1;"></span> DTE Görüş Hattı
+          </button>
+          <button class="layer-btn" data-layer="suitability">
+            <span class="color-indicator" style="background: #ec4899;"></span> İniş Skoru
+          </button>
+          <button class="layer-btn" id="btn-toggle-corridor" style="grid-column: span 2; border-color: rgba(6, 182, 212, 0.4); color: #67e8f9;">
+            <span class="color-indicator" style="background: #06b6d4;"></span> Güneş Takip Koridoru (Shadow-Chasing)
+          </button>
+          <button class="layer-btn" id="btn-nvg-left" style="grid-column: span 2; border-color: rgba(255, 34, 68, 0.4); color: #ff6b81;">
+            🔴 Taktik NVG Kırmızı Gece Modu
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-label">Bölge İstatistikleri</div>
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Ort. Eğim</div>
+            <div class="stat-val" id="stat-slope">--<span class="stat-unit">&deg;</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Ort. Pürüzlülük</div>
+            <div class="stat-val" id="stat-rough">--<span class="stat-unit">m</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Güneşlenme</div>
+            <div class="stat-val" id="stat-illum">--<span class="stat-unit">%</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">En Yüksek Skor</div>
+            <div class="stat-val" id="stat-score" style="color: var(--accent-emerald);">--<span class="stat-unit">/100</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Yapay Zeka Otonom İniş Merkezi -->
+      <div class="ai-landing-section">
+        <div class="section-label" style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="color:var(--accent-cyan); display:flex; align-items:center; gap:6px;">
+            <svg style="width:13px; height:13px; fill:currentColor;" viewBox="0 0 24 24"><path d="M12 2.5s4 3.5 4 8.5c0 3-1.5 5.5-4 7-2.5-1.5-4-4-4-7 0-5 4-8.5 4-8.5zm0 18.5c-1 0-2.5-1-2.5-2.5h5c0 1.5-1.5 2.5-2.5 2.5z"/></svg>
+            Yapay Zeka Otonom İniş Merkezi
+          </span>
+          <span class="ai-status-pulse" id="ai-continuous-indicator">HAZIR</span>
+        </div>
+
+        <div style="display:flex; gap:6px; margin-bottom:8px;">
+          <button class="ai-action-btn primary" id="btn-ai-land" style="flex:1.8;">
+            <svg style="width:12px; height:12px; fill:currentColor;" viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
+            AI İniş Başlat
+          </button>
+          <button class="ai-action-btn" id="btn-ai-continuous" style="flex:1.2;">
+            Sürekli İniş
+          </button>
+        </div>
+
+        <!-- Canlı İniş & Telemetri Kartı -->
+        <div class="ai-telemetry-box" id="ai-telemetry-box">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <span class="ai-target-label" id="ai-active-target">Hedef: SITE ALPHA</span>
+            <span class="suitability-badge badge-excellent" id="ai-touchdown-badge" style="font-size:9px; padding:2px 6px;">MÜKEMMEL</span>
+          </div>
+
+          <div class="ai-score-row">
+            <div>
+              <div style="font-size:9px; color:var(--text-muted); text-transform:uppercase;">İniş Sağlık Skoru</div>
+              <div class="ai-score-value" id="ai-score-display">--<span style="font-size:12px; color:var(--text-muted);">/100</span></div>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:9px; color:var(--text-muted); text-transform:uppercase;">Düşey İniş Hızı (Vz)</div>
+              <div class="ai-vz-value" id="ai-vz-display">-- m/s</div>
+            </div>
+          </div>
+
+          <!-- Canlı Metrikler Tablosu -->
+          <div class="ai-metrics-grid">
+            <div class="ai-metric-item">
+              <span class="ai-m-label">Yatay Hız (Vxy)</span>
+              <span class="ai-m-val" id="ai-vxy-display">-- m/s</span>
+            </div>
+            <div class="ai-metric-item">
+              <span class="ai-m-label">Gövde Eğim</span>
+              <span class="ai-m-val" id="ai-tilt-display">--&deg;</span>
+            </div>
+            <div class="ai-metric-item">
+              <span class="ai-m-label">Hedef Hatası</span>
+              <span class="ai-m-val" id="ai-error-display">-- m</span>
+            </div>
+            <div class="ai-metric-item">
+              <span class="ai-m-label">Kalan Yakıt</span>
+              <span class="ai-m-val" id="ai-fuel-display">-- %</span>
+            </div>
+          </div>
+
+          <!-- Yakıt Seviye Çubuğu -->
+          <div class="ai-fuel-progress-wrap">
+            <div class="ai-fuel-bar" id="ai-fuel-bar" style="width: 0%;"></div>
+          </div>
+
+          <!-- Monte Carlo İstatistikleri Özeti -->
+          <div class="ai-mc-summary">
+            <span>MC Deneme: <strong id="ai-mc-total" style="color:#fff;">--</strong></span>
+            <span>Başarı: <strong id="ai-mc-rate" style="color:var(--accent-emerald);">--%</strong></span>
+            <span>Ort. Puan: <strong id="ai-mc-avg" style="color:var(--accent-cyan);">--</strong></span>
+          </div>
+
+          <button class="ai-report-btn" id="btn-open-analysis">
+            <svg style="width:12px; height:12px; fill:currentColor;" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>
+            AI Teşhis & Optimizasyon Raporu
+          </button>
+        </div>
+      </div>
+
+      <!-- ML & Uçuş Veritabanı Merkezi -->
+      <div class="ml-database-section">
+        <div class="section-label" style="display:flex; justify-content:space-between; align-items:center;">
+          <span style="color:var(--accent-purple); display:flex; align-items:center; gap:6px;">
+            <svg style="width:13px; height:13px; fill:currentColor;" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 2h1.5v3l1.5-1.5 1.5 1.5V5H18v14H6V5h6zm-4 6h8v2H8v-2zm0 4h5v2H8v-2z"/></svg>
+            ML & Uçuş Veritabanı
+          </span>
+          <span class="ai-status-pulse" id="ml-engine-badge" style="background:rgba(168,85,247,0.15); color:var(--accent-purple); border-color:rgba(168,85,247,0.3);">EĞİTİLDİ</span>
+        </div>
+
+        <div class="ml-card">
+          <!-- ML Temel Metrikleri -->
+          <div class="ml-metrics-row">
+            <div class="ml-m-item">
+              <span class="ml-m-label">Kayıtlı İniş</span>
+              <span class="ml-m-val" id="ml-db-count">--</span>
+            </div>
+            <div class="ml-m-item">
+              <span class="ml-m-label">Doğruluk (Acc)</span>
+              <span class="ml-m-val" id="ml-accuracy-val" style="color:var(--accent-emerald);">--%</span>
+            </div>
+            <div class="ml-m-item">
+              <span class="ml-m-label">R² Skoru</span>
+              <span class="ml-m-val" id="ml-r2-val" style="color:var(--accent-cyan);">--</span>
+            </div>
+          </div>
+
+          <!-- Özellik Önem Düzeyleri (Feature Importance Çubukları) -->
+          <div class="ml-feature-importance-box">
+            <div style="display:flex; justify-content:space-between; font-size:9px; color:var(--text-muted); margin-bottom:5px;">
+              <span>Özellik Önem Düzeyleri</span>
+              <span id="ml-top-feature-name" style="color:var(--accent-purple);">Eğim / Vz</span>
+            </div>
+            <div id="ml-feature-bars-container" class="ml-bars-wrap">
+              <div style="font-size:10px; color:var(--text-muted);">Özellik ağırlıkları yükleniyor...</div>
+            </div>
+          </div>
+
+          <!-- Eylem Butonları -->
+          <div style="display:flex; gap:6px; margin-top:6px;">
+            <button class="ai-action-btn" id="btn-open-ml-predict" style="flex:1.2; font-size:10px; background:rgba(168,85,247,0.15); border-color:rgba(168,85,247,0.4); color:#e9d5ff;">
+              <svg style="width:11px; height:11px; fill:currentColor;" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-2h2zm0-4h-2V7h2z"/></svg>
+              Ön Uçuş Risk Tahmini
+            </button>
+            <button class="ai-action-btn" id="btn-train-ml" style="flex:0.8; font-size:10px;">
+              <svg style="width:11px; height:11px; fill:currentColor;" viewBox="0 0 24 24"><path d="M17.65 6.35A7.958 7.958 0 0 0 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08A5.99 5.99 0 0 1 12 18c-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"/></svg>
+              Yeniden Eğit
+            </button>
+          </div>
+
+          <button class="ai-report-btn" id="btn-open-db-modal" style="width:100%; margin-top:6px; border-color:rgba(168,85,247,0.3); color:#d8b4fe;">
+            <svg style="width:12px; height:12px; fill:currentColor;" viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
+            Uçuş Veritabanı & Canlı Log
+          </button>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-label">Referans Veri Doğrulama</div>
+        <button class="ref-toggle-btn" id="btn-toggle-ref">
+          <svg style="width:14px; height:14px; fill:currentColor;" viewBox="0 0 24 24"><path d="M21 19V5c0-1.1-.9-2-2-2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2zM8.5 13.5l2.5 3.01L14.5 12l4.5 6H5l3.5-4.5z"/></svg>
+          MoonTrek LOLA Referansını Göster
+        </button>
+      </div>
+
+      <div>
+        <div class="section-label">Kamera Bakış Açıları</div>
+        <div style="display: flex; gap: 6px;">
+          <button class="layer-btn" id="btn-cam-iso" style="flex:1;">İzometrik</button>
+          <button class="layer-btn" id="btn-cam-top" style="flex:1;">Kuşbakışı</button>
+          <button class="layer-btn" id="btn-cam-side" style="flex:1;">Sırt Hattı</button>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Sağ Detaylı Nokta Analiz Paneli (Tıklanan Piksel) -->
+  <aside class="right-panel hidden" id="inspector-panel">
+    <div class="panel-header">
+      <span>İniş Sahası İncelemesi</span>
+      <button id="btn-close-inspector" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:16px;">&times;</button>
+    </div>
+    <div class="panel-body">
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <span class="section-label" style="margin:0;">İniş Güvenlik Durumu</span>
+        <span class="suitability-badge badge-excellent" id="insp-badge">MÜKEMMEL</span>
+      </div>
+
+      <div style="background: rgba(0,0,0,0.3); border-radius: 6px; padding: 10px;">
+        <div class="telemetry-row">
+          <span class="telemetry-label">Seçilen Koordinat</span>
+          <span class="telemetry-value" id="insp-coords">-89.75&deg;, 0.00&deg;</span>
+        </div>
+        <div class="telemetry-row">
+          <span class="telemetry-label">Yüzey Kotu (Elevation)</span>
+          <span class="telemetry-value" id="insp-elev">-- m</span>
+        </div>
+        <div class="telemetry-row">
+          <span class="telemetry-label">Eğim Açısı (Slope)</span>
+          <span class="telemetry-value" id="insp-slope">-- &deg; (&lt; 8&deg; Hedef)</span>
+        </div>
+        <div class="telemetry-row">
+          <span class="telemetry-label">Pürüzlülük İndeksi (TRI)</span>
+          <span class="telemetry-value" id="insp-rough">-- m</span>
+        </div>
+        <div class="telemetry-row">
+          <span class="telemetry-label">Güneşlenme Süresi</span>
+          <span class="telemetry-value" id="insp-illum">-- %</span>
+        </div>
+        <div class="telemetry-row">
+          <span class="telemetry-label">Dünya Görüş Hattı (DTE)</span>
+          <span class="telemetry-value" id="insp-dte">-- %</span>
+        </div>
+        <div class="telemetry-row">
+          <span class="telemetry-label">Yüzey Sıcaklığı (LRO Diviner)</span>
+          <span class="telemetry-value" id="insp-temp">-- K (-- &deg;C)</span>
+        </div>
+        <div class="telemetry-row" style="flex-direction:column; align-items:flex-start; gap:4px; padding:6px 0;">
+          <span class="telemetry-label" style="font-size:10px; color:var(--accent-purple); font-weight:600;">Bilimsel &amp; Görev Hedefi</span>
+          <span style="font-size:10px; color:#cbd5e1; line-height:1.35;" id="insp-objective">--</span>
+        </div>
+        <div class="telemetry-row" style="border:none;">
+          <span class="telemetry-label" style="color:var(--accent-cyan); font-weight:700;">Uygunluk Skoru</span>
+          <span class="telemetry-value" id="insp-score" style="color:var(--accent-cyan); font-size:14px;">-- / 100</span>
+        </div>
+      </div>
+
+      <div>
+        <div class="section-label">24 Saatlik Güneş & Dünya Görünürlük Profili</div>
+        <canvas id="chart-canvas" width="320" height="120"></canvas>
+        <div style="display:flex; justify-content:space-between; font-size:9px; color:var(--text-muted); margin-top:4px;">
+          <span style="color:#f59e0b;">&bull; Güneş Yüksekliği</span>
+          <span style="color:#38bdf8;">&bull; Dünya Yüksekliği</span>
+          <span style="color:#ef4444;">&bull; Ufuk Sırt Engeli</span>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Katman Renk Skalası Lejantı -->
+  <div class="legend-container" id="legend-box">
+    <div style="font-weight: 600; color:#fff;" id="legend-title">YÜKSEKLİK (KOT)</div>
+    <div class="legend-bar" id="legend-bar"></div>
+    <div class="legend-labels">
+      <span id="legend-min">-3500 m</span>
+      <span id="legend-mid">0 m</span>
+      <span id="legend-max">+1500 m</span>
+    </div>
+  </div>
+
+  <!-- Alt Zaman Kaydırıcısı (Time Scrubber) -->
+  <footer class="bottom-bar">
+    <button class="play-btn" id="btn-play-pause">&#9658;</button>
+
+    <div class="timeline-slider-wrap">
+      <div class="timeline-info">
+        <span>ZAMAN (UTC): <strong id="hud-time" style="color:#fff;">2026-11-15T00:00:00Z</strong></span>
+        <span>SİMÜLASYON ADIMI: <strong id="hud-step">0 / 24</strong></span>
+      </div>
+      <input type="range" id="time-slider" min="0" max="24" step="1" value="0">
+    </div>
+
+    <div class="live-angles-hud">
+      <div class="hud-item">
+        <span>Güneş Az/Yük</span>
+        <span id="hud-sun-angles">0.0&deg; / 0.0&deg;</span>
+      </div>
+      <div class="hud-item">
+        <span>Güneş Akısı</span>
+        <span id="hud-sun-flux">0.0 W/m&sup2;</span>
+      </div>
+      <div class="hud-item">
+        <span>Dünya Az/Yük</span>
+        <span id="hud-earth-angles">0.0&deg; / 0.0&deg;</span>
+      </div>
+      <div class="hud-item">
+        <span>Dünya Mesafe</span>
+        <span id="hud-earth-dist">384,400 km</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- MoonTrek Referans Görüntü Modal / PIP -->
+  <div class="ref-modal hidden" id="ref-modal">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+      <span style="font-size:11px; font-weight:700; color:var(--accent-cyan);">LRO LOLA MOONTREK REFERANSI</span>
+      <button id="btn-close-ref" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:16px;">&times;</button>
+    </div>
+    <img src="/static/assets/shackleton_reference.jpg" alt="Shackleton LOLA DEM Referansı" class="ref-img">
+    <div style="font-size:9px; color:var(--text-muted); font-family:var(--font-mono);">
+      Shackleton Krateri (89.9°S, 0.0°E, 21km çap). Kırmızı/Sarı: Yüksek sırt (+1300m), Mavi/Mor: Soğuk taban (-4000m).
+    </div>
+  </div>
+
+  <!-- Yapay Zeka Detaylı İniş Teşhis ve Optimizasyon Modal -->
+  <div class="ai-modal-overlay hidden" id="ai-analysis-modal">
+    <div class="ai-modal-content">
+      <div class="ai-modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <svg style="width:16px; height:16px; fill:var(--accent-cyan);" viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
+          <span style="font-size:12px; font-weight:700; color:#fff;" id="analysis-modal-title">NASA ARTEMIS AI OTONOM İNİŞ TEŞHİS RAPORU</span>
+        </div>
+        <button id="btn-close-analysis" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="ai-modal-body" id="analysis-modal-body">
+        <div style="color:var(--text-muted); font-size:11px;">Rapor yükleniyor...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Uçuş Veritabanı ve Canlı Log Modalı -->
+  <div class="ai-modal-overlay hidden" id="db-trials-modal">
+    <div class="ai-modal-content" style="width: 900px; max-width: 94vw;">
+      <div class="ai-modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <svg style="width:16px; height:16px; fill:var(--accent-purple);" viewBox="0 0 24 24"><path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H8V4h12v12z"/></svg>
+          <span style="font-size:12px; font-weight:700; color:#fff;">AY İNİŞ TELEMETRİ VERİTABANI & CANLI LOGLAR</span>
+        </div>
+        <button id="btn-close-db-modal" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="ai-modal-body">
+        <!-- DB İstatistik Özeti -->
+        <div class="db-summary-cards" id="db-summary-cards">
+          <div class="db-stat-badge">Toplam Kayıt: <strong id="db-m-total" style="color:#fff;">--</strong></div>
+          <div class="db-stat-badge">Başarı Oranı: <strong id="db-m-success" style="color:var(--accent-emerald);">--%</strong></div>
+          <div class="db-stat-badge">Ortalama Skor: <strong id="db-m-avg-score" style="color:var(--accent-cyan);">-- / 100</strong></div>
+          <div class="db-stat-badge">Ort. Vz: <strong id="db-m-avg-vz" style="color:var(--accent-gold);">-- m/s</strong></div>
+        </div>
+
+        <!-- Filtre ve Kontrol Barı -->
+        <div style="display:flex; gap:10px; align-items:center; justify-content:space-between; margin-bottom:6px;">
+          <div style="display:flex; gap:8px; align-items:center;">
+            <label style="font-size:11px; color:var(--text-muted);">Saha Filtresi:</label>
+            <select id="db-filter-site" class="db-filter-select">
+              <option value="">Tüm Sahalar</option>
+              <option value="MALAPERT_MASSIF">Malapert Massif (Artemis III)</option>
+              <option value="CONNECTING_RIDGE_EXT">Connecting Ridge Ext (Artemis III)</option>
+              <option value="LEIBNITZ_BETA">Leibnitz Beta (Artemis III)</option>
+              <option value="DE_GERLACHE_RIM_1">de Gerlache Rim 1 (Artemis III)</option>
+              <option value="DE_GERLACHE_RIM_2">de Gerlache Rim 2 (Artemis III)</option>
+              <option value="AMUNDSEN_RIM">Amundsen Rim (Artemis III)</option>
+              <option value="NOBILE_RIM_2">Nobile Rim 2 (Artemis III)</option>
+              <option value="DE_GERLACHE_KOCHER">de Gerlache-Kocher (Artemis III)</option>
+              <option value="HAWORTH">Haworth (Artemis III)</option>
+              <option value="SITE_ALPHA">Site Alpha (Connecting Ridge)</option>
+              <option value="SITE_BETA">Site Beta (Peak A)</option>
+              <option value="SITE_GAMMA">Site Gamma (South Apron)</option>
+              <option value="SITE_DELTA">Site Delta (PSR)</option>
+              <option value="SHOEMAKER_RIM">Shoemaker Rim (Safe Haven)</option>
+              <option value="FAUSTINI_RIM">Faustini Rim (Safe Haven)</option>
+              <option value="CABEUS_RIDGE">Cabeus Ridge (Safe Haven)</option>
+              <option value="SLATER_RIM">Slater Rim (Safe Haven)</option>
+              <option value="SVERDRUP_RIM">Sverdrup Rim (Safe Haven)</option>
+            </select>
+
+            <label style="font-size:11px; color:var(--text-muted); margin-left:8px;">Durum Filtresi:</label>
+            <select id="db-filter-status" class="db-filter-select">
+              <option value="">Tüm Durumlar</option>
+              <option value="PERFECT_TOUCHDOWN">Mükemmel İniş</option>
+              <option value="SAFE_TOUCHDOWN">Güvenli İniş</option>
+              <option value="HARD_LANDING">Sert İniş</option>
+              <option value="CRASH">Kaza</option>
+            </select>
+          </div>
+
+          <button id="btn-refresh-db" class="ai-action-btn" style="padding:4px 10px; font-size:11px;">
+            Yenile
+          </button>
+        </div>
+
+        <!-- Tablo -->
+        <div class="db-table-scroll-wrap">
+          <table class="db-trials-table">
+            <thead>
+              <tr>
+                <th>Deneme ID</th>
+                <th>Zaman (UTC)</th>
+                <th>Saha</th>
+                <th>İniş Vz</th>
+                <th>Yatay Vxy</th>
+                <th>Gövde Eğim</th>
+                <th>Kalan Yakıt</th>
+                <th>Skor</th>
+                <th>Durum</th>
+              </tr>
+            </thead>
+            <tbody id="db-trials-tbody">
+              <tr>
+                <td colspan="9" style="text-align:center; color:var(--text-muted); padding:20px;">Veriler yükleniyor...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ön Uçuş ML Risk ve Güdüm Tahmincisi Modalı -->
+  <div class="ai-modal-overlay hidden" id="ml-predict-modal">
+    <div class="ai-modal-content" style="width: 780px; max-width: 92vw;">
+      <div class="ai-modal-header">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <svg style="width:16px; height:16px; fill:var(--accent-purple);" viewBox="0 0 24 24"><path d="M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2zm1 15h-2v-2h2zm0-4h-2V7h2z"/></svg>
+          <span style="font-size:12px; font-weight:700; color:#fff;">ÖN UÇUŞ ML RİSK VE GÜDÜM TAHMİNCİSİ (PRE-FLIGHT ASSESSOR)</span>
+        </div>
+        <button id="btn-close-predict-modal" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="ai-modal-body">
+        <p style="color:var(--text-secondary); font-size:11px; margin-bottom:8px;">
+          Ay yüzeyine alçalma öncesinde sensör ve yörünge telemetrilerini girerek makine öğrenimi modellerinin öngördüğü iniş sağlık skorunu, kaza/sert iniş risk olasılıklarını ve Apollo E-Guidance tavsiye marjlarını hesaplayınız.
+        </p>
+
+        <!-- Giriş Parametreleri Izgarası -->
+        <div class="ml-inputs-grid">
+          <div class="ml-input-group">
+            <label>Başlangıç İrtifası (m): <span id="val-pred-alt">3200 m</span></label>
+            <input type="range" id="input-pred-alt" min="1000" max="6000" step="50" value="3200">
+          </div>
+          <div class="ml-input-group">
+            <label>Yatay Hız Vxy (m/s): <span id="val-pred-vh">62 m/s</span></label>
+            <input type="range" id="input-pred-vh" min="20" max="120" step="1" value="62">
+          </div>
+          <div class="ml-input-group">
+            <label>Düşey Hız Vz (m/s): <span id="val-pred-vv">-28 m/s</span></label>
+            <input type="range" id="input-pred-vv" min="-70" max="-10" step="1" value="-28">
+          </div>
+          <div class="ml-input-group">
+            <label>İniş Alanı Eğimi (°): <span id="val-pred-slope">4.0°</span></label>
+            <input type="range" id="input-pred-slope" min="0" max="22" step="0.2" value="4.0">
+          </div>
+          <div class="ml-input-group">
+            <label>Pürüzlülük TRI (m): <span id="val-pred-tri">0.30 m</span></label>
+            <input type="range" id="input-pred-tri" min="0.05" max="2.5" step="0.05" value="0.30">
+          </div>
+          <div class="ml-input-group">
+            <label>Güneşlenme Oranı (%): <span id="val-pred-solar">85%</span></label>
+            <input type="range" id="input-pred-solar" min="0" max="100" step="1" value="85">
+          </div>
+          <div class="ml-input-group">
+            <label>Dünya Görüş Hattı DTE (%): <span id="val-pred-dte">90%</span></label>
+            <input type="range" id="input-pred-dte" min="0" max="100" step="1" value="90">
+          </div>
+          <div class="ml-input-group" style="display:flex; align-items:flex-end;">
+            <button id="btn-run-ml-predict" class="ai-action-btn primary" style="width:100%; height:32px;">
+              ML Risk ve Güdüm Tahmini Yap
+            </button>
+          </div>
+        </div>
+
+        <!-- Tahmin Çıktı Kartı -->
+        <div id="ml-predict-result-box" class="ml-predict-box">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+            <span style="font-size:11px; font-weight:700; color:var(--text-secondary);">GÖREV GÜVENLİK DEĞERLENDİRMESİ</span>
+            <span id="pred-risk-pill" class="suitability-badge badge-excellent" style="font-size:11px; padding:4px 10px;">DÜŞÜK RİSK</span>
+          </div>
+
+          <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:12px;">
+            <div class="ml-res-card">
+              <div class="ml-res-label">Beklenen Sağlık Skoru</div>
+              <div class="ml-res-val" id="pred-score-display" style="color:var(--accent-cyan);">-- / 100</div>
+            </div>
+            <div class="ml-res-card">
+              <div class="ml-res-label">Öngörülen Yakıt Tüketimi</div>
+              <div class="ml-res-val" id="pred-fuel-display" style="color:var(--accent-gold);">-- kg</div>
+            </div>
+            <div class="ml-res-card">
+              <div class="ml-res-label">Kalan Yakıt Marjı</div>
+              <div class="ml-res-val" id="pred-fuel-pct-display" style="color:var(--accent-emerald);">-- %</div>
+            </div>
+          </div>
+
+          <!-- Olasılık Çubukları -->
+          <div style="background:rgba(0,0,0,0.3); padding:10px; border-radius:6px; margin-bottom:10px;">
+            <div style="font-size:10px; color:var(--text-muted); margin-bottom:6px;">İNİŞ SONUCU OLASILIK DAĞILIMI (SOFTMAX SINIFLANDIRICI)</div>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+              <div>
+                <div style="display:flex; justify-content:space-between; font-size:10px;">
+                  <span style="color:var(--accent-emerald);">Güvenli Yumuşak İniş (SAFE)</span>
+                  <span id="prob-safe-text" style="font-weight:700; color:var(--accent-emerald);">--%</span>
+                </div>
+                <div class="prob-bar-track">
+                  <div id="prob-safe-bar" class="prob-bar-fill" style="background:var(--accent-emerald); width:0%;"></div>
+                </div>
+              </div>
+
+              <div>
+                <div style="display:flex; justify-content:space-between; font-size:10px;">
+                  <span style="color:var(--accent-gold);">Sert İniş (HARD)</span>
+                  <span id="prob-hard-text" style="font-weight:700; color:var(--accent-gold);">--%</span>
+                </div>
+                <div class="prob-bar-track">
+                  <div id="prob-hard-bar" class="prob-bar-fill" style="background:var(--accent-gold); width:0%;"></div>
+                </div>
+              </div>
+
+              <div>
+                <div style="display:flex; justify-content:space-between; font-size:10px;">
+                  <span style="color:var(--accent-rose);">Kritik Kaza (CRASH)</span>
+                  <span id="prob-crash-text" style="font-weight:700; color:var(--accent-rose);">--%</span>
+                </div>
+                <div class="prob-bar-track">
+                  <div id="prob-crash-bar" class="prob-bar-fill" style="background:var(--accent-rose); width:0%;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Tavsiye ve Güdüm Bilgisi -->
+          <div class="ml-advisory-box">
+            <div style="display:flex; gap:6px; align-items:center; margin-bottom:4px;">
+              <strong style="color:var(--accent-cyan); font-size:11px;">Uçuş Kontrol Tavsiyesi & Güdüm Marjı:</strong>
+              <span id="pred-throttle-band" style="font-size:10px; color:#fff; background:rgba(255,255,255,0.1); padding:2px 6px; border-radius:3px;">--</span>
+            </div>
+            <div id="pred-advisory-text" style="font-size:11px; color:var(--text-secondary); line-height:1.4;">
+              Tahmin çalıştırılmayı bekliyor.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Aviyonik Kokpit Paneli (Physics & Avionics Inspector) Modalı -->
+  <div class="ai-modal-overlay hidden" id="avionics-modal">
+    <div class="ai-modal-content" style="width: 880px; max-width: 94vw;">
+      <div class="ai-modal-header" style="border-bottom: 1px solid var(--accent-cyan);">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <svg style="width:16px; height:16px; fill:var(--accent-cyan);" viewBox="0 0 24 24"><path d="M12 2L4.5 20.29l.71.71L12 18l6.79 3 .71-.71z"/></svg>
+          <span style="font-size:12px; font-weight:700; color:#fff;">AVİYONİK KOKPİT VE FİZİK TELEMETRİ MERKEZİ (PHYSICS &amp; AVIONICS INSPECTOR)</span>
+        </div>
+        <button id="btn-close-avionics" class="modal-close-btn">&times;</button>
+      </div>
+      <div class="ai-modal-body">
+        <p style="color:var(--text-secondary); font-size:11px; margin-bottom:12px; line-height:1.45;">
+          NASA Artemis III ve Lunar Gateway NRHO yörünge röle penceresi, Bıçak Sırtı Kırınım (Knife-Edge Diffraction) S-Band sinyal erişimi, DSN derin uzay bağlantı bütçesi ve LRO LOLA/NAC kayaç riski (Boulder Hazard) telemetrilerini gerçek zamanlı izleyiniz.
+        </p>
+
+        <div class="avionics-grid">
+          <!-- 1. Gateway NRHO Röle Penceresi (AOS / LOS) -->
+          <div class="avionics-card">
+            <div class="avionics-card-header">
+              <span class="avionics-card-title">
+                🛰️ Gateway NRHO Röle Penceresi
+              </span>
+              <span class="avionics-status-pill active" id="av-nrho-status">AOS (AKTİF)</span>
+            </div>
+            <div class="avionics-metric-item">
+              <span class="avionics-m-label">Yörünge Tipi:</span>
+              <span class="avionics-m-val">9:2 NRHO Halo (L2 Rezonans)</span>
+            </div>
+            <div class="avionics-metric-item">
+              <span class="avionics-m-label">AOS İletişim Penceresi:</span>
+              <span class="avionics-m-val" id="av-nrho-aos-window">8.4 Saat Kesintisiz</span>
+            </div>
+            <div class="avionics-metric-item">
+              <span class="avionics-m-label">Sonraki LOS (Görüş Kaybı):</span>
+              <span class="avionics-m-val" id="av-nrho-los-countdown" style="color:var(--accent-emerald);">03:42:18</span>
+            </div>
+            <div class="avionics-metric-item">
+              <span class="avionics-m-label">Orbital Yükseklik:</span>
+              <span class="avionics-m-val" id="av-nrho-alt">3,240 km (Periapsis)</span>
+            </div>
+            <div class="avionics-metric-item">
+              <span class="avionics-m-label">Ka-Band Röle Hızı:</span>
+              <span class="avionics-m-val" style="color:var(--accent-cyan);">100 Mbps (HD Telemetri)</span>
+            </div>
+            <div class="avionics-formula-note">
+              9:2 sinodik rezonans periyodu: 6.56 gün. Güney Kutbu üzerinden kesintisiz yüksek irtifa röle kapsaması.
+            </div>
+          </div>
+
+          <!-- 2. Bıçak Sırtı Kırınım (Knife-Edge Diffraction) S-Band -->
+          <div class="avionics-card">
+            <div class="avionics-card-header">
+              <span class="avionics-card-title">
+                ⚡ Bıçak Sırtı Kırınım (Knife-Edge)
+              </span>
+              <span class="avionics-status-pill active" id="av-diff-status">S-BAND GÜVENLİ</span>
+            </div>
+            <div class="avionics-metric-item">
+              <span class="avionics-m-label">Fresnel Parametresi (v):</span>
+              <span class="avionics-m-val" id="av-diff-v">-0.68</span>
+            </div>
+            <div class="avionics-metric-item">
+              <span class="avionics-m-label">Kırınım Kaybı (Diffraction Loss):</span>
+              <span class="avionics-m-val" id="av-diff-loss" style="color:var(--accent-gold);">-4.5 dB</span>
+            </div>
+            <div class="avionics-metric-item">
+              <span class="avionics-m-label">Taşıyıcı Frekansı (S-Band):</span>
+              <span class="avionics-m-val">2.215 GHz (&lambda; = 13.54 cm)</span>
+            </div>
+            <div class="avionics-metric-item">
+              <span class="avionics-m-label">Efektif Sinyal Marjı:</span>
+              <span class="avionics-m-val" id="av-diff-margin" style="color:var(--accent-emerald);">+14.2 dB (&gt; 3 dB Eşik)</span>
+            </div>
+            <div class="avionics-metric-item">
+              <span class="avionics-m-label">PSR Krater Tabanı Kapsama:</span>
+              <span class="avionics-m-val" style="color:var(--accent-cyan);">Kırınım ile Açık</span>
+            </div>
+            <div class="avionics-formula-note">
+              Fresnel-Kirchhoff: v = h &middot; &radic;(2(d1+d2) / &lambda;d1d2). Krater sırtı üzerinden difraksiyonla kalıcı gölgeye sinyal erişimi.
+            </div>
+          </div>
+
+          <!-- 3. DSN İstasyon Bağlantı Bütçesi (Deep Space Network) -->
+          <div class="avionics-card">
+            <div class="avionics-card-header">
+              <span class="avionics-card-title">
+                🌍 DSN Derin Uzay Link Bütçesi
+              </span>
+              <span class="avionics-status-pill active" id="av-dsn-status">BAĞLI (MADRID)</span>
+            </div>
+            <div class="avionics-metric-item">
+              <span class="avionics-m-label">Aktif Yer İstasyonu:</span>
+              <span class="avionics-m-val" id="av-dsn-station">DSN Madrid (DSS-63, 70m)</span>
+            </div>
+            <div class="avionics-metric-item">
+              <span class="avionics-m-label">İstasyon EIRP:</span>
+              <span class="avionics-m-val">84.5 dBW (X-Band 8.45 GHz)</span>
+            </div>
+            <div class="avionics-metric-item">
+              <span class="avionics-m-label">Serbest Uzay Kaybı (FSPL):</span>
+              <span class="avionics-m-val" id="av-dsn-fspl">-210.8 dB (384,400 km)</span>
+            </div>
+            <div class="avionics-metric-item">
+              <span class="avionics-m-label">Eb/N0 Marjı:</span>
+              <span class="avionics-m-val" id="av-dsn-ebn0" style="color:var(--accent-emerald);">+17.2 dB (Emniyetli)</span>
+            </div>
+            <div class="avionics-metric-item">
+              <span class="avionics-m-label">Tek Yönlü Sinyal Gecikmesi:</span>
+              <span class="avionics-m-val">1.28 saniye</span>
+            </div>
+            <div class="avionics-formula-note">
+              FSPL = 20&middot;log10(d) + 20&middot;log10(f) + 92.45 dB. DSN 70 metrelik dev çanak antenleriyle kesintisiz telekomünikasyon.
+            </div>
+          </div>
+
+          <!-- 4. Boulder Hazard (Kayaç Dağılımı ve Engel Riski) -->
+          <div class="avionics-card">
+            <div class="avionics-card-header">
+              <span class="avionics-card-title">
+                🪨 Boulder Hazard (Kayaç Riski)
+              </span>
+              <span class="avionics-status-pill active" id="av-boulder-status">DÜŞÜK RİSK</span>
+            </div>
+            <div class="avionics-metric-item">
+              <span class="avionics-m-label">CFA Kayaç Dağılım Modeli:</span>
+              <span class="avionics-m-val">F_k(D) = q &middot; e^(-p&middot;D)</span>
+            </div>
+            <div class="avionics-metric-item">
+              <span class="avionics-m-label">&gt; 1.5 m Blok Kayaç Olasılığı:</span>
+              <span class="avionics-m-val" id="av-boulder-prob" style="color:var(--accent-emerald);">%1.2 (Çok Düşük)</span>
+            </div>
+            <div class="avionics-metric-item">
+              <span class="avionics-m-label">Maksimum Engel Yüksekliği:</span>
+              <span class="avionics-m-val" id="av-boulder-max-h">0.52 m</span>
+            </div>
+            <div class="avionics-metric-item">
+              <span class="avionics-m-label">İniş Takımı Klirensi:</span>
+              <span class="avionics-m-val" style="color:var(--accent-cyan);">1.20 m (Marj: +0.68 m)</span>
+            </div>
+            <div class="avionics-metric-item">
+              <span class="avionics-m-label">Regolit Taşıma Direnci:</span>
+              <span class="avionics-m-val">135 kPa (Taşıma Emniyetli)</span>
+            </div>
+            <div class="avionics-formula-note">
+              LRO NAC 0.5m/px görüntülerinden türetilen Cumulative Fractional Area (CFA) istatistiği. İniş ayaklarının devrilme riski düşüktür.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/terrain_viewer.js?v=3.0.0"></script>
+  <script src="/static/app.js?v=3.0.0"></script>
+</body>
+</html>

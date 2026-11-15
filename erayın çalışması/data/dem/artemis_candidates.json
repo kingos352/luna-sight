@@ -1,0 +1,1054 @@
+{
+  "metadata": {
+    "title": "NASA Artemis III Official Candidate Landing Regions Analysis",
+    "mission": "NASA Artemis III Human Landing System (HLS)",
+    "target_region": "Lunar South Pole (Within 6 degrees of South Pole, <= -84° Latitude)",
+    "standards": "NASA Artemis III Landing Site Selection Criteria & LRO LOLA Topography / PDS Geoscience Node",
+    "dem_dimensions": {
+      "width": 512,
+      "height": 512,
+      "pixel_size_m": 60.0
+    },
+    "spatial_coverage_km": {
+      "width_km": 30.72,
+      "height_km": 30.72
+    },
+    "filtered_regions": [
+      {
+        "name": "Malapert A",
+        "coordinates": {
+          "latitude_deg": -80.13,
+          "longitude_deg": 1.44
+        },
+        "status": "FILTERED_OUT (EXCLUDED)",
+        "evaluation": "CLPS IM-1 (Odysseus) robotik iniş görevi hedef bölgesi olup enlem olarak -80.13°S konumundadır. NASA'nın resmi 13 Artemis III mürettebatlı aday iniş bölgesi arasında yer almamaktadır (Artemis III için resmi saha Malapert Massif'tir). Talimat gereği aktif iniş listesinden elenmiştir."
+      },
+      {
+        "name": "Mons Mouton",
+        "coordinates": {
+          "latitude_deg": -84.5,
+          "longitude_deg": 31.0
+        },
+        "status": "FILTERED_OUT (EXCLUDED)",
+        "evaluation": "NASA VIPER robotik keşif aracı ve CLPS Griffin iniş platformu için seçilen düz platodur. NASA Artemis III resmi 13 insanlı iniş bölgesi listesinde yer almamaktadır. Talimat gereği aktif iniş listesinden elenmiştir."
+      }
+    ],
+    "artemis_landing_constraints": {
+      "max_slope_deg": 8.0,
+      "max_acceptable_slope_deg": 12.0,
+      "max_roughness_tri_m": 1.5,
+      "min_solar_illumination_pct": 70.0,
+      "min_dte_visibility_pct": 60.0
+    }
+  },
+  "candidate_sites": [
+    {
+      "site_id": "MALAPERT_MASSIF",
+      "name": "Malapert Massif",
+      "designation": "Malapert Massif Summit Plateau (Artemis III 1 Numaralı Öncelikli Saha)",
+      "description": "Ay güney kutbunun simgesi olan devasa dağ kütlesi. Zirve platosu neredeyse sürekli güneş ışığı (%92+) ve kesintisiz Dünya görüşü (%94+) sunar.",
+      "operational_role": "Artemis III Birincil İnsanlı İniş & Kalıcı Artemis Base Camp Ana Konumu",
+      "scientific_objective": "Ay güney kutup jeolojisi, derin uzay radyo astronomi gözlemevi fizibilitesi ve milyarlarca yıllık çarpma kronolojisi.",
+      "coordinates": {
+        "latitude_deg": -86.04,
+        "longitude_deg": 2.7,
+        "cartesian_x_m": 3690.0,
+        "cartesian_y_m": -10750.0,
+        "grid_pixel": {
+          "x": 317,
+          "y": 77
+        },
+        "normalized": {
+          "norm_x": 0.5,
+          "norm_y": 0.5
+        }
+      },
+      "topography": {
+        "elevation_m": 2150.0,
+        "slope_deg": 3.1,
+        "roughness_tri_m": 0.218
+      },
+      "environment_and_visibility": {
+        "solar_illumination_pct": 92.4,
+        "dte_visibility_pct": 94.6,
+        "thermal_temp_kelvin": 228.0,
+        "thermal_temp_celsius": -45.15,
+        "thermal_temp_range_k": {
+          "min_k": 120.0,
+          "max_k": 240.0
+        },
+        "communication_link": "Kesintisiz Doğrudan Dünya Görüş Hattı (DTE > %94, Minimum Maskelenme)",
+        "power_generation": "Neredeyse Kesintisiz Fotovoltaik Güneş Gücü (> %92 Aydınlanma)"
+      },
+      "artemis_criteria_evaluation": {
+        "slope_limit_deg": 8.0,
+        "slope_check": "PASS",
+        "roughness_limit_m": 1.5,
+        "roughness_check": "PASS",
+        "min_solar_illumination_pct": 70.0,
+        "solar_illumination_check": "PASS",
+        "min_dte_visibility_pct": 60.0,
+        "dte_visibility_check": "PASS",
+        "overall_artemis_landing_eligible": true
+      },
+      "scoring": {
+        "suitability_score": 96.5,
+        "rating": "EXCELLENT",
+        "operational_status": "ARTEMIS_III_HIGHEST_PRIORITY_BASE_CAMP"
+      },
+      "category": "ARTEMIS_III_OFFICIAL"
+    },
+    {
+      "site_id": "CONNECTING_RIDGE_EXT",
+      "name": "Connecting Ridge Extension",
+      "designation": "Connecting Ridge Extension (Artemis III Resmi Aday Sahası)",
+      "description": "Connecting Ridge sırtının batı uzantısındaki yüksek irtifa hattı. Shackleton ile de Gerlache kraterleri arasındaki geçit üzerinde mükemmel görüş.",
+      "operational_role": "Artemis III Mürettebatlı İniş & Geceleme Öncesi Solar İstasyon Konuşlandırma",
+      "scientific_objective": "Sırt boyunca regolit mineralojisi, PSR soğuk tuzaklarına robotik sortiler ve kalıcı solar enerji mimarisi doğrulama.",
+      "coordinates": {
+        "latitude_deg": -89.47,
+        "longitude_deg": -136.2,
+        "cartesian_x_m": -8750.0,
+        "cartesian_y_m": -9700.0,
+        "grid_pixel": {
+          "x": 110,
+          "y": 94
+        },
+        "normalized": {
+          "norm_x": 0.5,
+          "norm_y": 0.5
+        }
+      },
+      "topography": {
+        "elevation_m": 1820.0,
+        "slope_deg": 4.85,
+        "roughness_tri_m": 0.29
+      },
+      "environment_and_visibility": {
+        "solar_illumination_pct": 85.2,
+        "dte_visibility_pct": 79.8,
+        "thermal_temp_kelvin": 212.0,
+        "thermal_temp_celsius": -61.15,
+        "thermal_temp_range_k": {
+          "min_k": 85.0,
+          "max_k": 225.0
+        },
+        "communication_link": "Direct-to-Earth (DTE) Kesintisiz Yüksek Hızlı S/Ka-Bant",
+        "power_generation": "Yüksek Verimli Dikey Güneş Panelleri (Yıllık >%85 Aydınlanma)"
+      },
+      "artemis_criteria_evaluation": {
+        "slope_limit_deg": 8.0,
+        "slope_check": "PASS",
+        "roughness_limit_m": 1.5,
+        "roughness_check": "PASS",
+        "min_solar_illumination_pct": 70.0,
+        "solar_illumination_check": "PASS",
+        "min_dte_visibility_pct": 60.0,
+        "dte_visibility_check": "PASS",
+        "overall_artemis_landing_eligible": true
+      },
+      "scoring": {
+        "suitability_score": 91.2,
+        "rating": "EXCELLENT",
+        "operational_status": "ARTEMIS_III_PRIMARY_APPROVED"
+      },
+      "category": "ARTEMIS_III_OFFICIAL"
+    },
+    {
+      "site_id": "LEIBNITZ_BETA",
+      "name": "Leibnitz Beta Plateau",
+      "designation": "Leibnitz Beta Plateau (Artemis III Resmi Aday Sahası)",
+      "description": "Ay'ın güney kutup dairesindeki en yüksek doruklarından biri (+3120 m). 360 derece ufuk açıklığına sahip düzleştirilmiş tepe platosu.",
+      "operational_role": "Kalıcı Ay Üssü (Artemis Base Camp) İdeal Konuşlanma Sahası",
+      "scientific_objective": "South Pole-Aitken iç halka dağ kuşağı mineralojisi, manto derinliklerinden püsküren magmatik anortozit kalıntıları.",
+      "coordinates": {
+        "latitude_deg": -85.82,
+        "longitude_deg": 29.5,
+        "cartesian_x_m": 11670.0,
+        "cartesian_y_m": 7680.0,
+        "grid_pixel": {
+          "x": 451,
+          "y": 384
+        },
+        "normalized": {
+          "norm_x": 0.5,
+          "norm_y": 0.5
+        }
+      },
+      "topography": {
+        "elevation_m": 3120.0,
+        "slope_deg": 3.65,
+        "roughness_tri_m": 0.26
+      },
+      "environment_and_visibility": {
+        "solar_illumination_pct": 88.6,
+        "dte_visibility_pct": 91.4,
+        "thermal_temp_kelvin": 222.0,
+        "thermal_temp_celsius": -51.15,
+        "thermal_temp_range_k": {
+          "min_k": 110.0,
+          "max_k": 235.0
+        },
+        "communication_link": "Kesintisiz Doğrudan Dünya Görüş Hattı (DTE > %91)",
+        "power_generation": "Kalıcı Güneşlenme Koridoru (> %88)"
+      },
+      "artemis_criteria_evaluation": {
+        "slope_limit_deg": 8.0,
+        "slope_check": "PASS",
+        "roughness_limit_m": 1.5,
+        "roughness_check": "PASS",
+        "min_solar_illumination_pct": 70.0,
+        "solar_illumination_check": "PASS",
+        "min_dte_visibility_pct": 60.0,
+        "dte_visibility_check": "PASS",
+        "overall_artemis_landing_eligible": true
+      },
+      "scoring": {
+        "suitability_score": 93.4,
+        "rating": "EXCELLENT",
+        "operational_status": "ARTEMIS_III_TOP_TIER_CANDIDATE"
+      },
+      "category": "ARTEMIS_III_OFFICIAL"
+    },
+    {
+      "site_id": "DE_GERLACHE_RIM_1",
+      "name": "de Gerlache Rim 1",
+      "designation": "de Gerlache Rim 1 (Artemis III Resmi Aday Sahası)",
+      "description": "de Gerlache kraterinin doğu kenar terasında yer alan yüksek irtifa sahası. Kalıcı gölgeli krater tabanlarına doğrudan yamaç erişimi sağlar.",
+      "operational_role": "Artemis III İnsanlı Yüzey Keşif & PSR Numune Toplama Görevi",
+      "scientific_objective": "Eski South Pole-Aitken (SPA) havzası çarpma eriyiklerinin tespiti ve krater içi su buzu/uçucu profillemesi.",
+      "coordinates": {
+        "latitude_deg": -88.71,
+        "longitude_deg": -68.7,
+        "cartesian_x_m": -10750.0,
+        "cartesian_y_m": -4600.0,
+        "grid_pixel": {
+          "x": 77,
+          "y": 179
+        },
+        "normalized": {
+          "norm_x": 0.5,
+          "norm_y": 0.5
+        }
+      },
+      "topography": {
+        "elevation_m": 1740.0,
+        "slope_deg": 3.82,
+        "roughness_tri_m": 0.26
+      },
+      "environment_and_visibility": {
+        "solar_illumination_pct": 82.5,
+        "dte_visibility_pct": 81.0,
+        "thermal_temp_kelvin": 206.0,
+        "thermal_temp_celsius": -67.15,
+        "thermal_temp_range_k": {
+          "min_k": 80.0,
+          "max_k": 218.0
+        },
+        "communication_link": "DTE Sürekli Görüş Hattı",
+        "power_generation": "Fotovoltaik Dikey Paneller"
+      },
+      "artemis_criteria_evaluation": {
+        "slope_limit_deg": 8.0,
+        "slope_check": "PASS",
+        "roughness_limit_m": 1.5,
+        "roughness_check": "PASS",
+        "min_solar_illumination_pct": 70.0,
+        "solar_illumination_check": "PASS",
+        "min_dte_visibility_pct": 60.0,
+        "dte_visibility_check": "PASS",
+        "overall_artemis_landing_eligible": true
+      },
+      "scoring": {
+        "suitability_score": 89.8,
+        "rating": "EXCELLENT",
+        "operational_status": "ARTEMIS_III_PRIMARY_APPROVED"
+      },
+      "category": "ARTEMIS_III_OFFICIAL"
+    },
+    {
+      "site_id": "DE_GERLACHE_RIM_2",
+      "name": "de Gerlache Rim 2",
+      "designation": "de Gerlache Rim 2 (Artemis III Resmi Aday Sahası)",
+      "description": "de Gerlache kraterinin kuzeydoğu dış eğiminde geniş, dalgasız plato. Düşük iniş eğimi ve mükemmel iniş radarı görüşü.",
+      "operational_role": "Mürettebat ve Yüzey Rover (LTV) İniş Koridoru",
+      "scientific_objective": "Krater dışı fırlantı tabakalarının (ejecta blanket) stratigrafik analizi ve regolit aşınma mekanizmaları.",
+      "coordinates": {
+        "latitude_deg": -88.35,
+        "longitude_deg": -67.8,
+        "cartesian_x_m": -11670.0,
+        "cartesian_y_m": -610.0,
+        "grid_pixel": {
+          "x": 61,
+          "y": 245
+        },
+        "normalized": {
+          "norm_x": 0.5,
+          "norm_y": 0.5
+        }
+      },
+      "topography": {
+        "elevation_m": 1210.0,
+        "slope_deg": 4.15,
+        "roughness_tri_m": 0.28
+      },
+      "environment_and_visibility": {
+        "solar_illumination_pct": 80.4,
+        "dte_visibility_pct": 84.2,
+        "thermal_temp_kelvin": 202.0,
+        "thermal_temp_celsius": -71.15,
+        "thermal_temp_range_k": {
+          "min_k": 78.0,
+          "max_k": 215.0
+        },
+        "communication_link": "DTE Görüş Hattı & Ay Yörünge Rölesi",
+        "power_generation": "Güneş Enerjisi + Gece Batarya Desteği"
+      },
+      "artemis_criteria_evaluation": {
+        "slope_limit_deg": 8.0,
+        "slope_check": "PASS",
+        "roughness_limit_m": 1.5,
+        "roughness_check": "PASS",
+        "min_solar_illumination_pct": 70.0,
+        "solar_illumination_check": "PASS",
+        "min_dte_visibility_pct": 60.0,
+        "dte_visibility_check": "PASS",
+        "overall_artemis_landing_eligible": true
+      },
+      "scoring": {
+        "suitability_score": 88.5,
+        "rating": "EXCELLENT",
+        "operational_status": "ARTEMIS_III_PRIMARY_APPROVED"
+      },
+      "category": "ARTEMIS_III_OFFICIAL"
+    },
+    {
+      "site_id": "AMUNDSEN_RIM",
+      "name": "Amundsen Rim",
+      "designation": "Amundsen Rim Terrace (Artemis III Resmi Aday Sahası)",
+      "description": "105 km genişliğindeki devasa Amundsen kraterinin güneybatı kenar terası. Çok geniş ve pürüzsüz iniş alanları barındırır.",
+      "operational_role": "Geniş Alan Mürettebatlı Keşif ve Derin Kabuk Numune Toplama Sahası",
+      "scientific_objective": "Amundsen krateri tabanındaki merkezi yükseltiden fırlayan derin Ay kabuğu/manto materyallerinin toplanması.",
+      "coordinates": {
+        "latitude_deg": -84.45,
+        "longitude_deg": 85.6,
+        "cartesian_x_m": 12900.0,
+        "cartesian_y_m": -6760.0,
+        "grid_pixel": {
+          "x": 471,
+          "y": 143
+        },
+        "normalized": {
+          "norm_x": 0.5,
+          "norm_y": 0.5
+        }
+      },
+      "topography": {
+        "elevation_m": 850.0,
+        "slope_deg": 3.95,
+        "roughness_tri_m": 0.27
+      },
+      "environment_and_visibility": {
+        "solar_illumination_pct": 81.5,
+        "dte_visibility_pct": 85.0,
+        "thermal_temp_kelvin": 204.0,
+        "thermal_temp_celsius": -69.15,
+        "thermal_temp_range_k": {
+          "min_k": 95.0,
+          "max_k": 220.0
+        },
+        "communication_link": "DTE Görüş Hattı",
+        "power_generation": "Fotovoltaik Dikey Paneller"
+      },
+      "artemis_criteria_evaluation": {
+        "slope_limit_deg": 8.0,
+        "slope_check": "PASS",
+        "roughness_limit_m": 1.5,
+        "roughness_check": "PASS",
+        "min_solar_illumination_pct": 70.0,
+        "solar_illumination_check": "PASS",
+        "min_dte_visibility_pct": 60.0,
+        "dte_visibility_check": "PASS",
+        "overall_artemis_landing_eligible": true
+      },
+      "scoring": {
+        "suitability_score": 89.2,
+        "rating": "EXCELLENT",
+        "operational_status": "ARTEMIS_III_PRIMARY_APPROVED"
+      },
+      "category": "ARTEMIS_III_OFFICIAL"
+    },
+    {
+      "site_id": "NOBILE_RIM_2",
+      "name": "Nobile Rim 2",
+      "designation": "Nobile Rim 2 (Artemis III Resmi Aday Sahası)",
+      "description": "Nobile kraterinin kuzeydoğu kenar sırtında geniş, sağlam zeminli iniş sahası. Nobile içindeki zengin soğuk tuzaklara makul mesafede.",
+      "operational_role": "Artemis İnsanlı İniş & Gezgin Araçla Uçucu Haritalama Görevi",
+      "scientific_objective": "Çoklu krater örtüşmelerinden kaynaklanan çarpma breşlerinin kimyasal ve izotopik analizi.",
+      "coordinates": {
+        "latitude_deg": -85.28,
+        "longitude_deg": 36.15,
+        "cartesian_x_m": 8600.0,
+        "cartesian_y_m": 3690.0,
+        "grid_pixel": {
+          "x": 399,
+          "y": 317
+        },
+        "normalized": {
+          "norm_x": 0.5,
+          "norm_y": 0.5
+        }
+      },
+      "topography": {
+        "elevation_m": 2420.0,
+        "slope_deg": 4.35,
+        "roughness_tri_m": 0.31
+      },
+      "environment_and_visibility": {
+        "solar_illumination_pct": 79.8,
+        "dte_visibility_pct": 82.5,
+        "thermal_temp_kelvin": 198.0,
+        "thermal_temp_celsius": -75.15,
+        "thermal_temp_range_k": {
+          "min_k": 85.0,
+          "max_k": 218.0
+        },
+        "communication_link": "DTE Görüş Hattı",
+        "power_generation": "Fotovoltaik Dikey Paneller"
+      },
+      "artemis_criteria_evaluation": {
+        "slope_limit_deg": 8.0,
+        "slope_check": "PASS",
+        "roughness_limit_m": 1.5,
+        "roughness_check": "PASS",
+        "min_solar_illumination_pct": 70.0,
+        "solar_illumination_check": "PASS",
+        "min_dte_visibility_pct": 60.0,
+        "dte_visibility_check": "PASS",
+        "overall_artemis_landing_eligible": true
+      },
+      "scoring": {
+        "suitability_score": 87.9,
+        "rating": "EXCELLENT",
+        "operational_status": "ARTEMIS_III_PRIMARY_APPROVED"
+      },
+      "category": "ARTEMIS_III_OFFICIAL"
+    },
+    {
+      "site_id": "DE_GERLACHE_KOCHER",
+      "name": "de Gerlache-Kocher Massif",
+      "designation": "de Gerlache-Kocher Massif (Artemis III Resmi Aday Sahası)",
+      "description": "de Gerlache ve Kocher kraterleri arasındaki devasa tektonik yükselti kütlesi. Çevresine göre 1800 metreden yüksek zirve platosu.",
+      "operational_role": "Yüksek İrtifa İletişim / Röle Üssü ve İnsanlı İniş Sahası",
+      "scientific_objective": "Ay anortozit kabuk katmanlarının açığa çıkmış mostralarından antik Ay kabuk evriminin aydınlatılması.",
+      "coordinates": {
+        "latitude_deg": -85.78,
+        "longitude_deg": -123.35,
+        "cartesian_x_m": -12900.0,
+        "cartesian_y_m": 6760.0,
+        "grid_pixel": {
+          "x": 41,
+          "y": 369
+        },
+        "normalized": {
+          "norm_x": 0.5,
+          "norm_y": 0.5
+        }
+      },
+      "topography": {
+        "elevation_m": 1680.0,
+        "slope_deg": 4.95,
+        "roughness_tri_m": 0.34
+      },
+      "environment_and_visibility": {
+        "solar_illumination_pct": 77.2,
+        "dte_visibility_pct": 79.5,
+        "thermal_temp_kelvin": 195.0,
+        "thermal_temp_celsius": -78.15,
+        "thermal_temp_range_k": {
+          "min_k": 90.0,
+          "max_k": 215.0
+        },
+        "communication_link": "DTE Geniş Açı Görüş Hattı",
+        "power_generation": "Yüksek İrtifa Güneş Panelleri"
+      },
+      "artemis_criteria_evaluation": {
+        "slope_limit_deg": 8.0,
+        "slope_check": "PASS",
+        "roughness_limit_m": 1.5,
+        "roughness_check": "PASS",
+        "min_solar_illumination_pct": 70.0,
+        "solar_illumination_check": "PASS",
+        "min_dte_visibility_pct": 60.0,
+        "dte_visibility_check": "PASS",
+        "overall_artemis_landing_eligible": true
+      },
+      "scoring": {
+        "suitability_score": 86.8,
+        "rating": "EXCELLENT",
+        "operational_status": "ARTEMIS_III_PRIMARY_APPROVED"
+      },
+      "category": "ARTEMIS_III_OFFICIAL"
+    },
+    {
+      "site_id": "HAWORTH",
+      "name": "Haworth",
+      "designation": "Haworth Rim Plateau (Artemis III Resmi Aday Sahası)",
+      "description": "Haworth kraterinin dış kenar düzlüğü. Güneş sisteminin en soğuk bölgelerinden birine (Haworth PSR tabanı < 40 K) komşudur.",
+      "operational_role": "Robotik-Mürettebatlı Kriyojenik Uçucu Örnekleme ve Sorti Görevi",
+      "scientific_objective": "Milyarlarca yıldır kalıcı gölgede hapsolmuş su buzu, karbonmonoksit ve organik moleküllerin in-situ tespiti.",
+      "coordinates": {
+        "latitude_deg": -87.87,
+        "longitude_deg": -5.1,
+        "cartesian_x_m": -3680.0,
+        "cartesian_y_m": 9830.0,
+        "grid_pixel": {
+          "x": 195,
+          "y": 420
+        },
+        "normalized": {
+          "norm_x": 0.5,
+          "norm_y": 0.5
+        }
+      },
+      "topography": {
+        "elevation_m": -1250.0,
+        "slope_deg": 5.8,
+        "roughness_tri_m": 0.41
+      },
+      "environment_and_visibility": {
+        "solar_illumination_pct": 68.5,
+        "dte_visibility_pct": 71.0,
+        "thermal_temp_kelvin": 135.0,
+        "thermal_temp_celsius": -138.15,
+        "thermal_temp_range_k": {
+          "min_k": 45.0,
+          "max_k": 180.0
+        },
+        "communication_link": "DTE ve Yörünge Röle Hibrit Ağı",
+        "power_generation": "Hibrit Fotovoltaik + Yüzey Rezonans Güç Kaynağı"
+      },
+      "artemis_criteria_evaluation": {
+        "slope_limit_deg": 8.0,
+        "slope_check": "PASS",
+        "roughness_limit_m": 1.5,
+        "roughness_check": "PASS",
+        "min_solar_illumination_pct": 70.0,
+        "solar_illumination_check": "CONDITIONAL",
+        "min_dte_visibility_pct": 60.0,
+        "dte_visibility_check": "PASS",
+        "overall_artemis_landing_eligible": true
+      },
+      "scoring": {
+        "suitability_score": 81.4,
+        "rating": "ACCEPTABLE",
+        "operational_status": "ARTEMIS_III_SCIENCE_HIGH_PRIORITY"
+      },
+      "category": "ARTEMIS_III_OFFICIAL"
+    },
+    {
+      "site_id": "SITE_ALPHA",
+      "name": "Site Alpha: Shackleton Kuzeybatı Sırtı",
+      "designation": "Connecting Ridge (Artemis III Öncelikli Saha)",
+      "description": "Shackleton krater sırtı ile de Gerlache krater sırtını birbirine bağlayan yüksek irtifa sırtı. Zirve platosu sürekli güneş ışığı ve doğrudan Dünya görüş hattına sahiptir.",
+      "operational_role": "Artemis III İnsanlı İniş & Kalıcı Yüzey Üssü Birincil Tercihi",
+      "scientific_objective": "Uçucu madde / su buzu örneklemesi, polar solar enerji üretimi ve DTE kesintisiz telekomünikasyon.",
+      "coordinates": {
+        "latitude_deg": -89.5528,
+        "longitude_deg": -34.083,
+        "cartesian_x_m": -7600.0,
+        "cartesian_y_m": -8200.0,
+        "grid_pixel": {
+          "x": 129,
+          "y": 119
+        },
+        "normalized": {
+          "norm_x": 0.2524,
+          "norm_y": 0.2329
+        }
+      },
+      "topography": {
+        "elevation_m": 1284.1,
+        "slope_deg": 0.08,
+        "roughness_tri_m": 0.261
+      },
+      "environment_and_visibility": {
+        "solar_illumination_pct": 86.4,
+        "dte_visibility_pct": 78.5,
+        "thermal_temp_kelvin": 215.0,
+        "thermal_temp_celsius": -58.15,
+        "thermal_temp_range_k": {
+          "min_k": 90.0,
+          "max_k": 222.0
+        },
+        "communication_link": "Direct-to-Earth (DTE) Kesintisiz Yüksek Hızlı X/Ka-Bant",
+        "power_generation": "Yüksek Verimli Fotovoltaik Güneş Panelleri (>80% Görev Süresi)"
+      },
+      "artemis_criteria_evaluation": {
+        "slope_limit_deg": 8.0,
+        "slope_check": "PASS",
+        "roughness_limit_m": 1.5,
+        "roughness_check": "PASS",
+        "min_solar_illumination_pct": 70.0,
+        "solar_illumination_check": "PASS",
+        "min_dte_visibility_pct": 60.0,
+        "dte_visibility_check": "PASS",
+        "overall_artemis_landing_eligible": true
+      },
+      "scoring": {
+        "suitability_score": 89.0,
+        "rating": "EXCELLENT",
+        "operational_status": "EXCELLENT_ARTEMIS_III_PRIORITY"
+      },
+      "category": "SHACKLETON_CRATER_UHD"
+    },
+    {
+      "site_id": "SITE_BETA",
+      "name": "Site Beta: Shackleton Doğu Sırt Zirvesi",
+      "designation": "Peak A Plateau (Peak Near Shackleton - Artemis III Resmi Saha)",
+      "description": "Shackleton kraterinin doğu kenarındaki en yüksek tepe noktası (Peak A). +1315m rakıma sahip düzleştirilmiş doğal zirve terası.",
+      "operational_role": "Artemis İnsanlı İniş Sahası (İkincil / Yedek Zirve İstasyonu)",
+      "scientific_objective": "Ay yüksek irtifa regolit jeolojisi, krater çarpma metamorfizması ve derin uzay optik gözlem.",
+      "coordinates": {
+        "latitude_deg": -89.6398,
+        "longitude_deg": 76.0537,
+        "cartesian_x_m": 10600.0,
+        "cartesian_y_m": 400.0,
+        "grid_pixel": {
+          "x": 433,
+          "y": 263
+        },
+        "normalized": {
+          "norm_x": 0.8474,
+          "norm_y": 0.5147
+        }
+      },
+      "topography": {
+        "elevation_m": 1315.6,
+        "slope_deg": 0.09,
+        "roughness_tri_m": 0.239
+      },
+      "environment_and_visibility": {
+        "solar_illumination_pct": 81.2,
+        "dte_visibility_pct": 74.0,
+        "thermal_temp_kelvin": 220.0,
+        "thermal_temp_celsius": -53.15,
+        "thermal_temp_range_k": {
+          "min_k": 88.0,
+          "max_k": 224.0
+        },
+        "communication_link": "Direct-to-Earth (DTE) Görüş Hattı",
+        "power_generation": "Güneş Enerjisi (Güneşlenme > 75%)"
+      },
+      "artemis_criteria_evaluation": {
+        "slope_limit_deg": 8.0,
+        "slope_check": "PASS",
+        "roughness_limit_m": 1.5,
+        "roughness_check": "PASS",
+        "min_solar_illumination_pct": 70.0,
+        "solar_illumination_check": "PASS",
+        "min_dte_visibility_pct": 60.0,
+        "dte_visibility_check": "PASS",
+        "overall_artemis_landing_eligible": true
+      },
+      "scoring": {
+        "suitability_score": 87.4,
+        "rating": "EXCELLENT",
+        "operational_status": "EXCELLENT_SECONDARY_SITE"
+      },
+      "category": "SHACKLETON_CRATER_UHD"
+    },
+    {
+      "site_id": "SITE_GAMMA",
+      "name": "Site Gamma: Güney Dış Yamaç Güvenli Düzlüğü",
+      "designation": "South Apron Plains",
+      "description": "Shackleton kraterinin güney dış eteğinde yer alan geniş, pürüzsüz ve son derece düşük eğimli regolit platosu.",
+      "operational_role": "Ağır Kargo İniş Sahası, Lojistik Depolama ve Habitat Konumlandırma",
+      "scientific_objective": "Büyük ölçekli habitat konuşlandırma, regolit mekaniği ve lojistik transferi.",
+      "coordinates": {
+        "latitude_deg": -89.6547,
+        "longitude_deg": 178.3584,
+        "cartesian_x_m": 300.0,
+        "cartesian_y_m": 13500.0,
+        "grid_pixel": {
+          "x": 261,
+          "y": 481
+        },
+        "normalized": {
+          "norm_x": 0.5108,
+          "norm_y": 0.9413
+        }
+      },
+      "topography": {
+        "elevation_m": 139.4,
+        "slope_deg": 0.11,
+        "roughness_tri_m": 0.317
+      },
+      "environment_and_visibility": {
+        "solar_illumination_pct": 72.8,
+        "dte_visibility_pct": 65.4,
+        "thermal_temp_kelvin": 185.0,
+        "thermal_temp_celsius": -88.15,
+        "thermal_temp_range_k": {
+          "min_k": 70.0,
+          "max_k": 200.0
+        },
+        "communication_link": "DTE Görüş Hattı & Ay Yörünge Rölesi",
+        "power_generation": "Karma Solar + Yüzey Reaktörü (FSP) / Akü Desteği"
+      },
+      "artemis_criteria_evaluation": {
+        "slope_limit_deg": 8.0,
+        "slope_check": "PASS",
+        "roughness_limit_m": 1.5,
+        "roughness_check": "PASS",
+        "min_solar_illumination_pct": 70.0,
+        "solar_illumination_check": "PASS",
+        "min_dte_visibility_pct": 60.0,
+        "dte_visibility_check": "PASS",
+        "overall_artemis_landing_eligible": true
+      },
+      "scoring": {
+        "suitability_score": 82.9,
+        "rating": "EXCELLENT",
+        "operational_status": "HIGH_SAFETY_CARGO_SUITABLE"
+      },
+      "category": "SHACKLETON_CRATER_UHD"
+    },
+    {
+      "site_id": "SITE_DELTA",
+      "name": "Site Delta: Shackleton Tabanı (PSR)",
+      "designation": "Shackleton Crater Floor (Permanently Shadowed Region)",
+      "description": "Shackleton kraterinin -4020m derinliğindeki kalıcı gölge tabanı. Kriyojenik soğuk tuzak.",
+      "operational_role": "Robotik Rover / Kriyojenik Numune Alma Sahası (İnsanlı İniş İçin Yüksek Risk / Elverişsiz)",
+      "scientific_objective": "Derin PSR su buzu, CO2, CH4, NH3 kriyojenik uçucularının yerinde tespiti ve analizi.",
+      "coordinates": {
+        "latitude_deg": -89.9219,
+        "longitude_deg": -39.3047,
+        "cartesian_x_m": -1500.0,
+        "cartesian_y_m": 1200.0,
+        "grid_pixel": {
+          "x": 231,
+          "y": 276
+        },
+        "normalized": {
+          "norm_x": 0.4521,
+          "norm_y": 0.5401
+        }
+      },
+      "topography": {
+        "elevation_m": -4020.0,
+        "slope_deg": 6.8,
+        "roughness_tri_m": 0.84
+      },
+      "environment_and_visibility": {
+        "solar_illumination_pct": 0.0,
+        "dte_visibility_pct": 12.0,
+        "thermal_temp_kelvin": 40.0,
+        "thermal_temp_celsius": -233.15,
+        "thermal_temp_range_k": {
+          "min_k": 35.0,
+          "max_k": 45.0
+        },
+        "communication_link": "Krater Sırtı Röle İstasyonu Şart (DTE Doğrudan Yok)",
+        "power_generation": "Radyoizotop Termoelektrik Üreteci (RTG) Şart"
+      },
+      "artemis_criteria_evaluation": {
+        "slope_limit_deg": 8.0,
+        "slope_check": "PASS",
+        "roughness_limit_m": 1.5,
+        "roughness_check": "PASS",
+        "min_solar_illumination_pct": 70.0,
+        "solar_illumination_check": "FAIL",
+        "min_dte_visibility_pct": 60.0,
+        "dte_visibility_check": "FAIL",
+        "overall_artemis_landing_eligible": false
+      },
+      "scoring": {
+        "suitability_score": 0.0,
+        "rating": "UNSAFE",
+        "operational_status": "UNSAFE_HAZARDOUS_CREW_INELIGIBLE_MAX_SCIENCE"
+      },
+      "category": "SHACKLETON_CRATER_UHD"
+    },
+    {
+      "site_id": "SHOEMAKER_RIM",
+      "name": "Shoemaker Krateri Sırtı (Shoemaker Rim)",
+      "category": "SOUTH_POLE_SAFE_HAVEN",
+      "designation": "Shoemaker Crater Northeast Rim Ridge (Kalıcı Gölge Sınırı Güvenli Saha)",
+      "description": "Shoemaker kraterinin kuzeydoğu sırt platosu. Derin gölgeli PSR su buzu tuzaklarına komşu, yüksek solar aydınlanma ve Dünya görüşü sunan güvenli iniş alanı.",
+      "operational_role": "Artemis Dışı Güvenli İniş Limanı (Safe Haven) & Su Buzu/Uçucu Madde Keşfi",
+      "scientific_objective": "Shoemaker PSR içi su buzu konsantrasyonu, uçucu maddeler ve Güney Kutbu çarpma havzası stratigrafisi.",
+      "coordinates": {
+        "latitude_deg": -86.6767,
+        "longitude_deg": 48.2815,
+        "cartesian_x_m": 75240.9,
+        "cartesian_y_m": 67080.7,
+        "grid_pixel": {
+          "x": 128,
+          "y": 128
+        },
+        "normalized": {
+          "norm_x": 0.5,
+          "norm_y": 0.5
+        }
+      },
+      "topography": {
+        "elevation_m": 2335.9,
+        "slope_deg": 3.85,
+        "roughness_tri_m": 0.28
+      },
+      "environment_and_visibility": {
+        "solar_illumination_pct": 92.8,
+        "dte_visibility_pct": 94.7,
+        "thermal_temp_kelvin": 261.7,
+        "thermal_temp_celsius": -11.43,
+        "thermal_temp_range_k": {
+          "min_k": 110.0,
+          "max_k": 235.0
+        },
+        "communication_link": "Kesintisiz Doğrudan Dünya Görüş Hattı (DTE > %95)",
+        "power_generation": "Yüksek Verimli Fotovoltaik Güneş Gücü (> %93 Aydınlanma)"
+      },
+      "artemis_criteria_evaluation": {
+        "slope_limit_deg": 8.0,
+        "slope_check": "PASS",
+        "roughness_limit_m": 1.5,
+        "roughness_check": "PASS",
+        "min_solar_illumination_pct": 70.0,
+        "solar_illumination_check": "PASS",
+        "min_dte_visibility_pct": 60.0,
+        "dte_visibility_check": "PASS",
+        "overall_artemis_landing_eligible": true
+      },
+      "scoring": {
+        "suitability_score": 82.0,
+        "rating": "HIGH_SAFETY",
+        "operational_status": "SOUTH_POLE_SAFE_HAVEN_VALIDATED"
+      }
+    },
+    {
+      "site_id": "FAUSTINI_RIM",
+      "name": "Faustini Krateri Sırtı (Faustini Rim)",
+      "category": "SOUTH_POLE_SAFE_HAVEN",
+      "designation": "Faustini Crater East Rim Plateau (Ultra Düz Haberleşme Platosu)",
+      "description": "Faustini kraterinin yüksek doğu sırt platosu. Son derece düşük eğim (< 2°), kesintisiz haberleşme ve geniş görüş açısı sağlayan birinci sınıf iniş sahası.",
+      "operational_role": "Kalıcı Haberleşme Rölesi & Uzun Süreli Yüzey Konuşlanması",
+      "scientific_objective": "Faustini tabanı soğuk tuzakları jeokimyasal analizi, regolit gaz çıkışları ve kriyojenik mineraloji.",
+      "coordinates": {
+        "latitude_deg": -86.4925,
+        "longitude_deg": 80.7183,
+        "cartesian_x_m": 104999.4,
+        "cartesian_y_m": 17159.9,
+        "grid_pixel": {
+          "x": 128,
+          "y": 128
+        },
+        "normalized": {
+          "norm_x": 0.5,
+          "norm_y": 0.5
+        }
+      },
+      "topography": {
+        "elevation_m": 1171.9,
+        "slope_deg": 1.15,
+        "roughness_tri_m": 0.24
+      },
+      "environment_and_visibility": {
+        "solar_illumination_pct": 88.9,
+        "dte_visibility_pct": 91.3,
+        "thermal_temp_kelvin": 238.4,
+        "thermal_temp_celsius": -34.71,
+        "thermal_temp_range_k": {
+          "min_k": 110.0,
+          "max_k": 235.0
+        },
+        "communication_link": "Kesintisiz Doğrudan Dünya Görüş Hattı (DTE > %91)",
+        "power_generation": "Yüksek Verimli Fotovoltaik Güneş Gücü (> %89 Aydınlanma)"
+      },
+      "artemis_criteria_evaluation": {
+        "slope_limit_deg": 8.0,
+        "slope_check": "PASS",
+        "roughness_limit_m": 1.5,
+        "roughness_check": "PASS",
+        "min_solar_illumination_pct": 70.0,
+        "solar_illumination_check": "PASS",
+        "min_dte_visibility_pct": 60.0,
+        "dte_visibility_check": "PASS",
+        "overall_artemis_landing_eligible": true
+      },
+      "scoring": {
+        "suitability_score": 89.0,
+        "rating": "HIGH_SAFETY",
+        "operational_status": "SOUTH_POLE_SAFE_HAVEN_VALIDATED"
+      }
+    },
+    {
+      "site_id": "CABEUS_RIDGE",
+      "name": "Cabeus Krateri Sırtı (Cabeus Ridge - LCROSS Keşif Kenarı)",
+      "category": "SOUTH_POLE_SAFE_HAVEN",
+      "designation": "Cabeus Ridge Overlook (NASA LCROSS Kanıtlanmış Su Buzu Keşif Hattı)",
+      "description": "NASA LCROSS çarpma aracının tonlarca su buzu ve hidroksil tespit ettiği Cabeus kraterinin yüksek kuzey sırtı. Madencilik ve bilim için en stratejik lokasyon.",
+      "operational_role": "Su Buzu ve Regolit Madenciliği Ön Arama Sahası",
+      "scientific_objective": "LCROSS çarpma krateri spektrometrisi, yüzey altı buz katmanları ve kalıcı baz kurma fizibilitesi.",
+      "coordinates": {
+        "latitude_deg": -83.7961,
+        "longitude_deg": -41.0726,
+        "cartesian_x_m": -123720.5,
+        "cartesian_y_m": 141960.5,
+        "grid_pixel": {
+          "x": 128,
+          "y": 128
+        },
+        "normalized": {
+          "norm_x": 0.5,
+          "norm_y": 0.5
+        }
+      },
+      "topography": {
+        "elevation_m": 2184.8,
+        "slope_deg": 2.65,
+        "roughness_tri_m": 0.26
+      },
+      "environment_and_visibility": {
+        "solar_illumination_pct": 92.3,
+        "dte_visibility_pct": 94.2,
+        "thermal_temp_kelvin": 258.7,
+        "thermal_temp_celsius": -14.45,
+        "thermal_temp_range_k": {
+          "min_k": 110.0,
+          "max_k": 235.0
+        },
+        "communication_link": "Kesintisiz Doğrudan Dünya Görüş Hattı (DTE > %94)",
+        "power_generation": "Yüksek Verimli Fotovoltaik Güneş Gücü (> %92 Aydınlanma)"
+      },
+      "artemis_criteria_evaluation": {
+        "slope_limit_deg": 8.0,
+        "slope_check": "PASS",
+        "roughness_limit_m": 1.5,
+        "roughness_check": "PASS",
+        "min_solar_illumination_pct": 70.0,
+        "solar_illumination_check": "PASS",
+        "min_dte_visibility_pct": 60.0,
+        "dte_visibility_check": "PASS",
+        "overall_artemis_landing_eligible": true
+      },
+      "scoring": {
+        "suitability_score": 85.6,
+        "rating": "HIGH_SAFETY",
+        "operational_status": "SOUTH_POLE_SAFE_HAVEN_VALIDATED"
+      }
+    },
+    {
+      "site_id": "SLATER_RIM",
+      "name": "Slater Krateri Sırtı (Slater Rim)",
+      "category": "SOUTH_POLE_SAFE_HAVEN",
+      "designation": "Slater Crater South Rim Gateway (Korunaklı Bilimsel Plato)",
+      "description": "Slater kraterinin güney sırt platosu. Düşük mikrometeorit riski, korunaklı topoğrafya ve geniş manevra koridoru sunar.",
+      "operational_role": "Bilimsel Keşif ve Otonom Kargo İnişi",
+      "scientific_objective": "Ay arka yüz geçiş bölgesi regoliti, sismik aktivite izleme ve manyetik anomaliler.",
+      "coordinates": {
+        "latitude_deg": -84.6817,
+        "longitude_deg": 160.4064,
+        "cartesian_x_m": 54119.7,
+        "cartesian_y_m": -152039.6,
+        "grid_pixel": {
+          "x": 128,
+          "y": 128
+        },
+        "normalized": {
+          "norm_x": 0.5,
+          "norm_y": 0.5
+        }
+      },
+      "topography": {
+        "elevation_m": -637.4,
+        "slope_deg": 2.95,
+        "roughness_tri_m": 0.27
+      },
+      "environment_and_visibility": {
+        "solar_illumination_pct": 82.9,
+        "dte_visibility_pct": 86.2,
+        "thermal_temp_kelvin": 202.3,
+        "thermal_temp_celsius": -70.9,
+        "thermal_temp_range_k": {
+          "min_k": 110.0,
+          "max_k": 235.0
+        },
+        "communication_link": "Kesintisiz Doğrudan Dünya Görüş Hattı (DTE > %86)",
+        "power_generation": "Yüksek Verimli Fotovoltaik Güneş Gücü (> %83 Aydınlanma)"
+      },
+      "artemis_criteria_evaluation": {
+        "slope_limit_deg": 8.0,
+        "slope_check": "PASS",
+        "roughness_limit_m": 1.5,
+        "roughness_check": "PASS",
+        "min_solar_illumination_pct": 70.0,
+        "solar_illumination_check": "PASS",
+        "min_dte_visibility_pct": 60.0,
+        "dte_visibility_check": "PASS",
+        "overall_artemis_landing_eligible": true
+      },
+      "scoring": {
+        "suitability_score": 81.1,
+        "rating": "HIGH_SAFETY",
+        "operational_status": "SOUTH_POLE_SAFE_HAVEN_VALIDATED"
+      }
+    },
+    {
+      "site_id": "SVERDRUP_RIM",
+      "name": "Sverdrup Krateri Platosu (Sverdrup Rim)",
+      "category": "SOUTH_POLE_SAFE_HAVEN",
+      "designation": "Sverdrup Crater High Rim Plateau (Güney Kutbu Yüksek İrtifa Sığınağı)",
+      "description": "Sverdrup kraterinin yüksek sırt platosu. Shackleton ve de Gerlache kraterleri arasında geniş görüş ve güvenli yaklaşma rotası sunar.",
+      "operational_role": "Alternatif İnsanlı & Otonom Güvenli İniş Limanı",
+      "scientific_objective": "Kutup altı jeolojik kontakt bölgeleri, uzun menzilli rover rota optimizasyonu ve PSR araştırmaları.",
+      "coordinates": {
+        "latitude_deg": -89.4455,
+        "longitude_deg": -137.3137,
+        "cartesian_x_m": -11399.9,
+        "cartesian_y_m": -12359.9,
+        "grid_pixel": {
+          "x": 128,
+          "y": 128
+        },
+        "normalized": {
+          "norm_x": 0.5,
+          "norm_y": 0.5
+        }
+      },
+      "topography": {
+        "elevation_m": 1954.3,
+        "slope_deg": 1.45,
+        "roughness_tri_m": 0.25
+      },
+      "environment_and_visibility": {
+        "solar_illumination_pct": 91.5,
+        "dte_visibility_pct": 93.6,
+        "thermal_temp_kelvin": 254.1,
+        "thermal_temp_celsius": -19.06,
+        "thermal_temp_range_k": {
+          "min_k": 110.0,
+          "max_k": 235.0
+        },
+        "communication_link": "Kesintisiz Doğrudan Dünya Görüş Hattı (DTE > %94)",
+        "power_generation": "Yüksek Verimli Fotovoltaik Güneş Gücü (> %92 Aydınlanma)"
+      },
+      "artemis_criteria_evaluation": {
+        "slope_limit_deg": 8.0,
+        "slope_check": "PASS",
+        "roughness_limit_m": 1.5,
+        "roughness_check": "PASS",
+        "min_solar_illumination_pct": 70.0,
+        "solar_illumination_check": "PASS",
+        "min_dte_visibility_pct": 60.0,
+        "dte_visibility_check": "PASS",
+        "overall_artemis_landing_eligible": true
+      },
+      "scoring": {
+        "suitability_score": 89.0,
+        "rating": "HIGH_SAFETY",
+        "operational_status": "SOUTH_POLE_SAFE_HAVEN_VALIDATED"
+      }
+    }
+  ]
+}

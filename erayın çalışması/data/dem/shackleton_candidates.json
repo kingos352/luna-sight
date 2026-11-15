@@ -1,0 +1,231 @@
+{
+  "metadata": {
+    "title": "NASA Artemis Lunar South Pole Candidate Landing Sites Analysis",
+    "crater_target": "Shackleton Crater",
+    "center_coordinates": {
+      "lat_deg": -89.9,
+      "lon_deg": 0.0
+    },
+    "dem_dimensions": {
+      "width": 512,
+      "height": 512,
+      "pixel_size_m": 60.0
+    },
+    "spatial_coverage_km": {
+      "width_km": 30.72,
+      "height_km": 30.72
+    },
+    "elevation_range_m": {
+      "min_m": -4060.9,
+      "max_m": 1331.9,
+      "relief_m": 5392.8
+    },
+    "standards": "NASA Artemis Lunar Landing Site Selection Standards & LRO LOLA Topography"
+  },
+  "candidate_sites": [
+    {
+      "site_id": "SITE_ALPHA",
+      "name": "Site Alpha: Shackleton Kuzeybatı Sırtı",
+      "designation": "Connecting Ridge (Artemis III Öncelikli Saha)",
+      "description": "Shackleton krater sırtı ile de Gerlache krater sırtını birbirine bağlayan yüksek irtifa sırtı. Zirve platosu sürekli güneş ışığı ve doğrudan Dünya görüş hattına sahiptir.",
+      "operational_role": "Artemis III İnsanlı İniş & Kalıcı Yüzey Üssü Birincil Tercihi",
+      "scientific_objective": "Uçucu madde / su buzu örneklemesi, polar solar enerji üretimi ve DTE kesintisiz telekomünikasyon.",
+      "coordinates": {
+        "latitude_deg": -89.5528,
+        "longitude_deg": -34.083,
+        "cartesian_x_m": -7600.0,
+        "cartesian_y_m": -8200.0,
+        "grid_pixel": {
+          "x": 129,
+          "y": 119
+        },
+        "normalized": {
+          "norm_x": 0.2524,
+          "norm_y": 0.2329
+        }
+      },
+      "topography": {
+        "elevation_m": 1284.1,
+        "slope_deg": 0.08,
+        "roughness_tri_m": 0.261
+      },
+      "environment_and_visibility": {
+        "solar_illumination_pct": 86.4,
+        "dte_visibility_pct": 78.5,
+        "thermal_temp_kelvin": 215.0,
+        "thermal_temp_celsius": -58.1,
+        "communication_link": "Direct-to-Earth (DTE) Kesintisiz Yüksek Hızlı X/Ka-Bant",
+        "power_generation": "Yüksek Verimli Fotovoltaik Güneş Panelleri (>80% Görev Süresi)"
+      },
+      "artemis_criteria_evaluation": {
+        "slope_limit_deg": 8.0,
+        "slope_check": "PASS",
+        "roughness_limit_m": 1.5,
+        "roughness_check": "PASS",
+        "min_solar_illumination_pct": 70.0,
+        "solar_illumination_check": "PASS",
+        "min_dte_visibility_pct": 60.0,
+        "dte_visibility_check": "PASS",
+        "overall_artemis_landing_eligible": true
+      },
+      "scoring": {
+        "suitability_score": 89.0,
+        "rating": "EXCELLENT",
+        "operational_status": "EXCELLENT_ARTEMIS_III_PRIORITY"
+      }
+    },
+    {
+      "site_id": "SITE_BETA",
+      "name": "Site Beta: Shackleton Doğu Sırt Zirvesi",
+      "designation": "Peak A Plateau",
+      "description": "Shackleton kraterinin doğu kenarındaki en yüksek tepe noktası (Peak A). +1315m rakıma sahip düzleştirilmiş doğal zirve terası.",
+      "operational_role": "Artemis İnsanlı İniş Sahası (İkincil / Yedek Zirve İstasyonu)",
+      "scientific_objective": "Ay yüksek irtifa regolit jeolojisi, krater çarpma metamorfizması ve derin uzay optik gözlem.",
+      "coordinates": {
+        "latitude_deg": -89.6398,
+        "longitude_deg": 76.0537,
+        "cartesian_x_m": 10600.0,
+        "cartesian_y_m": 400.0,
+        "grid_pixel": {
+          "x": 433,
+          "y": 263
+        },
+        "normalized": {
+          "norm_x": 0.8474,
+          "norm_y": 0.5147
+        }
+      },
+      "topography": {
+        "elevation_m": 1315.6,
+        "slope_deg": 0.09,
+        "roughness_tri_m": 0.239
+      },
+      "environment_and_visibility": {
+        "solar_illumination_pct": 81.2,
+        "dte_visibility_pct": 74.0,
+        "thermal_temp_kelvin": 220.0,
+        "thermal_temp_celsius": -53.1,
+        "communication_link": "Direct-to-Earth (DTE) Görüş Hattı",
+        "power_generation": "Güneş Enerjisi (Güneşlenme > 75%)"
+      },
+      "artemis_criteria_evaluation": {
+        "slope_limit_deg": 8.0,
+        "slope_check": "PASS",
+        "roughness_limit_m": 1.5,
+        "roughness_check": "PASS",
+        "min_solar_illumination_pct": 70.0,
+        "solar_illumination_check": "PASS",
+        "min_dte_visibility_pct": 60.0,
+        "dte_visibility_check": "PASS",
+        "overall_artemis_landing_eligible": true
+      },
+      "scoring": {
+        "suitability_score": 87.4,
+        "rating": "EXCELLENT",
+        "operational_status": "EXCELLENT_SECONDARY_SITE"
+      }
+    },
+    {
+      "site_id": "SITE_GAMMA",
+      "name": "Site Gamma: Güney Dış Yamaç Güvenli Düzlüğü",
+      "designation": "South Apron Plains",
+      "description": "Shackleton kraterinin güney dış eteğinde yer alan geniş, pürüzsüz ve son derece düşük eğimli regolit platosu.",
+      "operational_role": "Ağır Kargo İniş Sahası, Lojistik Depolama ve Habitat Konumlandırma",
+      "scientific_objective": "Büyük ölçekli habitat konuşlandırma, regolit mekaniği ve ISRO/ESA/JAXA lojistik transferi.",
+      "coordinates": {
+        "latitude_deg": -89.6547,
+        "longitude_deg": 178.3584,
+        "cartesian_x_m": 300.0,
+        "cartesian_y_m": 13500.0,
+        "grid_pixel": {
+          "x": 261,
+          "y": 481
+        },
+        "normalized": {
+          "norm_x": 0.5108,
+          "norm_y": 0.9413
+        }
+      },
+      "topography": {
+        "elevation_m": 139.4,
+        "slope_deg": 0.11,
+        "roughness_tri_m": 0.317
+      },
+      "environment_and_visibility": {
+        "solar_illumination_pct": 72.8,
+        "dte_visibility_pct": 65.4,
+        "thermal_temp_kelvin": 185.0,
+        "thermal_temp_celsius": -88.1,
+        "communication_link": "DTE Görüş Hattı & Ay Yörünge Rölesi",
+        "power_generation": "Karma Solar + Yüzey Reaktörü (Fission Surface Power) / Akü Desteği"
+      },
+      "artemis_criteria_evaluation": {
+        "slope_limit_deg": 8.0,
+        "slope_check": "PASS",
+        "roughness_limit_m": 1.5,
+        "roughness_check": "PASS",
+        "min_solar_illumination_pct": 70.0,
+        "solar_illumination_check": "PASS",
+        "min_dte_visibility_pct": 60.0,
+        "dte_visibility_check": "PASS",
+        "overall_artemis_landing_eligible": true
+      },
+      "scoring": {
+        "suitability_score": 82.9,
+        "rating": "EXCELLENT",
+        "operational_status": "HIGH_SAFETY_CARGO_SUITABLE"
+      }
+    },
+    {
+      "site_id": "SITE_DELTA",
+      "name": "Site Delta: Shackleton Tabanı (PSR)",
+      "designation": "Shackleton Crater Floor (Permanently Shadowed Region)",
+      "description": "Shackleton kraterinin -4020m derinliğindeki kalıcı gölge tabanı. Milyarlarca yıldır doğrudan güneş ışığı almayan aşırı kriyojenik soğuk tuzak.",
+      "operational_role": "Robotik Rover / Kriyojenik Numune Alma Sahası (İnsanlı İniş İçin Yüksek Risk / Elverişsiz)",
+      "scientific_objective": "Derin PSR su buzu, CO2, CH4, NH3 kriyojenik uçucularının yerinde tespiti ve analizi.",
+      "coordinates": {
+        "latitude_deg": -89.9219,
+        "longitude_deg": -39.3047,
+        "cartesian_x_m": -1500.0,
+        "cartesian_y_m": 1200.0,
+        "grid_pixel": {
+          "x": 231,
+          "y": 276
+        },
+        "normalized": {
+          "norm_x": 0.4521,
+          "norm_y": 0.5401
+        }
+      },
+      "topography": {
+        "elevation_m": -4019.7,
+        "slope_deg": 0.16,
+        "roughness_tri_m": 0.242
+      },
+      "environment_and_visibility": {
+        "solar_illumination_pct": 0.0,
+        "dte_visibility_pct": 0.0,
+        "thermal_temp_kelvin": 40.0,
+        "thermal_temp_celsius": -233.1,
+        "communication_link": "Krater Sırtı Röle İstasyonu veya Ay Yörünge Aracı Şart (DTE Yok)",
+        "power_generation": "Radyoizotop Termoelektrik Üreteci (RTG) veya Sırt-Taban Enerji Tether Kablosu"
+      },
+      "artemis_criteria_evaluation": {
+        "slope_limit_deg": 8.0,
+        "slope_check": "PASS",
+        "roughness_limit_m": 1.5,
+        "roughness_check": "PASS",
+        "min_solar_illumination_pct": 70.0,
+        "solar_illumination_check": "FAIL",
+        "min_dte_visibility_pct": 60.0,
+        "dte_visibility_check": "FAIL",
+        "overall_artemis_landing_eligible": false
+      },
+      "scoring": {
+        "suitability_score": 0.0,
+        "rating": "UNSAFE",
+        "operational_status": "UNSAFE_HAZARDOUS_CREW_INELIGIBLE_MAX_SCIENCE"
+      }
+    }
+  ]
+}
