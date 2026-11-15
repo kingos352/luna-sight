@@ -1,9 +1,0 @@
-feat(terrain): Artemis III aday bolgelerini genislet ve 20km ufuk profillerini ekle
-
-- src/luna_sight/terrain/sites.py icine 10 yeni resmi Artemis III adayi eklendi.
-- Malapert A resmi Artemis III kapsamina girmedigi icin elendi.
-- tests/test_terrain_sites.py guncellenerek aday koordinatlari ve Malapert A elenmesi test edildi.
-- scripts/k2_regional_horizon.py ile 12 aday bolge icin 20km ufuk profilleri ve karsilastirma ozeti uretildi.
-- scripts/k3_visibility_report.py ve app/app.py 20km bolgesel profilleri taniyacak sekilde genisletildi.
-- Tum aday bolgeler icin K3 gorunurluk raporlari ve pencereleri uretildi.
-- 211 test %100 basariyla gecti, governance 0 ihlal ile dogrulandi.
