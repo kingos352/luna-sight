@@ -49,6 +49,19 @@ HORIZON_DIR = REPO_ROOT / "data" / "derived"
 if SRC_DIR.is_dir() and str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
+from luna_sight.terrain.risk import (  # noqa: E402
+    analyze_all_sites_risk,
+    format_side_by_side_comparison,
+)
+from luna_sight.terrain.surface_3d import (  # noqa: E402
+    COLOR_SITE_A,
+    COLOR_SITE_B,
+    R_MOON_KM,
+    build_lunar_globe_figure,
+    build_polar_relief_figure,
+    compute_lunar_elevation,
+)
+
 # ---------------------------------------------------------------------------
 # Sabitler
 # ---------------------------------------------------------------------------
@@ -244,7 +257,7 @@ SITES: dict[str, SiteSpec] = {
         site_id="SITE-DE-GERLACHE",
         name="de Gerlache Krater Kenarı",
         latitude_deg=-88.50,
-        longitude_deg_east=87.10,
+        longitude_deg_east=-87.10,
         sun_offset_deg=1.4,
         sun_amplitude_deg=2.8,
         sun_phase=4.20,
@@ -1732,8 +1745,7 @@ def render_sidebar_controls() -> tuple[int, int, dt.datetime, str]:
             "K1 · JPL Horizons efemerisi",
             SRC_DIR / "luna_sight" / "ephemeris",
             k1_ready,
-            "Modül hazır. Görünürlük çıktıları bu modülün ürettiği "
-            "Horizons serisiyle hesaplandı."
+            "Modül hazır. Görünürlük çıktıları bu modülün ürettiği Horizons serisiyle hesaplandı."
             if k1_ready
             else "Henüz yok; efemeris sentetik (test_fixture).",
         ),
@@ -1992,8 +2004,7 @@ def render_verdict_band(
 
     if best.joint_hours <= 0:
         headline = (
-            "Seçilen pencerede <strong>hiçbir aday</strong> Güneş ve Dünya'yı "
-            "aynı anda görmüyor."
+            "Seçilen pencerede <strong>hiçbir aday</strong> Güneş ve Dünya'yı aynı anda görmüyor."
         )
     elif other.joint_hours <= 0:
         headline = (
@@ -2058,6 +2069,297 @@ def render_globe_tab() -> None:
     st.caption(
         "Fare ile döndür, tekerlekle yakınlaş. Küre ayrı bir pencere gibi "
         "çalışır; kenar çubuğundaki seçimler bu görünümü değiştirmez."
+    )
+
+
+def render_surface_3d_tab(
+    spec_a: SiteSpec,
+    spec_b: SiteSpec,
+    metrics_a: SiteMetrics,
+    metrics_b: SiteMetrics,
+    source_mode: str,
+) -> None:
+    """Etkileşimli Plotly 3B Ay yüzeyi ve kutup rölyef modelini çizer."""
+    st.caption(
+        "Ay'ın güney kutbuna odaklanmış 3B etkileşimli yüzey ve IAU krater modeli. "
+        "Kullanıcı küreyi veya 260 km kutup rölyefini fareyle döndürüp yakınlaştırabilir."
+    )
+
+    ctrl_col1, ctrl_col2, ctrl_col3, ctrl_col4 = st.columns([1.1, 1.2, 1.2, 1.2])
+    with ctrl_col1:
+        show_grid = st.checkbox(
+            "Enlem - boylam ağı",
+            value=True,
+            key=f"globe_grid_{source_mode}",
+            help="Ekvator, kutup paralelleri (-89°..-30°) ve meridyenleri çizer.",
+        )
+    with ctrl_col2:
+        show_south_pole = st.checkbox(
+            "Ay Güney Kutbu (90° G)",
+            value=True,
+            key=f"globe_pole_{source_mode}",
+            help="Gerçek Ay Güney Kutbu noktasını ve zemin eksenini gösterir.",
+        )
+    with ctrl_col3:
+        show_craters = st.checkbox(
+            "Doğrulanmış IAU kraterleri",
+            value=True,
+            key=f"globe_craters_{source_mode}",
+            help="Shackleton, Shoemaker, Faustini, Cabeus vb. krater isim ve çaplarını gösterir.",
+        )
+    with ctrl_col4:
+        show_sites = st.checkbox(
+            "Aday iniş bölgeleri (A ve B)",
+            value=True,
+            key=f"globe_sites_{source_mode}",
+            help="Seçilen Bölge A ve Bölge B hedeflerini 3B işaret direğiyle gösterir.",
+        )
+
+    cam_options = [
+        ("south_pole", "🔭 Güney Kutbu (Varsayılan)"),
+        ("south_pole_zoom", "🔍 Güney Kutbu Yakın Çekim"),
+        ("site_a", f"🛰️ Bölge A Odaklı ({spec_a.name})"),
+        ("site_b", f"🛰️ Bölge B Odaklı ({spec_b.name})"),
+        ("global", "🌍 Küresel Genel Bakış"),
+    ]
+    camera_focus = st.selectbox(
+        "Kamera görünüm açısı",
+        options=cam_options,
+        format_func=lambda opt: opt[1],
+        index=0,
+        key=f"globe_cam_{source_mode}",
+        help="Varsayılan olarak Güney Kutbuna odaklıdır; fareyle döndürülebilir.",
+    )[0]
+
+    with st.expander("Görünüm, derinlik ve ışıklandırma ayarları", expanded=False):
+        opt_col1, opt_col2, opt_col3, opt_col4 = st.columns(4)
+        with opt_col1:
+            view_mode = st.radio(
+                "Görselleştirme Modu",
+                options=["globe", "polar_relief"],
+                format_func=lambda k: (
+                    "🌐 3B Küresel Ay Küresi"
+                    if k == "globe"
+                    else "🏔️ 3B Güney Kutbu Rölyefi (260 km)"
+                ),
+                horizontal=True,
+                key=f"globe_view_mode_{source_mode}",
+            )
+        with opt_col2:
+            default_exagg = 1.8 if view_mode == "globe" else 2.2
+            exaggeration = st.slider(
+                "Yükselti kabartması (çarpan)",
+                min_value=1.0,
+                max_value=3.5,
+                value=default_exagg,
+                step=0.2,
+                key=f"globe_exagg_{source_mode}",
+                help="1.0x (birebir gerçek ölçek) ile 3.5x arası doğal derinlik çarpanı.",
+            )
+        with opt_col3:
+            light_azimuth = st.slider(
+                "Güneş azimutu (ışık açısı)",
+                min_value=0.0,
+                max_value=360.0,
+                value=30.0,
+                step=15.0,
+                key=f"globe_light_az_{source_mode}",
+                help="Güneş ışığının geliş yönünü değiştirerek krater gölgelerini simüle eder.",
+            )
+        with opt_col4:
+            sun_altitude = st.slider(
+                "Güneş ufuk yüksekliği",
+                min_value=1.0,
+                max_value=15.0,
+                value=15.0,
+                step=0.5,
+                key=f"globe_sun_alt_{source_mode}",
+                help="Kutup Güneşi'nin yerel ufkun üzerindeki açısı (gölge derinliğini belirler).",
+            )
+
+    if view_mode == "globe":
+        fig = build_lunar_globe_figure(
+            spec_a=spec_a,
+            spec_b=spec_b,
+            show_grid=show_grid,
+            show_south_pole=show_south_pole,
+            show_sites=show_sites,
+            show_craters=show_craters,
+            exaggeration=exaggeration,
+            camera_focus=camera_focus,
+            light_azimuth_deg=light_azimuth,
+            sun_altitude_deg=sun_altitude,
+        )
+    else:
+        fig = build_polar_relief_figure(
+            spec_a=spec_a,
+            spec_b=spec_b,
+            show_grid=show_grid,
+            show_south_pole=show_south_pole,
+            show_sites=show_sites,
+            show_craters=show_craters,
+            exaggeration=exaggeration,
+            light_azimuth_deg=light_azimuth,
+            sun_altitude_deg=sun_altitude,
+        )
+
+    st.plotly_chart(fig)
+
+    st.caption(
+        "🎮 **3B Etkileşim:** Fare sol tuşu ile küreyi döndürün · "
+        "Tekerlek ile yakınlaştırın · Krater konumları IAU kataloğuna sabitlenmiştir."
+    )
+
+    st.info(
+        "**ℹ️ Temsili Yükselti Modeli Bildirimi:** Bu Plotly 3B görünümü, "
+        "Uluslararası Astronomi Birliği (IAU) tescilli güney kutbu kraterleri "
+        "(Shackleton, Shoemaker, Faustini, de Gerlache, Haworth, Cabeus, Nobile, "
+        "Amundsen, Malapert) ve Bağlantı Sırtı geometrisi üzerinden oluşturulmuş "
+        "matematiksel **temsili bir modeldir**. Resmi NASA/LRO DEM iddiası içermez.",
+        icon="ℹ️",
+    )
+
+    card_col_a, card_col_b = st.columns(2)
+    for col, spec, badge_title, color, metrics in (
+        (card_col_a, spec_a, "Aday Bölge A", COLOR_SITE_A, metrics_a),
+        (card_col_b, spec_b, "Aday Bölge B", COLOR_SITE_B, metrics_b),
+    ):
+        with col:
+            lat_rad = math.radians(spec.latitude_deg)
+            pole_dist_km = R_MOON_KM * (math.pi / 2.0 + lat_rad)
+            elev_km = float(compute_lunar_elevation(spec.latitude_deg, spec.longitude_deg_east))
+            sun_pct_txt = f"%{metrics.sun_share * 100:.0f} ({metrics.sun_hours:.1f} saat)"
+            earth_pct_txt = f"%{metrics.earth_share * 100:.0f} ({metrics.earth_hours:.1f} saat)"
+            st.markdown(
+                f"<div class='ls-card' style='border-left: 4px solid {color};'>"
+                f"<div class='ls-card-title' style='color:{color}; font-size: 0.95rem;'>"
+                f"{badge_title} · {spec.name} ({spec.site_id})</div>"
+                f"<div class='ls-card-detail' style='margin-top: 0.4rem;'>"
+                f"• <b>Enlem / Boylam:</b> {spec.coordinates}<br>"
+                f"• <b>3B Model Yükseltisi:</b> {elev_km:+.2f} km (Ay referans küresine göre)<br>"
+                f"• <b>Güney Kutup Noktasına Mesafe:</b> ~{pole_dist_km:.1f} km<br>"
+                f"• <b>Güneş Görünürlüğü:</b> {sun_pct_txt}<br>"
+                f"• <b>Dünya Görüş Penceresi:</b> {earth_pct_txt}"
+                f"</div></div>",
+                unsafe_allow_html=True,
+            )
+
+
+def _fmt_slope_deg(value: float) -> str:
+    return "—" if np.isnan(value) else f"{value:.2f}°"
+
+
+def _fmt_slope_pct(value: float) -> str:
+    return "—" if np.isnan(value) else f"{value:.1%}"
+
+
+def _render_risk_metric_card(metrics) -> None:
+    """Tek bir site için arazi riski metrik kartını çizer."""
+    color = "#38bdf8" if metrics.site_id == "Site01" else "#3ddc97"
+    coord_text = f"{metrics.latitude_deg:.4f}° G / {metrics.longitude_deg_east:+.4f}° D"
+
+    st.markdown(
+        f"<div style='border-left: 4px solid {color}; padding: 1rem; "
+        f"background: rgba(255,255,255,0.02); border-radius: 0.5rem;'>"
+        f"<h4 style='margin:0 0 0.5rem; color:{color};'>"
+        f"{metrics.site_id} · {metrics.site_name}</h4>"
+        f"<small style='color:#888;'>{coord_text}</small>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("**Eğim (derece)**")
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Ortalama", _fmt_slope_deg(metrics.slope.mean_deg))
+    m2.metric("Maksimum", _fmt_slope_deg(metrics.slope.max_deg))
+    m3.metric("Medyan", _fmt_slope_deg(metrics.slope.median_deg))
+    m4.metric("P95", _fmt_slope_deg(metrics.slope.p95_deg))
+
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric(">5°", _fmt_slope_pct(metrics.slope.fraction_above_5deg))
+    m2.metric(">10°", _fmt_slope_pct(metrics.slope.fraction_above_10deg))
+    m3.metric(">15°", _fmt_slope_pct(metrics.slope.fraction_above_15deg))
+    m4.metric(">20°", _fmt_slope_pct(metrics.slope.fraction_above_20deg))
+
+    m1, m2 = st.columns(2)
+    m1.metric("Geçerli piksel %", _fmt_slope_pct(metrics.slope.valid_fraction))
+    m2.metric("Veri kaynağı", metrics.dem_source)
+
+    st.divider()
+
+    st.markdown("**Krater Metrikleri**")
+    k1, k2 = st.columns(2)
+    k1.metric("Yoğunluk (adet/km²)", f"{metrics.crater.density_per_km2:.3f}")
+    k2.metric("En yakın krater", metrics.crater.nearest_crater_name)
+    k1.metric("En yakın mesafe", f"{metrics.crater.nearest_crater_distance_m / 1000:.1f} km")
+    k2.metric("En yakın çap", f"{metrics.crater.nearest_crater_diameter_km:.1f} km")
+    k1.metric("Alan adeti", metrics.crater.craters_in_radius_count)
+    k2.metric("Kataloğu", metrics.crater.crater_catalog_used)
+
+    if metrics.dem_available:
+        st.success("✅ Gerçek DEM — eğim analizi aktif")
+    elif metrics.dem_source == "representative_model":
+        st.warning("⚠️ Temsili model — gerçek DEM bekleniyor, sadece krater metrikleri aktif")
+    else:
+        st.error("❌ Gerçek DEM yok — eğim analizi yapılamıyor")
+
+
+def render_risk_tab() -> None:
+    """Arazi Riski analiz sekmesini çizer."""
+    st.subheader("🌍 LunarSight — Arazi Riski Analizi")
+
+    with st.spinner("Arazi riski metrikleri hesaplanıyor..."):
+        risk_metrics = analyze_all_sites_risk()
+
+    comparison_text = format_side_by_side_comparison(risk_metrics)
+    st.code(comparison_text, language=None)
+
+    st.divider()
+    st.markdown("### 📊 Site Bazlı Detaylar")
+
+    cols = st.columns(2)
+    for i, (_site_id, metrics) in enumerate(risk_metrics.items()):
+        with cols[i % 2]:
+            _render_risk_metric_card(metrics)
+
+    st.divider()
+    st.markdown("### 📡 Veri Kaynakları ve Kalite")
+    for _site_id, metrics in risk_metrics.items():
+        with st.expander(f"{metrics.site_id} — {metrics.site_name} ({metrics.dem_source})"):
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("DEM Kaynağı", metrics.dem_source)
+                st.metric("DEM Mevcut", "Evet" if metrics.dem_available else "Hayır")
+                if metrics.dem_metadata:
+                    meta = metrics.dem_metadata
+                    crs_val = meta.get("crs")
+                    crs_short = (str(crs_val)[:100] + "...") if crs_val else None
+                    st.json(
+                        {
+                            "product": meta.get("product"),
+                            "pixel_size_m": meta.get("pixel_size_m"),
+                            "width": meta.get("width"),
+                            "height": meta.get("height"),
+                            "crs": crs_short,
+                        }
+                    )
+            with col2:
+                if not metrics.dem_available:
+                    st.warning(
+                        "⚠️ Gerçek DEM (GeoTIFF) dosyası bulunamadı. "
+                        "`data/cache/lola/` klasörüne Site01 ve Site04 için "
+                        "`*_surf.tif`, `*_ldec.tif`, `*_toterr.tif` dosyalarını yerleştirin. "
+                        "Şu an yalnızca IAU krater kataloğu metrikleri sunulmaktadır."
+                    )
+                else:
+                    st.success("✅ Gerçek LOLA DEM yüklendi; eğim analizi aktif.")
+
+    st.divider()
+    st.caption(
+        "Not: Eğim hesaplaması 5 m/piksel LOLA DEM'den merkezi farklar (central differences) ile "
+        "yapılır. Eğim eşikleri (5°/10°/15°/20°) ham ölçümdür; tek başına iniş güvenliği kararı "
+        "vermez. Krater yoğunluğu IAU onaylı 14 krater kataloğuyla hesaplanır; DEM dosyaları "
+        "`data/cache/lola/` altında aranır."
     )
 
 
@@ -2190,9 +2492,7 @@ def main() -> None:
     metrics_b = compute_metrics(frame_b, step_minutes)
 
     with verdict_slot:
-        render_verdict_band(
-            catalog[selected_a], metrics_a, catalog[selected_b], metrics_b
-        )
+        render_verdict_band(catalog[selected_a], metrics_a, catalog[selected_b], metrics_b)
 
     if actual_source == SOURCE_REAL and frame_a.attrs.get("window_truncated"):
         st.warning(
@@ -2234,21 +2534,33 @@ def main() -> None:
 
     # --- Adım 3: görselleştirmeler ----------------------------------------
     st.markdown(
-        "<div class='ls-step'>3 · Karşılaştırma ve ufuk grafikleri</div>",
+        "<div class='ls-step'>3 · Karşılaştırma ve görselleştirmeler</div>",
         unsafe_allow_html=True,
     )
-    globe_tab, horizon_tab, timeline_tab, map_tab, data_tab = st.tabs(
+    globe_tab, horizon_tab, timeline_tab, map_tab, risk_tab, data_tab = st.tabs(
         [
             "3B Ay küresi",
             "Ufuk görünümü",
             "Zaman çizelgesi",
             "Güney Kutbu Haritası (2D)",
+            "Arazi Riski",
             "Veri ve kaynak",
         ]
     )
 
     with globe_tab:
         render_globe_tab()
+        with st.expander(
+            "🏔️ Etkileşimli 3B Topografik Rölyef ve Krater Modeli (Plotly)",
+            expanded=False,
+        ):
+            render_surface_3d_tab(
+                catalog[selected_a],
+                catalog[selected_b],
+                metrics_a,
+                metrics_b,
+                source_mode,
+            )
 
     with horizon_tab:
         st.caption(
@@ -2363,6 +2675,9 @@ def main() -> None:
             build_south_pole_map(catalog[selected_a], catalog[selected_b]),
             use_container_width=True,
         )
+
+    with risk_tab:
+        render_risk_tab()
 
     with data_tab:
         render_data_tab(frame_a, frame_b, catalog[selected_a], catalog[selected_b])

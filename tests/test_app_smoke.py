@@ -190,3 +190,19 @@ def test_flight_briefing_card_generation():
     assert "GO (UÇUŞA UYGUN)" in card
     assert "🟢 GO" in card
     assert "2026-11-16 04:00 UTC" in card
+
+
+@pytest.mark.skipif(not app.REAL_AVAILABLE, reason="gerçek K3 çıktısı yok")
+def test_site_catalog_and_risk_tab_consistency(clean_caches):
+    """de_gerlache boylam tutarlılığı ve Arazi Riski sekmesi DEM durumu doğrulanır."""
+    assert app.SITES["de_gerlache"].longitude_deg_east == pytest.approx(-87.10)
+
+    at = _run_app()
+    assert not at.exception
+    # Karar bandı mevcut olmalı
+    assert any("ls-verdict" in m.value for m in at.markdown)
+    # Metriklerde nan% görünmemeli ve DEM yoksa yanlış başarı mesajı basılmamalı
+    metric_vals = [str(m.value) for m in at.metric]
+    assert all("nan%" not in v.lower() and "nan°" not in v.lower() for v in metric_vals)
+    success_msgs = " ".join(s.value for s in at.success)
+    assert "Gerçek LOLA DEM yüklendi" not in success_msgs
