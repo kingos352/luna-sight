@@ -1,0 +1,79 @@
+1
+00:00:02,000 --> 00:00:06,636
+At the Moon's south pole the Sun never rises far above the horizon.
+
+2
+00:00:06,636 --> 00:00:14,109
+A landing site needs two things at once: sunlight for power, and a line of
+sight to Earth for communication.
+
+3
+00:00:14,109 --> 00:00:16,116
+Local terrain can block both.
+
+4
+00:00:16,116 --> 00:00:28,710
+LUNA SIGHT compares candidate regions on exactly these two visibilities, using
+real data: JPL Horizons for Sun and Earth positions, and LOLA elevation models
+for the terrain horizon.
+
+5
+00:00:28,710 --> 00:00:38,757
+Here are two candidates side by side: Site01, Connecting ridge, and Site04,
+Shackleton rim, over a seven day window.
+
+6
+00:00:38,757 --> 00:00:44,213
+On the Sun side they are equal, both see the Sun for 169 hours.
+
+7
+00:00:44,213 --> 00:00:52,268
+The difference is Earth. Site01 gives 54 hours of direct Earth visibility.
+Site04 gives none:
+
+8
+00:00:52,268 --> 00:01:00,409
+the crater wall rises six to nine degrees exactly where Earth sits, and Earth
+never clears it.
+
+9
+00:01:00,409 --> 00:01:05,832
+In the horizon view, the center is zenith and the outer circle is the horizon.
+
+10
+00:01:05,832 --> 00:01:13,966
+The yellow trace is the Sun, the blue trace is Earth, and the dashed grey line
+is the real terrain horizon from LOLA.
+
+11
+00:01:13,966 --> 00:01:20,432
+As we step through time, Earth swings with libration. The Sun channel stays
+visible all week.
+
+12
+00:01:20,432 --> 00:01:28,844
+Amber samples are uncertain: Earth sits inside a zero point one degree
+transition band. Those are not counted as visible.
+
+13
+00:01:28,844 --> 00:01:30,757
+Every number is traceable.
+
+14
+00:01:30,757 --> 00:01:40,981
+The source record shows the ephemeris service, its version, the DE441 kernel,
+and the exact query parameters, with a quality flag of valid.
+
+15
+00:01:40,981 --> 00:01:45,469
+These values are not hard coded; they are read from each row.
+
+16
+00:01:45,469 --> 00:01:53,413
+The terrain profile has its own record: five meter per pixel LOLA data, with
+file checksums in the manifest.
+
+17
+00:01:53,413 --> 00:01:59,813
+LUNA SIGHT is a preliminary assessment tool. It does not make landing safety
+decisions.

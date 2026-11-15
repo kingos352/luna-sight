@@ -1,0 +1,57 @@
+{
+  "_comment": "Demo videosu anlatımının tek kaynağı. Seslendirme (Windows SAPI), gömülü altyazı ve .srt dosyası bu dosyadan üretilir; üçü ayrışamaz. Anlatım dili İngilizce: NASA Space Apps değerlendirmesi İngilizce yürütülür, sistemde Türkçe TTS sesi yok. Arayüz Türkçe kalır.",
+  "voice": "Microsoft Zira Desktop",
+  "title_card": {
+    "heading": "LUNA SIGHT",
+    "subtitle": "Lunar South Pole Landing Site Navigator",
+    "footer": "NASA Space Apps Challenge · Artemis"
+  },
+  "end_card": {
+    "heading": "Site01 · Connecting ridge",
+    "subtitle": "54 hours of joint Sun + Earth visibility.  Site04 · Shackleton rim: none.",
+    "footer": "Preliminary assessment tool. It does not make landing safety decisions."
+  },
+  "segments": [
+    {
+      "id": "seg1",
+      "scene_prefixes": ["intro"],
+      "chunks": [
+        "At the Moon's south pole the Sun never rises far above the horizon.",
+        "A landing site needs two things at once: sunlight for power, and a line of sight to Earth for communication.",
+        "Local terrain can block both.",
+        "LUNA SIGHT compares candidate regions on exactly these two visibilities, using real data: JPL Horizons for Sun and Earth positions, and LOLA elevation models for the terrain horizon."
+      ]
+    },
+    {
+      "id": "seg2",
+      "scene_prefixes": ["compare"],
+      "chunks": [
+        "Here are two candidates side by side: Site01, Connecting ridge, and Site04, Shackleton rim, over a seven day window.",
+        "On the Sun side they are equal, both see the Sun for 169 hours.",
+        "The difference is Earth. Site01 gives 54 hours of direct Earth visibility. Site04 gives none:",
+        "the crater wall rises six to nine degrees exactly where Earth sits, and Earth never clears it."
+      ]
+    },
+    {
+      "id": "seg3",
+      "scene_prefixes": ["horizon", "timeline"],
+      "chunks": [
+        "In the horizon view, the center is zenith and the outer circle is the horizon.",
+        "The yellow trace is the Sun, the blue trace is Earth, and the dashed grey line is the real terrain horizon from LOLA.",
+        "As we step through time, Earth swings with libration. The Sun channel stays visible all week.",
+        "Amber samples are uncertain: Earth sits inside a zero point one degree transition band. Those are not counted as visible."
+      ]
+    },
+    {
+      "id": "seg4",
+      "scene_prefixes": ["data"],
+      "chunks": [
+        "Every number is traceable.",
+        "The source record shows the ephemeris service, its version, the DE441 kernel, and the exact query parameters, with a quality flag of valid.",
+        "These values are not hard coded; they are read from each row.",
+        "The terrain profile has its own record: five meter per pixel LOLA data, with file checksums in the manifest.",
+        "LUNA SIGHT is a preliminary assessment tool. It does not make landing safety decisions."
+      ]
+    }
+  ]
+}
