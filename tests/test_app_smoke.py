@@ -137,3 +137,56 @@ def test_missing_real_file_falls_back_to_synthetic(clean_caches, monkeypatch, tm
     assert "bulunamadı" in frame.attrs["fallback_reason"]
     assert set(frame["quality_flag"]) == {"test_fixture"}
     assert set(app.DATA_CONTRACT_COLUMNS).issubset(frame.columns)
+
+
+def test_lunar_surface_distance_and_south_pole_map():
+    site_a = app.SiteSpec("Site01", "Connecting ridge", -89.463163, -137.489553)
+    site_b = app.SiteSpec("Site04", "Shackleton rim", -89.766811, -171.869898)
+
+    dist = app.lunar_surface_distance_km(
+        site_a.latitude_deg,
+        site_a.longitude_deg_east,
+        site_b.latitude_deg,
+        site_b.longitude_deg_east,
+    )
+    # Bölgeler arası beklenen büyük daire mesafesi ~10-12 km
+    assert 9.0 <= dist <= 13.0
+
+    fig = app.build_south_pole_map(site_a, site_b)
+    assert fig is not None
+    assert len(fig.data) == 4
+    trace_names = [t.name for t in fig.data]
+    assert any("Güney Kutbu" in name for name in trace_names)
+    assert any("Bölge A" in name for name in trace_names)
+    assert any("Bölge B" in name for name in trace_names)
+
+
+def test_flight_briefing_card_generation():
+    site = app.SiteSpec("Site01", "Connecting ridge", -89.463163, -137.489553)
+    now = app.dt.datetime(2026, 11, 15, 0, 0, tzinfo=app.dt.UTC)
+    metrics = app.SiteMetrics(
+        total_hours=168.0,
+        sun_hours=100.0,
+        earth_hours=80.0,
+        joint_hours=75.0,
+        longest_earth_window=40.0,
+        longest_joint_window=30.0,
+        longest_earth_blackout=12.0,
+        optimal_landing_time="2026-11-16 04:00 UTC",
+        sun_share=0.85,
+        earth_share=0.50,
+        joint_uncertain_share=0.02,
+        terrain_blocked_share=0.1,
+        horizon_mean=1.5,
+        horizon_max=3.2,
+        horizon_max_az=120.0,
+    )
+
+    card = app.generate_flight_briefing_card(
+        site, metrics, now, days=7, min_sun_req=70, max_blackout_tol=24
+    )
+    assert "ARTEMIS-LS-Site01" in card
+    assert "SUHAIL STANDARDI" in card
+    assert "GO (UÇUŞA UYGUN)" in card
+    assert "🟢 GO" in card
+    assert "2026-11-16 04:00 UTC" in card

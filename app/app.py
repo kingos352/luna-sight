@@ -28,6 +28,7 @@ from __future__ import annotations
 import datetime as dt
 import importlib
 import json
+import math
 import os
 import sys
 import zlib
@@ -1162,6 +1163,206 @@ def build_battery_figure(frame: pd.DataFrame, step_minutes: int, title: str) -> 
     return fig
 
 
+def lunar_surface_distance_km(
+    lat1_deg: float, lon1_deg: float, lat2_deg: float, lon2_deg: float
+) -> float:
+    """İki Ay yüzeyi koordinatı arasındaki büyük daire mesafesini (km) hesaplar.
+
+    Ay ortalama yarıçapı: R ≈ 1737.4 km.
+    """
+    r_moon_km = 1737.4
+    phi1, phi2 = math.radians(lat1_deg), math.radians(lat2_deg)
+    dphi = math.radians(lat2_deg - lat1_deg)
+    dlam = math.radians(lon2_deg - lon1_deg)
+
+    a = math.sin(dphi / 2.0) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlam / 2.0) ** 2
+    c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(max(0.0, 1.0 - a)))
+    return r_moon_km * c
+
+
+def build_south_pole_map(spec_a: SiteSpec, spec_b: SiteSpec) -> go.Figure:
+    """Ay Güney Kutbu (90°S) merkezli 2D radar / kutupsal harita üretir."""
+    km_per_deg = (math.pi / 180.0) * 1737.4  # ~30.323 km/deg
+    r_a = max(0.0, (90.0 + spec_a.latitude_deg) * km_per_deg)
+    r_b = max(0.0, (90.0 + spec_b.latitude_deg) * km_per_deg)
+
+    dist_km = lunar_surface_distance_km(
+        spec_a.latitude_deg,
+        spec_a.longitude_deg_east,
+        spec_b.latitude_deg,
+        spec_b.longitude_deg_east,
+    )
+
+    fig = go.Figure()
+
+    # 1. Güney Kutbu (90°S) Merkez Noktası
+    fig.add_trace(
+        go.Scatterpolar(
+            r=[0],
+            theta=[0],
+            mode="markers+text",
+            name="Ay Güney Kutbu (90°S)",
+            text=["Ay Güney Kutbu (90°S)"],
+            textposition="top center",
+            marker={"size": 13, "color": "#ffffff", "symbol": "cross"},
+            hovertemplate="<b>Ay Güney Kutbu (90.00°S)</b><extra></extra>",
+        )
+    )
+
+    # 2. Bölge A Noktası
+    fig.add_trace(
+        go.Scatterpolar(
+            r=[r_a],
+            theta=[spec_a.longitude_deg_east],
+            mode="markers+text",
+            name=f"Bölge A: {spec_a.site_id}",
+            text=[f"A: {spec_a.site_id}"],
+            textposition="bottom right",
+            marker={"size": 15, "color": "#4FC3F7", "symbol": "circle"},
+            hovertemplate=(
+                f"<b>Bölge A: {spec_a.name}</b><br>"
+                f"ID: {spec_a.site_id}<br>"
+                f"Enlem: {spec_a.latitude_deg:.4f}°<br>"
+                f"Boylam: {spec_a.longitude_deg_east:.4f}°<br>"
+                f"Kutuptan Mesafe: {r_a:.1f} km<extra></extra>"
+            ),
+        )
+    )
+
+    # 3. Bölge B Noktası
+    fig.add_trace(
+        go.Scatterpolar(
+            r=[r_b],
+            theta=[spec_b.longitude_deg_east],
+            mode="markers+text",
+            name=f"Bölge B: {spec_b.site_id}",
+            text=[f"B: {spec_b.site_id}"],
+            textposition="bottom left",
+            marker={"size": 15, "color": "#FFB74D", "symbol": "diamond"},
+            hovertemplate=(
+                f"<b>Bölge B: {spec_b.name}</b><br>"
+                f"ID: {spec_b.site_id}<br>"
+                f"Enlem: {spec_b.latitude_deg:.4f}°<br>"
+                f"Boylam: {spec_b.longitude_deg_east:.4f}°<br>"
+                f"Kutuptan Mesafe: {r_b:.1f} km<extra></extra>"
+            ),
+        )
+    )
+
+    # 4. A ile B arasındaki bağlantı çizgisi (inter-site mesafe)
+    fig.add_trace(
+        go.Scatterpolar(
+            r=[r_a, r_b],
+            theta=[spec_a.longitude_deg_east, spec_b.longitude_deg_east],
+            mode="lines",
+            name=f"A–B Mesafesi (~{dist_km:.1f} km)",
+            line={"color": "#FF5252", "width": 2.5, "dash": "dash"},
+            hovertemplate=f"Bölgeler Arası Mesafe: <b>{dist_km:.1f} km</b><extra></extra>",
+        )
+    )
+
+    max_r = max(25.0, max(r_a, r_b) * 1.3)
+    fig.update_layout(
+        title={
+            "text": f"Ay Güney Kutup Bölgesi Radar Haritası (A–B Mesafesi: ~{dist_km:.1f} km)",
+            "font": {"size": 14},
+        },
+        polar={
+            "radialaxis": {
+                "visible": True,
+                "range": [0, max_r],
+                "gridcolor": "rgba(154,164,191,0.2)",
+                "linecolor": "rgba(154,164,191,0.4)",
+                "ticksuffix": " km",
+                "tickfont": {"color": "#9aa4bf", "size": 10},
+            },
+            "angularaxis": {
+                "gridcolor": "rgba(154,164,191,0.2)",
+                "linecolor": "rgba(154,164,191,0.4)",
+                "tickfont": {"color": "#9aa4bf", "size": 10},
+                "direction": "counterclockwise",
+                "rotation": 0,
+            },
+            "bgcolor": "rgba(20,26,46,0.5)",
+        },
+        paper_bgcolor="rgba(0,0,0,0)",
+        font={"color": "#e8ecf8"},
+        height=450,
+        margin={"l": 30, "r": 30, "t": 50, "b": 30},
+        legend={"orientation": "h", "yanchor": "bottom", "y": -0.15, "x": 0.05},
+    )
+    return fig
+
+
+def generate_flight_briefing_card(
+    spec: SiteSpec,
+    metrics: SiteMetrics,
+    start_utc: dt.datetime,
+    days: int,
+    min_sun_req: int,
+    max_blackout_tol: int,
+) -> str:
+    """Astronotlar ve görev kontrol için tek tıkla indirilebilir uçuş brifing kartı."""
+    end_utc = start_utc + dt.timedelta(days=days)
+    sun_pct = metrics.sun_share * 100.0
+    sun_pass = sun_pct >= min_sun_req
+    blackout_pass = metrics.longest_earth_blackout <= max_blackout_tol
+    overall_status = (
+        "GO (UÇUŞA UYGUN)" if (sun_pass and blackout_pass) else "NO-GO (KORUMA / İPTAL)"
+    )
+
+    pass_sun_str = "[PASS - SAĞLANDI]" if sun_pass else "[FAIL - YETERSİZ]"
+    pass_blk_str = "[PASS - SAĞLANDI]" if blackout_pass else "[FAIL - TOLERANS AŞILDI]"
+    badge_str = (
+        "🟢 GO (Tüm Kriterler Karşılandı)"
+        if (sun_pass and blackout_pass)
+        else "🔴 NO-GO (Kritik Risk Tespit Edildi)"
+    )
+
+    t_start = start_utc.strftime("%Y-%m-%d %H:%M")
+    t_end = end_utc.strftime("%Y-%m-%d %H:%M")
+    blk = metrics.longest_earth_blackout
+    coord = f"Enlem {spec.latitude_deg:.4f}°, Boylam {spec.longitude_deg_east:.4f}°"
+
+    return f"""# 🌙 LUNA SIGHT · ASTRONOT UÇUŞ BRİFİNG KARTI (FLIGHT BRIEFING CARD)
+**Görev ID:** ARTEMIS-LS-{spec.site_id}
+**Zaman Penceresi:** {t_start} UTC → {t_end} UTC ({days} Gün)
+**Nihai Değerlendirme:** {overall_status}
+
+---
+
+## 1. İNİŞ BÖLGESİ KİMLİK KARTI
+- **Bölge Adı:** {spec.name} ({spec.site_id})
+- **Koordinat:** {coord} (Doğu-Pozitif)
+- **Topografya Veri Tabanı:** {spec.origin.upper()} (LOLA DEM)
+
+## 2. GÖREV KISITLARI & DEĞERLENDİRME (SUHAIL STANDARDI)
+- **Minimum Güneşlenme:** Hedef ≥ %{min_sun_req} | Gerçekleşen: %{sun_pct:.1f} → {pass_sun_str}
+- **Maks. Kesinti:** Limit ≤ {max_blackout_tol} sa | Gerçekleşen: {blk:.1f} sa → {pass_blk_str}
+- **Görev Durumu Rozeti:** {badge_str}
+
+## 3. TAKTİK İNİŞ VE OPERASYON PENCERESİ
+- **Önerilen Taktik İniş Anı (Optimal Landing):** {metrics.optimal_landing_time}
+- **En Uzun Kesintisiz Şarj & Doğrudan İletişim:** {metrics.longest_joint_window:.1f} saat
+- **Toplam Güneş Aydınlanma Süresi:** {metrics.sun_hours:.1f} saat
+- **Toplam Dünya Doğrudan Görüş Süresi:** {metrics.earth_hours:.1f} saat
+- **Eşzamanlı (Güneş + Dünya) Görüş Süresi:** {metrics.joint_hours:.1f} saat
+- **Maksimum İletişimsizlik (Kör Nokta):** {metrics.longest_earth_blackout:.1f} saat
+
+## 4. TOPOĞRAFİK RİSK & ENGEL ÖZETİ
+- **Ortalama Ufuk Yüksekliği:** {metrics.horizon_mean:.1f}°
+- **En Yüksek Tepe/Engel:** {metrics.horizon_max:.1f}° (Azimut: {metrics.horizon_max_az:.0f}°)
+- **Krater/Dağ Gölgeleme Kaybı:** %{metrics.terrain_blocked_share * 100:.0f}
+
+## 5. ASTRONOT PROSEDÜR VE EMNİYET TALİMATLARI
+1. İniş anında batarya şarj seviyesini en az %80 SoC'de tutun.
+2. {blk:.1f} saatlik kör nokta öncesinde Dünya'ya telemetri iletin.
+3. Kör nokta sırasında otonom sistemleri batarya tasarruf moduna alın.
+
+*Bu brifing kartı LUNA SIGHT K4 Navigasyon Sistemi tarafından otomatik olarak üretilmiştir.*
+"""
+
+
 # ---------------------------------------------------------------------------
 # Arayüz katmanı
 # ---------------------------------------------------------------------------
@@ -1434,6 +1635,27 @@ def render_sidebar_controls() -> tuple[int, int, dt.datetime, str]:
         )
 
     st.sidebar.divider()
+    st.sidebar.subheader("Görev kısıtları (SUHAIL)")
+    min_sun_req = st.sidebar.slider(
+        "Min. Güneş İhtiyacı (%)",
+        min_value=10,
+        max_value=100,
+        value=70,
+        step=5,
+        help="Aracın güneş panelleri için görev boyunca gereken minimum aydınlanma oranı.",
+        key=f"min_sun_{source_mode}",
+    )
+    max_blackout_tol = st.sidebar.slider(
+        "Maks. Telsiz Kesintisi Toleransı (saat)",
+        min_value=0,
+        max_value=72,
+        value=24,
+        step=2,
+        help="Dünya ile kesintisiz kör nokta (blackout) süresinin izin verilen üst sınırı.",
+        key=f"max_blackout_{source_mode}",
+    )
+
+    st.sidebar.divider()
     st.sidebar.subheader("Bilimsel kaynaklar")
     st.sidebar.markdown(_integration_badges_html(), unsafe_allow_html=True)
     k1_ready = _module_implemented("luna_sight.ephemeris")
@@ -1482,7 +1704,7 @@ def render_sidebar_controls() -> tuple[int, int, dt.datetime, str]:
             "Eksik veri görünür/engellenmiş sayılmaz; geçiş bandı `uncertain` "
             "olarak raporlanır. Bu ekran iniş güvenliği kararı vermez."
         )
-    return days, step_minutes, start_utc, source_mode
+    return days, step_minutes, start_utc, source_mode, min_sun_req, max_blackout_tol
 
 
 def render_site_panel(
@@ -1491,11 +1713,39 @@ def render_site_panel(
     spec: SiteSpec,
     metrics: SiteMetrics,
     compare: SiteMetrics,
+    min_sun_req: int = 70,
+    max_blackout_tol: int = 24,
+    start_utc: dt.datetime | None = None,
+    days: int = 7,
+    source_mode: str = "mock",
 ) -> None:
     """Tek bir bölgenin metrik ve engel özetini sütuna çizer."""
     with column:
         source_note = "K2/LOLA ufuk profili" if spec.origin == "real" else "yaklaşık · mock"
         st.caption(f"Koordinat: {spec.coordinates} · {source_note}")
+
+        # SUHAIL Kriter Uygunluk Rozeti
+        sun_pct = metrics.sun_share * 100.0
+        sun_pass = sun_pct >= min_sun_req
+        blackout_pass = metrics.longest_earth_blackout <= max_blackout_tol
+        if sun_pass and blackout_pass:
+            st.success(
+                f"🟢 **GÖREV İÇİN UYGUN (PASS)** · Güneş %{sun_pct:.0f} (Hedef ≥ %{min_sun_req}) · "
+                f"Kesinti {metrics.longest_earth_blackout:.1f} sa (Limit ≤ {max_blackout_tol} sa)",
+                icon="✅",
+            )
+        else:
+            fails = []
+            if not sun_pass:
+                fails.append(f"Güneş %{sun_pct:.0f} < %{min_sun_req}")
+            if not blackout_pass:
+                fails.append(
+                    f"Kesinti {metrics.longest_earth_blackout:.1f} sa > {max_blackout_tol} sa"
+                )
+            st.error(
+                f"🔴 **GÖREV RİSKLİ (FAIL)** · Kriter İhlali: {', '.join(fails)}",
+                icon="🚨",
+            )
 
         sun_delta = metrics.sun_hours - compare.sun_hours
         earth_delta = metrics.earth_hours - compare.earth_hours
@@ -1561,6 +1811,19 @@ def render_site_panel(
             f"*(En uzun pencere: {best_dur:.1f} sa kesintisiz güç ve iletişim)*",
             icon="🚀",
         )
+
+        if start_utc is not None:
+            briefing_md = generate_flight_briefing_card(
+                spec, metrics, start_utc, days, min_sun_req, max_blackout_tol
+            )
+            st.download_button(
+                f"📋 {spec.site_id} Uçuş Kartını İndir (.md)",
+                data=briefing_md.encode("utf-8"),
+                file_name=f"flight_briefing_{spec.site_id.lower()}.md",
+                mime="text/markdown",
+                key=f"dl_flight_card_{spec.site_id}_{label}_{source_mode}",
+                help="Astronotlar ve görev kontrol için taktik uçuş brifing kartı.",
+            )
 
         with st.expander("Topoğrafik engel özeti", expanded=True):
             st.markdown(
@@ -1689,7 +1952,9 @@ def main() -> None:
     )
     inject_theme()
 
-    days, step_minutes, start_utc, source_mode = render_sidebar_controls()
+    days, step_minutes, start_utc, source_mode, min_sun_req, max_blackout_tol = (
+        render_sidebar_controls()
+    )
     start_iso = start_utc.astimezone(dt.UTC).isoformat()
 
     engine_active = _engine_available()
@@ -1770,16 +2035,43 @@ def main() -> None:
             icon="ℹ️",
         )
 
-    render_site_panel(column_a, "Bölge A", catalog[selected_a], metrics_a, metrics_b)
-    render_site_panel(column_b, "Bölge B", catalog[selected_b], metrics_b, metrics_a)
+    render_site_panel(
+        column_a,
+        "Bölge A",
+        catalog[selected_a],
+        metrics_a,
+        metrics_b,
+        min_sun_req,
+        max_blackout_tol,
+        start_utc,
+        days,
+        source_mode,
+    )
+    render_site_panel(
+        column_b,
+        "Bölge B",
+        catalog[selected_b],
+        metrics_b,
+        metrics_a,
+        min_sun_req,
+        max_blackout_tol,
+        start_utc,
+        days,
+        source_mode,
+    )
 
     # --- Adım 3: görselleştirmeler ----------------------------------------
     st.markdown(
         "<div class='ls-step'>3 · Karşılaştırma ve ufuk grafikleri</div>",
         unsafe_allow_html=True,
     )
-    horizon_tab, timeline_tab, data_tab = st.tabs(
-        ["Ufuk görünümü", "Zaman çizelgesi", "Veri ve kaynak"]
+    horizon_tab, timeline_tab, map_tab, data_tab = st.tabs(
+        [
+            "Ufuk görünümü",
+            "Zaman çizelgesi",
+            "Güney Kutbu Haritası (2D)",
+            "Veri ve kaynak",
+        ]
     )
 
     with horizon_tab:
@@ -1885,6 +2177,16 @@ def main() -> None:
                 )
             )
         st.caption(BATTERY_ASSUMPTIONS)
+
+    with map_tab:
+        st.caption(
+            "Ay Güney Kutbu (90°S) merkezli 2D radar haritası. Aday iniş bölgelerinin "
+            "konumlarını, kutba mesafelerini ve iki bölge arasındaki mesafeyi gösterir."
+        )
+        st.plotly_chart(
+            build_south_pole_map(catalog[selected_a], catalog[selected_b]),
+            use_container_width=True,
+        )
 
     with data_tab:
         render_data_tab(frame_a, frame_b, catalog[selected_a], catalog[selected_b])
