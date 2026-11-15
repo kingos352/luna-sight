@@ -1,0 +1,30 @@
+{
+  "site_id": "Site06",
+  "site_name": "de Gerlache-Kocher massif",
+  "latitude_deg": -85.8,
+  "longitude_deg_east": -116.3,
+  "analysis_radius_m": 5000.0,
+  "source_id": "pgda-lola-5mpp",
+  "dem_source": "precomputed_lola_dem",
+  "dem_file": "data/cache/lola/eray_regions/DE_GERLACHE_KOCHER.tif",
+  "dem_resolution_m": 150.0,
+  "slope": {
+    "mean_deg": 13.388,
+    "max_deg": 24.981,
+    "median_deg": 13.898,
+    "std_deg": 5.682,
+    "p95_deg": 21.662,
+    "fraction_above_5deg": 0.906,
+    "fraction_above_10deg": 0.7036,
+    "fraction_above_15deg": 0.4487,
+    "fraction_above_20deg": 0.1012,
+    "valid_fraction": 1.0
+  },
+  "boulder_hazard": {
+    "mean_hazard_prob": 0.3402,
+    "p95_hazard_prob": 0.4998,
+    "landing_safety_score": 44.18,
+    "footprint_3sigma_safe_pct": 29.64
+  },
+  "notes": "Computed from NASA LRO LOLA Regional DEM tile DE_GERLACHE_KOCHER.tif (150 m/px) covering (-114225.9, -56454.0) m; tile center offset 15717.0 m."
+}

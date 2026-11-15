@@ -43,9 +43,14 @@ def probe_duration(path: Path) -> float:
     """Ses dosyasının gerçek süresi (saniye)."""
     result = subprocess.run(
         [
-            "ffprobe", "-v", "error",
-            "-show_entries", "format=duration",
-            "-of", "csv=p=0", str(path),
+            "ffprobe",
+            "-v",
+            "error",
+            "-show_entries",
+            "format=duration",
+            "-of",
+            "csv=p=0",
+            str(path),
         ],
         capture_output=True,
         text=True,

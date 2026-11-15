@@ -99,10 +99,10 @@ class CandidateSite:
 
 
 #: Bölgesel 5 m/piksel LOLA DEM karosu bulunan bölgeler.
-SITES_WITH_REGIONAL_DEM: tuple[str, ...] = ('Site01', 'Site04')
+SITES_WITH_REGIONAL_DEM: tuple[str, ...] = ("Site01", "Site04")
 
 
-#: Aday bölge kataloğu. Ölçüm içermez; modül açıklamasına bakın.
+#: Projenin resmi aday iniş bölgeleri kataloğu (NASA Artemis III; ölçüm içermez).
 CANDIDATE_SITES: dict[str, CandidateSite] = {
     "Site01": CandidateSite(
         site_id="Site01",
@@ -117,6 +117,24 @@ CANDIDATE_SITES: dict[str, CandidateSite] = {
             "erişimi dengeli."
         ),
     ),
+    "Site02": CandidateSite(
+        site_id="Site02",
+        site_name="Connecting ridge extension",
+        latitude_deg=-89.300000,
+        longitude_deg_east=-150.000000,
+        x_m=-10613.3,
+        y_m=-18382.8,
+        description="Connecting Ridge uzantısı; elverişli aydınlanma ve PSR yakınlığı.",
+    ),
+    "Site03": CandidateSite(
+        site_id="Site03",
+        site_name="de Gerlache rim 1",
+        latitude_deg=-88.500000,
+        longitude_deg_east=-68.000000,
+        x_m=-42175.4,
+        y_m=17040.0,
+        description="de Gerlache kraterinin kuzeybatı sırtı.",
+    ),
     "Site04": CandidateSite(
         site_id="Site04",
         site_name="Shackleton rim",
@@ -130,154 +148,77 @@ CANDIDATE_SITES: dict[str, CandidateSite] = {
             "duvarı ile engelli."
         ),
     ),
-    "MALAPERT_MASSIF": CandidateSite(
-        site_id="MALAPERT_MASSIF",
-        site_name="Malapert Massif",
-        latitude_deg=-86.04,
-        longitude_deg_east=2.7,
-        x_m=5658.8,
-        y_m=119994.9,
-        operational_role="Artemis III Birincil İnsanlı İniş & Kalıcı Artemis Base Camp Ana Konumu",
-        description=(
-            "Ay güney kutbunun simgesi olan devasa dağ kütlesi. Zirve platosu sürekli güneş "
-            "ve kesintisiz Dünya görüşü sunar."
-        ),
+    "Site05": CandidateSite(
+        site_id="Site05",
+        site_name="de Gerlache rim 2",
+        latitude_deg=-88.710000,
+        longitude_deg_east=-64.000000,
+        x_m=-35159.7,
+        y_m=17148.5,
+        description="de Gerlache kraterinin güneydoğu sırtı.",
     ),
-    "CONNECTING_RIDGE_EXT": CandidateSite(
-        site_id="CONNECTING_RIDGE_EXT",
-        site_name="Connecting Ridge Extension",
-        latitude_deg=-89.47,
-        longitude_deg_east=-136.2,
-        x_m=-11123.8,
-        y_m=-11599.8,
-        operational_role=(
-            "Artemis III Mürettebatlı İniş & Geceleme Öncesi Solar İstasyon Konuşlandırma"
-        ),
-        description=(
-            "Connecting Ridge sırtının batı uzantısındaki yüksek irtifa hattı. Shackleton ile "
-            "de Gerlache kraterleri arasındaki geçit."
-        ),
+    "Site06": CandidateSite(
+        site_id="Site06",
+        site_name="de Gerlache-Kocher massif",
+        latitude_deg=-85.800000,
+        longitude_deg_east=-116.300000,
+        x_m=-114225.9,
+        y_m=-56454.0,
+        description="de Gerlache ve Kocher kraterleri arasındaki masif dağ kütlesi.",
     ),
-    "LEIBNITZ_BETA": CandidateSite(
-        site_id="LEIBNITZ_BETA",
-        site_name="Leibnitz Beta Plateau",
-        latitude_deg=-85.82,
-        longitude_deg_east=29.5,
-        x_m=62443.2,
-        y_m=110367.9,
-        operational_role="Alternatif Artemis III İniş Platosu & Genişletilmiş Yüzey Keşif Üssü",
-        description=(
-            "Geniş ve son derece düşük eğimli plato alanı. Yüksek iniş güvenliği ve geniş "
-            "hareket serbestisi sağlar."
-        ),
-    ),
-    "DE_GERLACHE_RIM_1": CandidateSite(
-        site_id="DE_GERLACHE_RIM_1",
-        site_name="de Gerlache Rim 1",
-        latitude_deg=-88.71,
-        longitude_deg_east=-68.7,
-        x_m=-36446.6,
-        y_m=14209.9,
-        operational_role="Bilimsel Keşif ve Kalıcı Gölge Bölgesi (PSR) Örnekleme Noktası",
-        description=(
-            "de Gerlache kraterinin doğu sırt hattı. Krater içine doğrudan robotik kol veya "
-            "rover sortisi imkanı."
-        ),
-    ),
-    "DE_GERLACHE_RIM_2": CandidateSite(
-        site_id="DE_GERLACHE_RIM_2",
-        site_name="de Gerlache Rim 2",
-        latitude_deg=-88.35,
-        longitude_deg_east=-67.8,
-        x_m=-46327.8,
-        y_m=18906.0,
-        operational_role="Yedek İniş Bölgesi & Çift Görevli İletişim İstasyonu",
-        description="de Gerlache kraterinin kuzeydoğu kenar platosu.",
-    ),
-    "AMUNDSEN_RIM": CandidateSite(
-        site_id="AMUNDSEN_RIM",
-        site_name="Amundsen Rim",
-        latitude_deg=-84.45,
-        longitude_deg_east=85.6,
-        x_m=167929.9,
-        y_m=12921.5,
-        operational_role="Derin Krater Kenar Keşfi & Magmatik Malzeme İncelemesi",
-        description=(
-            "Devasa Amundsen kraterinin güneybatı sırtı. Teraslı duvar yapısı ve merkezi dağ "
-            "kütlesi manzarası."
-        ),
-    ),
-    "NOBILE_RIM_2": CandidateSite(
-        site_id="NOBILE_RIM_2",
-        site_name="Nobile Rim 2",
-        latitude_deg=-85.28,
-        longitude_deg_east=36.15,
-        x_m=84478.1,
-        y_m=115636.3,
-        operational_role="Uçucu Madde Haritalama & Robotik-İnsanlı İş Birliği Üssü",
-        description=(
-            "Nobile kraterinin batı kenar platosu. VIPER keşif rotasıyla doğrudan entegrasyon "
-            "potansiyeli."
-        ),
-    ),
-    "DE_GERLACHE_KOCHER": CandidateSite(
-        site_id="DE_GERLACHE_KOCHER",
-        site_name="de Gerlache-Kocher Massif",
-        latitude_deg=-85.78,
-        longitude_deg_east=-123.35,
-        x_m=-106940.7,
-        y_m=-70380.6,
-        operational_role="Yüksek İrtifa Radyo Röle İstasyonu & Uzun Dönemli Gözlem Noktası",
-        description="de Gerlache ile Kocher arasındaki yüksek dağlık masif.",
-    ),
-    "HAWORTH": CandidateSite(
-        site_id="HAWORTH",
+    "Site07": CandidateSite(
+        site_id="Site07",
         site_name="Haworth",
-        latitude_deg=-87.87,
-        longitude_deg_east=-5.1,
-        x_m=-5742.2,
-        y_m=64340.4,
-        operational_role="Aşırı Düşük Sıcaklık Bilimsel İstasyonu (Kriyojenik Tuzaklar)",
-        description=(
-            "Haworth krateri kuzey kenarı. Güneş sisteminin en soğuk noktalarına sınır teşkil "
-            "eder."
-        ),
+        latitude_deg=-87.450000,
+        longitude_deg_east=-5.000000,
+        x_m=-6740.4,
+        y_m=77043.0,
+        description="Haworth krateri çevresi ve kalıcı gölgeli bölge (PSR) kenarları.",
     ),
-    "FAUSTINI_RIM": CandidateSite(
-        site_id="FAUSTINI_RIM",
-        site_name="Faustini Rim",
-        latitude_deg=-86.4925,
-        longitude_deg_east=80.7183,
-        x_m=104999.4,
-        y_m=17159.9,
-        operational_role="Su Buzu Teyit Üssü & Kalıcı İletişim İstasyonu",
-        description=(
-            "Faustini kraterinin yüksek kuzey sırtı; düşük yamaç eğimi ve stabil radyo "
-            "penceresi."
-        ),
+    "Site08": CandidateSite(
+        site_id="Site08",
+        site_name="Malapert massif",
+        latitude_deg=-86.000000,
+        longitude_deg_east=2.700000,
+        x_m=5716.0,
+        y_m=121208.0,
+        description="Malapert Dağı sırtı; Dünya ile yüksek görüş hattı ve iletişim avantajı.",
     ),
-    "CABEUS_RIDGE": CandidateSite(
-        site_id="CABEUS_RIDGE",
-        site_name="Cabeus Ridge",
-        latitude_deg=-83.7961,
-        longitude_deg_east=-41.0726,
-        x_m=-123720.5,
-        y_m=141960.5,
-        operational_role="LCROSS İmpakt Doğrulama Sahası & Volatil Madde Keşfi",
-        description=(
-            "Cabeus kraterini kuşatan yüksek sırt; Dünya ile sürekli doğrudan görüş hattına "
-            "sahiptir."
-        ),
+    "Site09": CandidateSite(
+        site_id="Site09",
+        site_name="Leibnitz beta plateau",
+        latitude_deg=-85.200000,
+        longitude_deg_east=33.000000,
+        x_m=79319.7,
+        y_m=122141.7,
+        description="Leibnitz Beta yüksek platosu; geniş iniş alanı ve düz topoğrafya.",
     ),
-    "SVERDRUP_RIM": CandidateSite(
-        site_id="SVERDRUP_RIM",
-        site_name="Sverdrup Rim",
-        latitude_deg=-89.4455,
-        longitude_deg_east=-137.3137,
-        x_m=-11400.0,
-        y_m=-12360.0,
-        operational_role="Alternatif İnsanlı & Otonom Güvenli İniş Limanı",
-        description="Sverdrup kraterinin yüksek sırt platosu; düşük eğimli aday ayak basma alanı.",
+    "Site11": CandidateSite(
+        site_id="Site11",
+        site_name="Nobile rim 2",
+        latitude_deg=-84.100000,
+        longitude_deg_east=59.700000,
+        x_m=154604.8,
+        y_m=90343.8,
+        description="Nobile krateri doğu sırtı alternatifi.",
+    ),
+    "Site12": CandidateSite(
+        site_id="Site12",
+        site_name="Amundsen rim",
+        latitude_deg=-84.500000,
+        longitude_deg_east=85.000000,
+        x_m=166271.5,
+        y_m=14546.9,
+        description="Amundsen krateri yüksek sırtı; antik kabuk materyali erişimi.",
+    ),
+    "Site13": CandidateSite(
+        site_id="Site13",
+        site_name="Mons Mouton",
+        latitude_deg=-84.600000,
+        longitude_deg_east=31.000000,
+        x_m=84398.0,
+        y_m=140461.8,
+        description="Mons Mouton (Faustini Rim A) düz zirveli yüksek dağ platosu.",
     ),
 }
 

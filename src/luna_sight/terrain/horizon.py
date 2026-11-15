@@ -23,6 +23,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 import numpy as np
+import pandas as pd
 
 from luna_sight.terrain.dem import DemGrid
 from luna_sight.terrain.polar import azimuth_unit_vector, xy_to_lonlat
@@ -354,4 +355,166 @@ def horizon_from_profile(
 
     if is_scalar:
         return float(result.item())
+    return result
+
+
+def _resolve_horizon_columns(df: pd.DataFrame, label: str) -> tuple[str, str | None]:
+    if "azimuth_deg" not in df.columns:
+        raise ValueError(f"{label} DataFrame içinde 'azimuth_deg' kolonu bulunmalıdır.")
+    if "horizon_elevation_deg" in df.columns:
+        elev_col = "horizon_elevation_deg"
+    elif "horizon_deg" in df.columns:
+        elev_col = "horizon_deg"
+    else:
+        raise ValueError(
+            f"{label} DataFrame içinde 'horizon_elevation_deg' veya 'horizon_deg' kolonu olmalıdır."
+        )
+
+    if "horizon_distance_m" in df.columns:
+        dist_col: str | None = "horizon_distance_m"
+    elif "occluder_distance_m" in df.columns:
+        dist_col = "occluder_distance_m"
+    else:
+        dist_col = None
+    return elev_col, dist_col
+
+
+def _prepare_sorted_profile(df: pd.DataFrame, label: str) -> tuple[pd.DataFrame, np.ndarray]:
+    if df.empty:
+        raise ValueError(f"{label} profili boş olamaz.")
+    work = df.copy()
+    az = np.mod(pd.to_numeric(work["azimuth_deg"], errors="raise").to_numpy(dtype=float), 360.0)
+    work["_az_norm"] = az
+    work = work.sort_values("_az_norm", kind="stable").drop_duplicates(
+        subset=["_az_norm"], keep="first"
+    )
+    sorted_az = work["_az_norm"].to_numpy(dtype=float)
+    return work.reset_index(drop=True), sorted_az
+
+
+def _circular_nearest_indices(src_az: np.ndarray, target_az: np.ndarray) -> np.ndarray:
+    diff = np.abs(target_az[:, None] - src_az[None, :])
+    angular_dist = np.minimum(diff, 360.0 - diff)
+    return np.argmin(angular_dist, axis=1)
+
+
+def _align_circular_elevation(
+    src_az: np.ndarray,
+    src_el: np.ndarray,
+    target_az: np.ndarray,
+) -> np.ndarray:
+    nearest_idx = _circular_nearest_indices(src_az, target_az)
+    nearest_dist = np.minimum(
+        np.abs(target_az - src_az[nearest_idx]),
+        360.0 - np.abs(target_az - src_az[nearest_idx]),
+    )
+    exact_mask = nearest_dist <= 1e-9
+
+    finite_mask = np.isfinite(src_el)
+    if np.count_nonzero(finite_mask) >= 2:
+        fin_az = src_az[finite_mask]
+        fin_el = src_el[finite_mask]
+        ext_az = np.concatenate([fin_az - 360.0, fin_az, fin_az + 360.0])
+        ext_el = np.concatenate([fin_el, fin_el, fin_el])
+        interp_vals = np.interp(target_az, ext_az, ext_el)
+    elif np.count_nonzero(finite_mask) == 1:
+        interp_vals = np.full(target_az.shape, float(src_el[finite_mask][0]), dtype=float)
+    else:
+        interp_vals = np.full(target_az.shape, np.nan, dtype=float)
+
+    return np.where(exact_mask, src_el[nearest_idx], interp_vals)
+
+
+def merge_hybrid_profiles(
+    near_profile: pd.DataFrame,
+    far_profile: pd.DataFrame,
+) -> pd.DataFrame:
+    """Yakın (yüksek çözünürlük) ve uzak (bölgesel) ufuk profillerini birleştirir.
+
+    Profiller azimut (``azimuth_deg``, 0–360°) ekseninde hizalanır (gerekirse
+    dairesel doğrusal enterpolasyon uygulanır), her azimutta
+    ``max(horizon_elevation_deg)`` alınır ve daha yüksek engeli veren profilin
+    mesafe/meta verisi korunur.
+    """
+    near_elev_col, near_dist_col = _resolve_horizon_columns(near_profile, "near_profile")
+    far_elev_col, far_dist_col = _resolve_horizon_columns(far_profile, "far_profile")
+
+    near_df, near_az = _prepare_sorted_profile(near_profile, "near_profile")
+    far_df, far_az = _prepare_sorted_profile(far_profile, "far_profile")
+
+    out_elev_col = (
+        "horizon_elevation_deg"
+        if "horizon_elevation_deg" in (near_elev_col, far_elev_col)
+        else "horizon_deg"
+    )
+    if "horizon_distance_m" in (near_dist_col, far_dist_col):
+        out_dist_col: str | None = "horizon_distance_m"
+    elif "occluder_distance_m" in (near_dist_col, far_dist_col):
+        out_dist_col = "occluder_distance_m"
+    else:
+        out_dist_col = None
+
+    target_az = near_az if near_az.size >= far_az.size else far_az
+
+    near_el_src = pd.to_numeric(near_df[near_elev_col], errors="coerce").to_numpy(dtype=float)
+    far_el_src = pd.to_numeric(far_df[far_elev_col], errors="coerce").to_numpy(dtype=float)
+
+    near_el_aligned = _align_circular_elevation(near_az, near_el_src, target_az)
+    far_el_aligned = _align_circular_elevation(far_az, far_el_src, target_az)
+
+    near_idx = _circular_nearest_indices(near_az, target_az)
+    far_idx = _circular_nearest_indices(far_az, target_az)
+
+    merged_el = np.fmax(near_el_aligned, far_el_aligned)
+    choose_far = np.where(
+        np.isnan(near_el_aligned),
+        np.isfinite(far_el_aligned),
+        np.isfinite(far_el_aligned) & (far_el_aligned > near_el_aligned),
+    )
+
+    result = pd.DataFrame({"azimuth_deg": target_az, out_elev_col: merged_el})
+
+    if out_dist_col is not None:
+        near_dist_vals = (
+            pd.to_numeric(near_df[near_dist_col], errors="coerce").to_numpy(dtype=float)[near_idx]
+            if near_dist_col is not None
+            else np.full(target_az.shape, np.nan, dtype=float)
+        )
+        far_dist_vals = (
+            pd.to_numeric(far_df[far_dist_col], errors="coerce").to_numpy(dtype=float)[far_idx]
+            if far_dist_col is not None
+            else np.full(target_az.shape, np.nan, dtype=float)
+        )
+        result[out_dist_col] = np.where(choose_far, far_dist_vals, near_dist_vals)
+
+    skip_cols = {
+        "azimuth_deg",
+        "_az_norm",
+        near_elev_col,
+        far_elev_col,
+        "source_range",
+    }
+    if near_dist_col is not None:
+        skip_cols.add(near_dist_col)
+    if far_dist_col is not None:
+        skip_cols.add(far_dist_col)
+
+    preserved_cols: list[str] = []
+    for col in list(near_df.columns) + list(far_df.columns):
+        if col not in skip_cols and col not in preserved_cols:
+            preserved_cols.append(col)
+
+    for col in preserved_cols:
+        in_near = col in near_df.columns
+        in_far = col in far_df.columns
+        if in_near and in_far:
+            near_vals = near_df[col].to_numpy()[near_idx]
+            far_vals = far_df[col].to_numpy()[far_idx]
+            result[col] = np.where(choose_far, far_vals, near_vals)
+        elif in_near:
+            result[col] = near_df[col].to_numpy()[near_idx]
+        elif in_far:
+            result[col] = far_df[col].to_numpy()[far_idx]
+
+    result["source_range"] = "hybrid"
     return result

@@ -1,0 +1,30 @@
+{
+  "site_id": "Site13",
+  "site_name": "Mons Mouton",
+  "latitude_deg": -84.6,
+  "longitude_deg_east": 31.0,
+  "analysis_radius_m": 5000.0,
+  "source_id": "synthetic-analytic",
+  "dem_source": "representative_model",
+  "dem_file": null,
+  "dem_resolution_m": 25.0,
+  "slope": {
+    "mean_deg": 0.652,
+    "max_deg": 1.976,
+    "median_deg": 0.505,
+    "std_deg": 0.512,
+    "p95_deg": 1.859,
+    "fraction_above_5deg": 0.0,
+    "fraction_above_10deg": 0.0,
+    "fraction_above_15deg": 0.0,
+    "fraction_above_20deg": 0.0,
+    "valid_fraction": 1.0
+  },
+  "boulder_hazard": {
+    "mean_hazard_prob": 0.157,
+    "p95_hazard_prob": 0.1689,
+    "landing_safety_score": 93.72,
+    "footprint_3sigma_safe_pct": 100.0
+  },
+  "notes": "No local LOLA GeoTIFF in data/cache/lola/eray_regions covered (84398.0, 140461.8) m; slope stats computed over 5 km radius on 25 m/px grid using compute_lunar_elevation (surface_3d.py)."
+}

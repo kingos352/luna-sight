@@ -14,7 +14,7 @@ import pytest
 import responses
 from conftest import FIXTURE_EARTH, FIXTURE_SUN, SIGNATURE
 
-from luna_sight.ephemeris import API_URL, POSITION_COLUMNS, HorizonsEphemeris, Site
+from luna_sight.ephemeris import API_URL, POSITION_COLUMNS, SOURCE_ID, HorizonsEphemeris, Site
 
 #: `FIXTURE_SUN` ve `FIXTURE_EARTH` bu üç damgayı içeriyor.
 GRID = pd.date_range("2026-11-14 00:00", periods=3, freq="30min", tz="UTC")
@@ -150,3 +150,17 @@ def test_unsorted_grid_is_sorted_before_query() -> None:
     frame = HorizonsEphemeris().positions(SITE, shuffled)
     assert list(frame["timestamp_utc"]) == list(GRID)
     assert frame[list(POSITION_COLUMNS)].notna().all().all()
+
+
+@responses.activate
+def test_provenance_attributes_preserve_canonical_defaults() -> None:
+    provider = HorizonsEphemeris()
+    assert provider.source_id == SOURCE_ID == "jpl-horizons"
+    assert provider.source_version == "1.2"
+    assert provider.model_id == "DE441"
+
+    _register()
+    provider.positions(SITE, GRID)
+    assert provider.source_id == "jpl-horizons"
+    assert provider.source_version == "1.2"
+    assert provider.model_id == "DE441"

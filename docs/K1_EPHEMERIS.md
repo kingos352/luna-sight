@@ -26,14 +26,30 @@ satırı açılır ve `sha256` önbellek dosyasından yeniden hesaplanabilir.
 
 ## 2. Aday noktalar
 
-Koordinatlar K2'den gelir (`docs/K2_HORIZON.md` bölüm 2); K1 kendi nokta
-tanımı üretmez. `site_id` yazımı K2 ve K3 çıktılarıyla birebir aynıdır,
-yoksa bölge bazlı birleştirme hata vermeden boş kalır.
+Koordinatlar K2 kataloğundan gelir (`src/luna_sight/terrain/sites.py` ve
+`docs/K2_HORIZON.md` bölüm 2); K1 kendi nokta tanımı üretmez. `site_id` yazımı
+K2 ve K3 çıktılarıyla birebir aynıdır, yoksa bölge bazlı birleştirme hata
+vermeden boş kalır.
+
+K1 (`Site`, `build_site_timeseries`, `HorizonsEphemeris`) tüm **12 NASA
+Artemis III aday bölgesini** (`Site01`–`Site09`, `Site11`–`Site13`) destekler;
+`luna_sight.ephemeris.__main__.SITES` CLI varsayılanı tarihsel referans çifti
+olan `Site01` ve `Site04`'ü içerir.
 
 | Site | Bölge | Enlem (°) | Boylam doğu-pozitif (°) |
 |---|---|---|---|
 | Site01 | Connecting ridge | −89.463163 | −137.489553 |
+| Site02 | Connecting ridge extension | −89.300000 | −150.000000 |
+| Site03 | de Gerlache rim 1 | −88.500000 | −68.000000 |
 | Site04 | Shackleton rim | −89.766811 | −171.869898 |
+| Site05 | de Gerlache rim 2 | −88.710000 | −64.000000 |
+| Site06 | de Gerlache-Kocher massif | −85.800000 | −116.300000 |
+| Site07 | Haworth | −87.450000 | −5.000000 |
+| Site08 | Malapert massif | −86.000000 | +2.700000 |
+| Site09 | Leibnitz beta plateau | −85.200000 | +33.000000 |
+| Site11 | Nobile rim 2 | −84.100000 | +59.700000 |
+| Site12 | Amundsen rim | −84.500000 | +85.000000 |
+| Site13 | Mons Mouton | −84.600000 | +31.000000 |
 
 ## 3. Birimler, çerçeve ve işaretler
 
@@ -107,6 +123,27 @@ değildir**, azimut çözünürlüklü karar K3'e aittir):
 | Site01 | +1.004° … +1.501° | −0.373° | Güneş ortalama ufkun üstünde |
 | Site04 | +1.346° … +1.668° | +3.219° | Güneş ortalama ufkun altında |
 
+### 6.1 Tüm 12 Artemis III Aday Bölgesi Özeti (`Site01`–`Site09`, `Site11`–`Site13`)
+
+`2026-11-14 00:00Z → 2026-11-21 00:00Z`, 5 dakika adım, `jpl-horizons` (`v1.2`,
+`DE441`, `APPARENT=AIRLESS`); `data/cache/ephemeris_{site_id}_20261114T0000_168h.csv`
+altındaki 12 bölgenin tamamında **2017 satır**, **0 `NaN`** ve `quality_flag == "valid"`:
+
+| Site | Bölge | Güneş yüksekliği (min … max) | Güneş azimutu | Dünya yüksekliği (min … max) | Dünya azimutu |
+|---|---|---|---|---|---|
+| Site01 | Connecting ridge | +1.0041° … +1.5014° | 178.9400° … 264.0928° | −5.0359° … +4.0195° | 130.2703° … 136.2323° |
+| Site02 | Connecting ridge extension | +0.8548° … +1.6372° | 191.4473° … 276.5981° | −5.2465° … +3.8090° | 142.7808° … 148.7428° |
+| Site03 | de Gerlache rim 1 | +0.0562° … +1.0409° | 109.4821° … 194.6120° | −4.0557° … +5.0955° | 60.8465° … 66.6737° |
+| Site04 | Shackleton rim | +1.3460° … +1.6678° | 213.3169° … 298.4816° | −4.8783° … +4.1427° | 164.6299° … 170.6395° |
+| Site05 | de Gerlache rim 2 | +0.2664° … +1.1969° | 105.4800° … 190.6136° | −4.0574° … +5.0710° | 56.8306° … 62.6903° |
+| Site06 | de Gerlache-Kocher massif | −2.6525° … −0.3575° | 157.7391° … 242.8783° | −6.4163° … +2.9736° | 109.2512° … 114.7199° |
+| Site07 | Haworth | −0.1375° … +3.2967° | 46.5284° … 131.6411° | −2.1044° … +6.9173° | 3.7635° → 357.9273° (0°/360° geçişli) |
+| Site08 | Malapert massif | −0.6768° … +4.6579° | 38.8861° … 123.9430° | −0.6584° … +8.3115° | 349.9881° … 356.0842° |
+| Site09 | Leibnitz beta plateau | +1.2487° … +6.2885° | 8.4987° … 93.7349° | −0.6769° … +8.0347° | 319.4546° … 325.8865° |
+| Site11 | Nobile rim 2 | +3.8593° … +7.4464° | 67.1747° → 341.6093° (0°/360° geçişli) | −1.7681° … +6.6723° | 292.5881° … 299.3395° |
+| Site12 | Amundsen rim | +5.5208° … +7.0524° | 41.8486° → 316.2157° (0°/360° geçişli) | −4.2668° … +4.1487° | 267.4049° … 274.1771° |
+| Site13 | Mons Mouton | +1.0219° … +6.8508° | 10.5224° … 95.7386° | −0.0774° … +8.6113° | 321.4133° … 327.8791° |
+
 ## 7. Doğrulama
 
 | Kanıt | Yöntem | Sonuç |
@@ -115,7 +152,7 @@ değildir**, azimut çözünürlüklü karar K3'e aittir):
 | Zaman ızgarası | 168 saat / 5 dakika | 2017 damga, tek adım değeri `[5.]` |
 | Köken alanları | Yanıt imzası ve `{source: ...}` ayrıştırması | `1.2`, `DE441`; `sha256` önbellekten yeniden hesaplandı |
 | Hata yolları | HTTP 503, kesik `$$SOE`, `n.a.`, eksik kolon, bozuk takvim | Hepsi hata ya da `NaN`; sessiz kabul yok |
-| Ağsız tekrar | `pytest-recording` kaseti, `--record-mode=none` | 68 test, modül kapsamı %100 |
+| Ağsız tekrar | `pytest-recording` kaseti, `--record-mode=none` | 54 K1 testi (depo geneli 225 test), tamamı geçer |
 | **Bağımsız yol** | Alt-nokta geometrisi, 5 damga × 2 bölge × 2 gövde | **Azimutta ≤ 0.0038°, yükseklikte ≤ 0.0004°** |
 
 ### 7.1 Bağımsız yol nasıl kurgulandı
@@ -249,5 +286,8 @@ frame = build_site_series(
 
 Sorgu adımı istenen ızgaradan çıkarılır; düzensiz ızgara ve dakika altı adım
 reddedilir. Horizons bir damga için değer vermezse hücre `NaN` kalır ve
-doldurulmaz; o satırı `uncertain` olarak sınıflamak K3'ün işidir. Ham
+doldurulmaz; o satırı `uncertain` olarak sınıflamak K3'ün işidir. `HorizonsEphemeris`
+sınıfı kanonik köken özniteliklerini (`source_id="jpl-horizons"`, `source_version="1.2"`,
+`model_id="DE441"`) taşır ve çağrı sonrasında yanıt değerleriyle günceller; böylece
+`VisibilityRunner` gerçek efemerisle koşarken köken alanlarını korur. Ham
 yanıtlar `provider.last_responses` içinde durur, köken kaydı oradan yazılır.

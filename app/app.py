@@ -31,6 +31,8 @@ import json
 import math
 import os
 import sys
+import textwrap
+import urllib.parse
 import zlib
 from dataclasses import dataclass, fields, replace
 from pathlib import Path
@@ -40,6 +42,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+import streamlit.components.v1 as components
 
 # `src/` düzenindeki bilimsel modüller (K1/K2/K3) birleştiğinde içe aktarılabilsin.
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -47,6 +50,37 @@ SRC_DIR = REPO_ROOT / "src"
 HORIZON_DIR = REPO_ROOT / "data" / "derived"
 if SRC_DIR.is_dir() and str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
+
+from luna_sight.terrain import (  # noqa: E402
+    CANDIDATE_SITES,
+    DEFAULT_ROVER_SPEED_KMH,
+    PSR_TARGETS,
+    RISK_SOURCE_PRECOMPUTED,
+    RISK_SOURCE_REAL,
+    RISK_SOURCE_REPRESENTATIVE,
+    analyze_all_sites_risk,
+    evaluate_landing_footprint,
+    find_safe_corridor,
+    format_side_by_side_comparison,
+)
+from luna_sight.terrain.surface_3d import (  # noqa: E402
+    COLOR_SITE_A,
+    COLOR_SITE_B,
+    R_MOON_KM,
+    build_lunar_globe_figure,
+    build_polar_relief_figure,
+    compute_lunar_elevation,
+)
+from luna_sight.visibility import (  # noqa: E402
+    DSN_STATIONS,
+    DSNStation,
+    FrequencyBand,
+    HorizonProfileLookup,
+    compute_gateway_visibility,
+    compute_link_budget,
+    compute_penumbra_power,
+    evaluate_emergency_link_margin,
+)
 
 # ---------------------------------------------------------------------------
 # Sabitler
@@ -93,6 +127,9 @@ NUMERIC_COLUMNS = [
     "earth_alt_deg",
     "terrain_horizon_sun_deg",
     "terrain_horizon_earth_deg",
+    "sun_margin_deg",
+    "earth_margin_deg",
+    "joint_margin_deg",
 ]
 
 # K3 motoru bağlandığında gelen isteğe bağlı tanılama sütunları.
@@ -243,7 +280,7 @@ SITES: dict[str, SiteSpec] = {
         site_id="SITE-DE-GERLACHE",
         name="de Gerlache Krater Kenarı",
         latitude_deg=-88.50,
-        longitude_deg_east=87.10,
+        longitude_deg_east=-87.10,
         sun_offset_deg=1.4,
         sun_amplitude_deg=2.8,
         sun_phase=4.20,
@@ -290,12 +327,17 @@ def _discover_real_sites() -> dict[str, SiteSpec]:
         if not site_id:
             continue
 
-        k2_summary = _read_json(OUTPUT_K2_DIR / f"{site_id}_summary.json")
+        k2_summary_path = OUTPUT_K2_DIR / f"{site_id}_summary.json"
+        if not k2_summary_path.is_file():
+            k2_summary_path = OUTPUT_K2_DIR / f"{site_id}_summary_20000m.json"
+        k2_summary = _read_json(k2_summary_path)
         name = str(k2_summary.get("site_name") or site_id)
 
         horizon_csv = OUTPUT_K2_DIR / f"{site_id}_horizon_4000m.csv"
         if not horizon_csv.is_file():
             horizon_csv = OUTPUT_K2_DIR / f"{site_id}_horizon_2000m.csv"
+        if not horizon_csv.is_file():
+            horizon_csv = OUTPUT_K2_DIR / f"{site_id}_horizon_20000m.csv"
         discovered[site_id] = SiteSpec(
             site_id=site_id,
             name=name,
@@ -472,7 +514,8 @@ def normalize_contract_frame(frame: pd.DataFrame) -> pd.DataFrame:
         normalized["timestamp_utc"], utc=True, errors="raise"
     )
     for column in NUMERIC_COLUMNS:
-        normalized[column] = pd.to_numeric(normalized[column], errors="coerce")
+        if column in normalized.columns:
+            normalized[column] = pd.to_numeric(normalized[column], errors="coerce")
 
     for column in ("sun_visible", "earth_visible", "joint_visible"):
         normalized[column] = (
@@ -675,8 +718,7 @@ def _evaluate_with_engine(frame: pd.DataFrame, site: SiteSpec) -> pd.DataFrame |
     evaluated["parameters"] = evaluated["parameters"].map(
         lambda raw: _merge_parameters(raw, engine_info)
     )
-    evaluated["source_id"] = evaluated["source_id"].astype(str) + "+K3"
-    return evaluated
+    return normalize_contract_frame(evaluated)
 
 
 class RealDataError(RuntimeError):
@@ -1163,6 +1205,48 @@ def build_battery_figure(frame: pd.DataFrame, step_minutes: int, title: str) -> 
     return fig
 
 
+def build_penumbra_figure(
+    frame: pd.DataFrame,
+    penumbra_result: dict[str, object],
+    title: str,
+) -> go.Figure:
+    """Noktasal vs. 0.533° Güneş diski yarı-gölge (penumbra) anlık güç grafiği."""
+    timestamps = pd.to_datetime(frame["timestamp_utc"])
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=timestamps,
+            y=penumbra_result["point_power_w"],
+            mode="lines",
+            name="Noktasal Kaynak Gücü (W)",
+            line={"color": "#9aa4bf", "width": 1.6, "dash": "dash"},
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=timestamps,
+            y=penumbra_result["penumbra_power_w"],
+            mode="lines",
+            name="Penumbra (0.533° + Limb Darkening) Gücü (W)",
+            line={"color": "#f5b942", "width": 2.4},
+            fill="tozeroy",
+            fillcolor="rgba(245, 185, 66, 0.14)",
+        )
+    )
+    fig.update_layout(
+        title={"text": f"{title} · Penumbra Güç Profili (1000 W Nominal)", "font": {"size": 13}},
+        height=240,
+        margin={"l": 10, "r": 10, "t": 38, "b": 10},
+        paper_bgcolor="rgba(0,0,0,0)",
+        plot_bgcolor="rgba(20,26,46,0.5)",
+        font={"color": "#e8ecf8"},
+        legend={"orientation": "h", "yanchor": "bottom", "y": 1.02, "x": 0},
+        yaxis={"title": "Güç (W)", "range": [0, 1080], "gridcolor": "rgba(154,164,191,0.2)"},
+        xaxis={"gridcolor": "rgba(154,164,191,0.2)"},
+    )
+    return fig
+
+
 def lunar_surface_distance_km(
     lat1_deg: float, lon1_deg: float, lat2_deg: float, lon2_deg: float
 ) -> float:
@@ -1180,7 +1264,12 @@ def lunar_surface_distance_km(
     return r_moon_km * c
 
 
-def build_south_pole_map(spec_a: SiteSpec, spec_b: SiteSpec) -> go.Figure:
+def build_south_pole_map(
+    spec_a: SiteSpec,
+    spec_b: SiteSpec,
+    corridor_a: dict[str, object] | None = None,
+    corridor_b: dict[str, object] | None = None,
+) -> go.Figure:
     """Ay Güney Kutbu (90°S) merkezli 2D radar / kutupsal harita üretir."""
     km_per_deg = (math.pi / 180.0) * 1737.4  # ~30.323 km/deg
     r_a = max(0.0, (90.0 + spec_a.latitude_deg) * km_per_deg)
@@ -1261,7 +1350,60 @@ def build_south_pole_map(spec_a: SiteSpec, spec_b: SiteSpec) -> go.Figure:
         )
     )
 
-    max_r = max(25.0, max(r_a, r_b) * 1.3)
+    extra_radii: list[float] = []
+    for label, corridor, line_color in (
+        ("A", corridor_a, "#3ddc97"),
+        ("B", corridor_b, "#fb7185"),
+    ):
+        if not corridor:
+            continue
+        waypoints = corridor.get("waypoints") or []
+        if not waypoints:
+            continue
+        wp_r = [max(0.0, (90.0 + float(wp["lat_deg"])) * km_per_deg) for wp in waypoints]
+        wp_theta = [float(wp["lon_deg_east"]) for wp in waypoints]
+        wp_custom = [(float(wp["cumulative_km"]), float(wp["local_slope_deg"])) for wp in waypoints]
+        extra_radii.extend(wp_r)
+        fig.add_trace(
+            go.Scatterpolar(
+                r=wp_r,
+                theta=wp_theta,
+                mode="lines+markers",
+                name=f"A* Koridor {label} → {corridor['target_name']}",
+                line={"color": line_color, "width": 3.0},
+                marker={"size": 5, "color": line_color},
+                customdata=wp_custom,
+                hovertemplate=(
+                    f"<b>A* Koridor {label} → {corridor['target_name']}</b><br>"
+                    "Mesafe: %{customdata[0]:.2f} km<br>"
+                    "Yerel Eğim: %{customdata[1]:.1f}°<extra></extra>"
+                ),
+            )
+        )
+        target_r = max(0.0, (90.0 + float(corridor["target_lat_deg"])) * km_per_deg)
+        target_theta = float(corridor["target_lon_deg_east"])
+        extra_radii.append(target_r)
+        fig.add_trace(
+            go.Scatterpolar(
+                r=[target_r],
+                theta=[target_theta],
+                mode="markers",
+                name=f"PSR Hedef {label}: {corridor['target_name']}",
+                marker={
+                    "size": 12,
+                    "color": line_color,
+                    "symbol": "star",
+                    "line": {"color": "#0b1020", "width": 1.5},
+                },
+                hovertemplate=(
+                    f"<b>PSR Hedef {label}: {corridor['target_name']}</b><br>"
+                    f"Toplam Mesafe: {float(corridor['total_distance_km']):.2f} km<br>"
+                    f"Tahmini EVA: {float(corridor['estimated_eva_hours']):.2f} sa<extra></extra>"
+                ),
+            )
+        )
+
+    max_r = max(25.0, max([r_a, r_b, *extra_radii]) * 1.3)
     fig.update_layout(
         title={
             "text": f"Ay Güney Kutup Bölgesi Radar Haritası (A–B Mesafesi: ~{dist_km:.1f} km)",
@@ -1373,34 +1515,6 @@ def inject_theme() -> None:
     st.markdown(
         """
         <style>
-        /* LUNA SIGHT GMAT Mission Control Workstation - Fullscreen Takeover */
-        header[data-testid="stHeader"] {
-            display: none !important;
-        }
-        section[data-testid="stSidebar"] {
-            display: none !important;
-        }
-        footer {
-            display: none !important;
-        }
-        .main, .block-container {
-            padding: 0 !important;
-            max-width: 100vw !important;
-            width: 100vw !important;
-            margin: 0 !important;
-            overflow: hidden !important;
-        }
-        iframe[title*="lunar_sight"], iframe[title*="component"] {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100vw !important;
-            height: 100vh !important;
-            min-height: 100vh !important;
-            z-index: 99999 !important;
-            border: none !important;
-        }
-
         /* Tasarım belirteçleri. Bileşenlerde ham hex yerine bunlar kullanılır;
            tek yerden değiştirilir ve açık/koyu ayrımı tutarlı kalır. */
         :root {
@@ -1419,8 +1533,9 @@ def inject_theme() -> None:
         }
         /* Teknik/panel karakteri için Fira ailesi; yüklenemezse sistem yazı
            tipine düşer, metin görünmez kalmaz. */
-        html, body, [class*="css"] {
+        html, body, [data-testid="stAppViewContainer"], [class*="css"] {
             font-family: "Fira Sans", "Segoe UI", system-ui, sans-serif;
+            -webkit-font-smoothing: antialiased;
         }
         code, pre, [data-testid="stMetricValue"] {
             font-family: "Fira Code", "Cascadia Mono", ui-monospace, monospace;
@@ -1654,7 +1769,7 @@ def _integration_badges_html() -> str:
     return "<div class='ls-badge-row'>" + "".join(items) + "</div>"
 
 
-def render_sidebar_controls() -> tuple[int, int, dt.datetime, str]:
+def render_sidebar_controls() -> tuple[int, int, dt.datetime, str, int, int]:
     """Adım 2: veri kaynağı, görev süresi, örnekleme ve başlangıç zamanı."""
     st.sidebar.markdown(
         "<div class='ls-step'>2 · Görev parametreleri</div>", unsafe_allow_html=True
@@ -1759,8 +1874,7 @@ def render_sidebar_controls() -> tuple[int, int, dt.datetime, str]:
             "K1 · JPL Horizons efemerisi",
             SRC_DIR / "luna_sight" / "ephemeris",
             k1_ready,
-            "Modül hazır. Görünürlük çıktıları bu modülün ürettiği "
-            "Horizons serisiyle hesaplandı."
+            "Modül hazır. Görünürlük çıktıları bu modülün ürettiği Horizons serisiyle hesaplandı."
             if k1_ready
             else "Henüz yok; efemeris sentetik (test_fixture).",
         ),
@@ -1771,7 +1885,7 @@ def render_sidebar_controls() -> tuple[int, int, dt.datetime, str]:
             "K2 · LOLA DEM ufuk profili",
             OUTPUT_K2_DIR,
             k2_ready,
-            "outputs/k2/*_horizon_4000m.csv (azimuth_deg, horizon_deg)",
+            "outputs/k2/*_horizon_*.csv (azimuth_deg, horizon_deg)",
         ),
         unsafe_allow_html=True,
     )
@@ -1993,10 +2107,13 @@ def render_source_cards(spec_a: SiteSpec, spec_b: SiteSpec, frame_a: pd.DataFram
     )
 
 
-#: 3B küre, frontend/ kaynaklarından derlenir. Streamlit component protokolü
+#: 3B küre, `frontend/` kaynaklarından (`components/lunar/`) ve statik Moon Trek
+#: paketinden (`static/moon/`) sunulabilir. Streamlit component protokolü
 #: LunarSight AI isteklerini aynı oturumdaki Python sunucusuna taşır.
 GLOBE_DIR = Path(__file__).resolve().parent / "components" / "lunar"
-GLOBE_HEIGHT = 840
+STATIC_MOON_DIR = Path(__file__).resolve().parent / "static" / "moon"
+GLOBE_URL = "/app/static/moon/index.html"
+GLOBE_HEIGHT = 760
 
 
 def render_verdict_band(
@@ -2017,8 +2134,7 @@ def render_verdict_band(
 
     if best.joint_hours <= 0:
         headline = (
-            "Seçilen pencerede <strong>hiçbir aday</strong> Güneş ve Dünya'yı "
-            "aynı anda görmüyor."
+            "Seçilen pencerede <strong>hiçbir aday</strong> Güneş ve Dünya'yı aynı anda görmüyor."
         )
     elif other.joint_hours <= 0:
         headline = (
@@ -2035,60 +2151,750 @@ def render_verdict_band(
 
     blocked = " is-blocked" if other.joint_hours <= 0 else ""
     st.markdown(
-        f"""
-        <div class="ls-verdict">
-          <div>
-            <span class="ls-verdict-kicker">Karşılaştırma sonucu</span>
-            <p class="ls-verdict-text">{headline}</p>
-          </div>
-          <div class="ls-verdict-stats">
-            <div class="ls-verdict-stat">
-              <span class="ls-verdict-label">{best_spec.site_id} ortak</span>
-              <span class="ls-verdict-value">{best.joint_hours:.1f} sa</span>
+        textwrap.dedent(
+            f"""
+            <div class="ls-verdict notranslate" translate="no">
+              <div>
+                <span class="ls-verdict-kicker">Karşılaştırma sonucu</span>
+                <p class="ls-verdict-text">{headline}</p>
+              </div>
+              <div class="ls-verdict-stats">
+                <div class="ls-verdict-stat">
+                  <span class="ls-verdict-label">{best_spec.site_id} ortak</span>
+                  <span class="ls-verdict-value">{best.joint_hours:.1f} sa</span>
+                </div>
+                <div class="ls-verdict-stat">
+                  <span class="ls-verdict-label">{other_spec.site_id} ortak</span>
+                  <span class="ls-verdict-value{blocked}">{other.joint_hours:.1f} sa</span>
+                </div>
+              </div>
             </div>
-            <div class="ls-verdict-stat">
-              <span class="ls-verdict-label">{other_spec.site_id} ortak</span>
-              <span class="ls-verdict-value{blocked}">{other.joint_hours:.1f} sa</span>
-            </div>
-          </div>
-        </div>
-        """,
+            """
+        ).strip(),
         unsafe_allow_html=True,
     )
 
 
-def render_globe_tab() -> None:
+def render_globe_tab(
+    spec_a: SiteSpec | None = None,
+    spec_b: SiteSpec | None = None,
+) -> str | None:
     """Moon Trek dokulu 3B Ay küresini göm.
 
-    Küre ile bu arayüz **aynı analizi** gösterir: her ikisi de JPL Horizons
-    OBSERVER efemerisini (DE441, `coord@301`, AIRLESS) ve aynı iki aday
-    bölgeyi kullanır; örnekleme 5 dakika, geçiş bandı 0.1 derece, gözlemci
-    yüksekliği 2 metre. Sayılar bu yüzden birbirini tutar.
+    ``windows.json``, ``horizons.json`` ve ``survey_targets.geojson`` dosyaları
+    12 Artemis III aday bölgesinin tamamını taşır; seçilen A/B çifti iframe'e
+    ``?siteA=...&siteB=...`` köprü parametreleri olarak iletilir. Ön-derlenmiş
+    Moon Trek WebGL yüzeyi ``Site01``/``Site04`` referans çiftine odaklanırken,
+    hemen alttaki Plotly 3B modeli 12 bölgenin herhangi bir A/B çiftini dinamik
+    olarak çizer.
     """
-    if not (GLOBE_DIR / "index.html").exists():
+    if not (GLOBE_DIR / "index.html").exists() and not (STATIC_MOON_DIR / "index.html").exists():
         st.warning(
-            "3B küre varlıkları bulunamadı (`components/lunar/`). Depo eksiksiz "
-            "klonlanmadıysa bu sekme boş kalır; diğer sekmeler etkilenmez.",
+            "3B küre varlıkları bulunamadı (`components/lunar/` veya `static/moon/`). "
+            "Depo eksiksiz klonlanmadıysa bu sekme boş kalır; diğer sekmeler etkilenmez.",
             icon="⚠️",
         )
-        return
+        return None
+
+    params: list[str] = []
+    if spec_a is not None:
+        params.append(f"siteA={urllib.parse.quote(spec_a.site_id, safe='')}")
+    if spec_b is not None:
+        params.append(f"siteB={urllib.parse.quote(spec_b.site_id, safe='')}")
+    globe_url = f"{GLOBE_URL}?{'&'.join(params)}" if params else GLOBE_URL
 
     st.caption(
         "Taban harita: **NASA Moon Trek / LRO WAC** doğal fotomozaik ve **QuickMap / LOLA** "
-        "renkli topoğrafya haritası. Sağ üstteki katman butonları ile Doğal WAC, QuickMap "
-        "renkli yükseklik ve 3B arazi kabartması arasında geçiş yapabilirsiniz. "
-        "Küre, bu arayüzle aynı efemeris ve aynı aday bölgeleri kullanır "
+        "renkli topoğrafya haritası. `windows.json`, `horizons.json` ve `survey_targets.geojson` "
+        "veri katmanları 12 Artemis III aday bölgesinin tamamını taşır; seçilen A/B çifti için "
+        "`?siteA=...&siteB=...` köprü parametreleri iletilir. "
         "(JPL Horizons · DE441 · `coord@301` · AIRLESS)."
     )
-    from streamlit.components.v1 import declare_component
+    if (GLOBE_DIR / "index.html").exists():
+        try:
+            from streamlit.components.v1 import declare_component
 
-    from luna_sight.ai.component import render_lunar_component
+            from luna_sight.ai.component import render_lunar_component
 
-    lunar_component = declare_component("lunar_sight", path=str(GLOBE_DIR))
-    render_lunar_component(lunar_component)
+            lunar_component = declare_component("lunar_sight", path=str(GLOBE_DIR))
+            render_lunar_component(lunar_component)
+        except Exception:
+            pass
+    components.iframe(globe_url, height=GLOBE_HEIGHT, scrolling=False)
     st.caption(
-        "Fare ile döndür, tekerlekle yakınlaş. Küre ayrı bir pencere gibi "
-        "çalışır; kenar çubuğundaki seçimler bu görünümü değiştirmez."
+        "Fare ile döndür, tekerlekle yakınlaş. Ön-derlenmiş WebGL küresi ayrı bir "
+        "pencere gibi çalışır; kenar çubuğundan seçtiğiniz tüm A/B çiftleri için "
+        "alttaki Plotly 3B topografik modelini açabilirsiniz."
+    )
+    return globe_url
+
+
+def render_surface_3d_tab(
+    spec_a: SiteSpec,
+    spec_b: SiteSpec,
+    metrics_a: SiteMetrics,
+    metrics_b: SiteMetrics,
+    source_mode: str,
+) -> None:
+    """Etkileşimli Plotly 3B Ay yüzeyi ve kutup rölyef modelini çizer."""
+    st.caption(
+        "Ay'ın güney kutbuna odaklanmış 3B etkileşimli yüzey ve IAU krater modeli. "
+        "Kullanıcı küreyi veya 260 km kutup rölyefini fareyle döndürüp yakınlaştırabilir."
+    )
+
+    ctrl_col1, ctrl_col2, ctrl_col3, ctrl_col4 = st.columns([1.1, 1.2, 1.2, 1.2])
+    with ctrl_col1:
+        show_grid = st.checkbox(
+            "Enlem - boylam ağı",
+            value=True,
+            key=f"globe_grid_{source_mode}",
+            help="Ekvator, kutup paralelleri (-89°..-30°) ve meridyenleri çizer.",
+        )
+    with ctrl_col2:
+        show_south_pole = st.checkbox(
+            "Ay Güney Kutbu (90° G)",
+            value=True,
+            key=f"globe_pole_{source_mode}",
+            help="Gerçek Ay Güney Kutbu noktasını ve zemin eksenini gösterir.",
+        )
+    with ctrl_col3:
+        show_craters = st.checkbox(
+            "Doğrulanmış IAU kraterleri",
+            value=True,
+            key=f"globe_craters_{source_mode}",
+            help="Shackleton, Shoemaker, Faustini, Cabeus vb. krater isim ve çaplarını gösterir.",
+        )
+    with ctrl_col4:
+        show_sites = st.checkbox(
+            "Aday iniş bölgeleri (A ve B)",
+            value=True,
+            key=f"globe_sites_{source_mode}",
+            help="Seçilen Bölge A ve Bölge B hedeflerini 3B işaret direğiyle gösterir.",
+        )
+
+    cam_options = [
+        ("south_pole", "🔭 Güney Kutbu (Varsayılan)"),
+        ("south_pole_zoom", "🔍 Güney Kutbu Yakın Çekim"),
+        ("site_a", f"🛰️ Bölge A Odaklı ({spec_a.name})"),
+        ("site_b", f"🛰️ Bölge B Odaklı ({spec_b.name})"),
+        ("global", "🌍 Küresel Genel Bakış"),
+    ]
+    camera_focus = st.selectbox(
+        "Kamera görünüm açısı",
+        options=cam_options,
+        format_func=lambda opt: opt[1],
+        index=0,
+        key=f"globe_cam_{source_mode}",
+        help="Varsayılan olarak Güney Kutbuna odaklıdır; fareyle döndürülebilir.",
+    )[0]
+
+    with st.expander("Görünüm, derinlik ve ışıklandırma ayarları", expanded=False):
+        opt_col1, opt_col2, opt_col3, opt_col4 = st.columns(4)
+        with opt_col1:
+            view_mode = st.radio(
+                "Görselleştirme Modu",
+                options=["globe", "polar_relief"],
+                format_func=lambda k: (
+                    "🌐 3B Küresel Ay Küresi"
+                    if k == "globe"
+                    else "🏔️ 3B Güney Kutbu Rölyefi (260 km)"
+                ),
+                horizontal=True,
+                key=f"globe_view_mode_{source_mode}",
+            )
+        with opt_col2:
+            default_exagg = 1.8 if view_mode == "globe" else 2.2
+            exaggeration = st.slider(
+                "Yükselti kabartması (çarpan)",
+                min_value=1.0,
+                max_value=3.5,
+                value=default_exagg,
+                step=0.2,
+                key=f"globe_exagg_{source_mode}",
+                help="1.0x (birebir gerçek ölçek) ile 3.5x arası doğal derinlik çarpanı.",
+            )
+        with opt_col3:
+            light_azimuth = st.slider(
+                "Güneş azimutu (ışık açısı)",
+                min_value=0.0,
+                max_value=360.0,
+                value=30.0,
+                step=15.0,
+                key=f"globe_light_az_{source_mode}",
+                help="Güneş ışığının geliş yönünü değiştirerek krater gölgelerini simüle eder.",
+            )
+        with opt_col4:
+            sun_altitude = st.slider(
+                "Güneş ufuk yüksekliği",
+                min_value=1.0,
+                max_value=15.0,
+                value=15.0,
+                step=0.5,
+                key=f"globe_sun_alt_{source_mode}",
+                help="Kutup Güneşi'nin yerel ufkun üzerindeki açısı (gölge derinliğini belirler).",
+            )
+
+    if view_mode == "globe":
+        fig = build_lunar_globe_figure(
+            spec_a=spec_a,
+            spec_b=spec_b,
+            show_grid=show_grid,
+            show_south_pole=show_south_pole,
+            show_sites=show_sites,
+            show_craters=show_craters,
+            exaggeration=exaggeration,
+            camera_focus=camera_focus,
+            light_azimuth_deg=light_azimuth,
+            sun_altitude_deg=sun_altitude,
+        )
+    else:
+        fig = build_polar_relief_figure(
+            spec_a=spec_a,
+            spec_b=spec_b,
+            show_grid=show_grid,
+            show_south_pole=show_south_pole,
+            show_sites=show_sites,
+            show_craters=show_craters,
+            exaggeration=exaggeration,
+            light_azimuth_deg=light_azimuth,
+            sun_altitude_deg=sun_altitude,
+        )
+
+    st.plotly_chart(fig)
+
+    st.caption(
+        "🎮 **3B Etkileşim:** Fare sol tuşu ile küreyi döndürün · "
+        "Tekerlek ile yakınlaştırın · Krater konumları IAU kataloğuna sabitlenmiştir."
+    )
+
+    st.info(
+        "**ℹ️ Temsili Yükselti Modeli Bildirimi:** Bu Plotly 3B görünümü, "
+        "Uluslararası Astronomi Birliği (IAU) tescilli güney kutbu kraterleri "
+        "(Shackleton, Shoemaker, Faustini, de Gerlache, Haworth, Cabeus, Nobile, "
+        "Amundsen, Malapert) ve Bağlantı Sırtı geometrisi üzerinden oluşturulmuş "
+        "matematiksel **temsili bir modeldir**. Resmi NASA/LRO DEM iddiası içermez.",
+        icon="ℹ️",
+    )
+
+    card_col_a, card_col_b = st.columns(2)
+    for col, spec, badge_title, color, metrics in (
+        (card_col_a, spec_a, "Aday Bölge A", COLOR_SITE_A, metrics_a),
+        (card_col_b, spec_b, "Aday Bölge B", COLOR_SITE_B, metrics_b),
+    ):
+        with col:
+            lat_rad = math.radians(spec.latitude_deg)
+            pole_dist_km = R_MOON_KM * (math.pi / 2.0 + lat_rad)
+            elev_km = float(compute_lunar_elevation(spec.latitude_deg, spec.longitude_deg_east))
+            sun_pct_txt = f"%{metrics.sun_share * 100:.0f} ({metrics.sun_hours:.1f} saat)"
+            earth_pct_txt = f"%{metrics.earth_share * 100:.0f} ({metrics.earth_hours:.1f} saat)"
+            st.markdown(
+                f"<div class='ls-card' style='border-left: 4px solid {color};'>"
+                f"<div class='ls-card-title' style='color:{color}; font-size: 0.95rem;'>"
+                f"{badge_title} · {spec.name} ({spec.site_id})</div>"
+                f"<div class='ls-card-detail' style='margin-top: 0.4rem;'>"
+                f"• <b>Enlem / Boylam:</b> {spec.coordinates}<br>"
+                f"• <b>3B Model Yükseltisi:</b> {elev_km:+.2f} km (Ay referans küresine göre)<br>"
+                f"• <b>Güney Kutup Noktasına Mesafe:</b> ~{pole_dist_km:.1f} km<br>"
+                f"• <b>Güneş Görünürlüğü:</b> {sun_pct_txt}<br>"
+                f"• <b>Dünya Görüş Penceresi:</b> {earth_pct_txt}"
+                f"</div></div>",
+                unsafe_allow_html=True,
+            )
+
+
+def _fmt_slope_deg(value: float) -> str:
+    return "—" if np.isnan(value) else f"{value:.2f}°"
+
+
+def _fmt_slope_pct(value: float) -> str:
+    return "—" if np.isnan(value) else f"{value:.1%}"
+
+
+def _render_risk_metric_card(metrics, accent_color: str | None = None) -> None:
+    """Tek bir site için arazi riski metrik kartını çizer."""
+    color = accent_color or ("#38bdf8" if metrics.site_id == "Site01" else "#3ddc97")
+    coord_text = f"{metrics.latitude_deg:.4f}° G / {metrics.longitude_deg_east:+.4f}° D"
+
+    st.markdown(
+        f"<div style='border-left: 4px solid {color}; padding: 1rem; "
+        f"background: rgba(255,255,255,0.02); border-radius: 0.5rem;'>"
+        f"<h4 style='margin:0 0 0.5rem; color:{color};'>"
+        f"{metrics.site_id} · {metrics.site_name}</h4>"
+        f"<small style='color:#888;'>{coord_text}</small>"
+        f"</div>",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown("**Eğim (derece)**")
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric("Ortalama", _fmt_slope_deg(metrics.slope.mean_deg))
+    m2.metric("Maksimum", _fmt_slope_deg(metrics.slope.max_deg))
+    m3.metric("Medyan", _fmt_slope_deg(metrics.slope.median_deg))
+    m4.metric("P95", _fmt_slope_deg(metrics.slope.p95_deg))
+
+    m1, m2, m3, m4 = st.columns(4)
+    m1.metric(">5°", _fmt_slope_pct(metrics.slope.fraction_above_5deg))
+    m2.metric(">10°", _fmt_slope_pct(metrics.slope.fraction_above_10deg))
+    m3.metric(">15°", _fmt_slope_pct(metrics.slope.fraction_above_15deg))
+    m4.metric(">20°", _fmt_slope_pct(metrics.slope.fraction_above_20deg))
+
+    m1, m2 = st.columns(2)
+    m1.metric("Geçerli piksel %", _fmt_slope_pct(metrics.slope.valid_fraction))
+    m2.metric("Veri kaynağı", metrics.dem_source)
+
+    st.divider()
+
+    st.markdown("**Krater Metrikleri**")
+    k1, k2 = st.columns(2)
+    k1.metric("Yoğunluk (adet/km²)", f"{metrics.crater.density_per_km2:.3f}")
+    k2.metric("En yakın krater", metrics.crater.nearest_crater_name)
+    k1.metric("En yakın mesafe", f"{metrics.crater.nearest_crater_distance_m / 1000:.1f} km")
+    k2.metric("En yakın çap", f"{metrics.crater.nearest_crater_diameter_km:.1f} km")
+    k1.metric("Alan adeti", metrics.crater.craters_in_radius_count)
+    k2.metric("Kataloğu", metrics.crater.crater_catalog_used)
+
+    has_finite_slope = not np.isnan(metrics.slope.mean_deg)
+    if metrics.dem_source == RISK_SOURCE_REAL and has_finite_slope:
+        st.success("✅ Gerçek LOLA DEM (GeoTIFF) — eğim analizi aktif")
+    elif metrics.dem_source == RISK_SOURCE_PRECOMPUTED and has_finite_slope:
+        st.success("✅ Ön-hesaplanmış LOLA DEM özeti aktif — eğim analizi hazır")
+    elif metrics.dem_source == RISK_SOURCE_REPRESENTATIVE and has_finite_slope:
+        st.info("ℹ️ Analitik Kutup Yükselti Modeli özeti aktif (yerel GeoTIFF dışı)")
+    elif metrics.dem_source == RISK_SOURCE_REPRESENTATIVE:
+        st.warning("⚠️ Temsili model — gerçek DEM bekleniyor, sadece krater metrikleri aktif")
+    else:
+        st.error("❌ Gerçek DEM yok — eğim analizi yapılamıyor")
+
+
+def _resolve_risk_pair(
+    risk_metrics: dict[str, object],
+    selected_a: str | None,
+    selected_b: str | None,
+) -> list[str]:
+    """Seçilen A/B bölgelerini arazi riski sözlüğünde güvenli iki anahtara eşler."""
+    keys = list(risk_metrics)
+    if not keys:
+        return []
+    key_a = selected_a if (selected_a and selected_a in risk_metrics) else None
+    key_b = selected_b if (selected_b and selected_b in risk_metrics) else None
+    if key_a is not None and key_b is not None:
+        return [key_a, key_b]
+    if key_a is not None:
+        fallback_b = next((k for k in keys if k != key_a), key_a)
+        return [key_a, fallback_b]
+    if key_b is not None:
+        fallback_a = next((k for k in keys if k != key_b), key_b)
+        return [fallback_a, key_b]
+    return keys[:2]
+
+
+def _earth_obstruction_summary(frame: pd.DataFrame) -> tuple[float | None, float, float]:
+    """Dünya ufuk engelleme açısı (derece) için medyan pozitif, pik ve acil durum açısı döner."""
+    diff = (
+        pd.to_numeric(frame["terrain_horizon_earth_deg"], errors="coerce")
+        - pd.to_numeric(frame["earth_alt_deg"], errors="coerce")
+    ).dropna()
+    if diff.empty:
+        return None, 0.0, 0.0
+    peak_deg = float(diff.max())
+    if peak_deg <= 0.0:
+        em_angle = max(-89.0, min(89.0, float(diff.median())))
+        return None, peak_deg, em_angle
+    positive = diff[diff > 0.0]
+    med_pos = min(89.0, float(positive.median()) if not positive.empty else 0.0)
+    return med_pos, min(89.0, peak_deg), med_pos
+
+
+def _render_landing_hazard_section(
+    spec_a: SiteSpec | None,
+    spec_b: SiteSpec | None,
+    top_pair: list[str],
+) -> None:
+    """3σ iniş elipsi ve Golombek-Rapp alt-piksel kayaç tehlike skorunu çizer."""
+    st.markdown("### 🪨 3σ İniş Elipsi & Kayaç Tehlike Skoru")
+    if spec_a is not None and spec_b is not None:
+        if spec_a.site_id not in CANDIDATE_SITES or spec_b.site_id not in CANDIDATE_SITES:
+            st.info(
+                "ℹ️ 3σ iniş elipsi ve kayaç tehlike skoru 12 resmi Artemis III aday bölgesi "
+                "(Gerçek Ekip Çıktısı modu) için hesaplanır."
+            )
+            return
+        site_ids = [spec_a.site_id, spec_b.site_id]
+    else:
+        site_ids = [sid for sid in top_pair if sid in CANDIDATE_SITES]
+        if not site_ids:
+            return
+
+    verdict_badges = {
+        "SAFE_NOMINAL": "🟢 NOMİNAL GÜVENLİ",
+        "CONDITIONAL_HAZARD_AVOIDANCE": "🟡 KOŞULLU (TEHLİKE KAÇINMA)",
+        "HIGH_SLOPE_CAUTION": "🟠 YÜKSEK EĞİM UYARISI",
+        "UNSAFE_STEEP_TERRAIN": "🔴 DİK ARAZİ / UYGUN DEĞİL",
+        "INSUFFICIENT_DEM_DATA": "⚪ YETERSİZ DEM VERİSİ",
+    }
+    cols = st.columns(len(site_ids))
+    for idx, site_id in enumerate(site_ids):
+        fp = evaluate_landing_footprint(site_id)
+        label = "Bölge A" if idx == 0 else "Bölge B"
+        accent = "#38bdf8" if idx == 0 else "#3ddc97"
+        with cols[idx]:
+            st.markdown(
+                f"<div class='ls-card' style='border-left: 4px solid {accent};'>"
+                f"<div class='ls-card-title' style='color:{accent};'>"
+                f"{label} · {fp['site_id']} ({fp['site_name']})</div>"
+                f"<div class='ls-card-detail'>3σ Elips: {fp['semi_major_m']:.0f}m × "
+                f"{fp['semi_minor_m']:.0f}m · Karar: "
+                f"{verdict_badges.get(str(fp['verdict']), str(fp['verdict']))}</div>"
+                "</div>",
+                unsafe_allow_html=True,
+            )
+            r1_c1, r1_c2 = st.columns(2)
+            r1_c1.metric(
+                "3σ Güvenli Alan %", f"%{float(fp['footprint_safe_pct']):.1f}", border=True
+            )
+            r1_c2.metric(
+                "Kayaç Çarpma Olasılığı",
+                f"%{float(fp['boulder_hazard_prob']) * 100.0:.2f}",
+                border=True,
+            )
+            r2_c1, r2_c2, r2_c3 = st.columns(3)
+            r2_c1.metric(
+                "Güvenlik Skoru / 100",
+                f"{float(fp['landing_safety_score']):.1f}",
+                border=True,
+            )
+            r2_c2.metric(
+                "HLS <10° Uyumluluğu",
+                "Uyumlu" if fp["hls_10deg_compliant"] else ">10° Sınır Üstü",
+                border=True,
+            )
+            r2_c3.metric("Karar", str(fp["verdict"]), border=True)
+
+
+def _render_gateway_relay_section(
+    spec_a: SiteSpec | None,
+    spec_b: SiteSpec | None,
+    frame_a: pd.DataFrame | None,
+    frame_b: pd.DataFrame | None,
+) -> None:
+    """Lunar Gateway (NRHO 9:2) 3. gövde röle görünürlük karşılaştırmasını çizer."""
+    st.markdown("### 🛰️ Lunar Gateway (NRHO 9:2) 3. Gövde Röle Görünürlüğü")
+    if (
+        spec_a is None
+        or spec_b is None
+        or frame_a is None
+        or frame_b is None
+        or frame_a.empty
+        or frame_b.empty
+    ):
+        st.info(
+            "ℹ️ Lunar Gateway NRHO 9:2 röle analizi için Bölge A ve Bölge B zaman "
+            "serileri gereklidir."
+        )
+        return
+
+    gw_cols = st.columns(2)
+    for idx, (label, spec, frame, accent) in enumerate(
+        (
+            ("Bölge A", spec_a, frame_a, "#38bdf8"),
+            ("Bölge B", spec_b, frame_b, "#3ddc97"),
+        )
+    ):
+        az, hz, _ = _site_horizon_profile(spec)
+        lookup = HorizonProfileLookup(az, hz)
+        gw = compute_gateway_visibility(
+            frame,
+            lookup,
+            spec.latitude_deg,
+            spec.longitude_deg_east,
+            margin_deg=0.1,
+        )
+        with gw_cols[idx]:
+            st.markdown(
+                f"<div class='ls-card' style='border-left: 4px solid {accent};'>"
+                f"<div class='ls-card-title' style='color:{accent};'>"
+                f"{label} · {spec.label}</div>"
+                f"<div class='ls-card-detail'>NRHO 9:2 Güney Halo · Apolun ~70.000 km · "
+                f"Geçiş bandı ±0.1°</div></div>",
+                unsafe_allow_html=True,
+            )
+            g1, g2, g3 = st.columns(3)
+            g1.metric("Doğrudan Dünya %", f"%{gw['direct_earth_pct']:.1f}", border=True)
+            g2.metric("Gateway NRHO %", f"%{gw['gateway_relay_pct']:.1f}", border=True)
+            g3.metric("Birleşik Haberleşme %", f"%{gw['combined_comms_pct']:.1f}", border=True)
+
+            g4, g5 = st.columns(2)
+            g4.metric("Maks. Kesinti (sa)", f"{gw['max_relay_outage_hours']:.1f} sa", border=True)
+            g5.metric(
+                "Ort. Gateway Yüksekliği",
+                f"{gw['mean_gateway_elevation_deg']:.1f}°",
+                border=True,
+            )
+
+            if gw["direct_earth_pct"] < 5.0 and gw["combined_comms_pct"] >= 50.0:
+                st.success(
+                    f"🛰️ **Gateway Röle Kurtarması ({spec.site_id}):** Doğrudan Dünya "
+                    f"görüşü %{gw['direct_earth_pct']:.1f} iken Gateway NRHO rölesi "
+                    f"birleşik haberleşmeyi **%{gw['combined_comms_pct']:.1f}** seviyesine "
+                    "çıkarır!"
+                )
+            elif gw["combined_comms_pct"] > gw["direct_earth_pct"] + 5.0:
+                gain = gw["combined_comms_pct"] - gw["direct_earth_pct"]
+                st.info(
+                    f"🛰️ Gateway rölesi kesintisiz haberleşmeyi "
+                    f"**%{gw['direct_earth_pct']:.1f} → %{gw['combined_comms_pct']:.1f}** "
+                    f"(+%{gain:.1f}) artırır."
+                )
+
+
+def _render_comms_link_section(
+    spec_a: SiteSpec | None,
+    spec_b: SiteSpec | None,
+    frame_a: pd.DataFrame | None,
+    frame_b: pd.DataFrame | None,
+) -> None:
+    """ITU-R P.526 bıçak sırtı kırınım ve NASA DSN bağlantı bütçesi karşılaştırmasını çizer."""
+    st.markdown("### 📡 ITU-R P.526 Bıçak Sırtı Kırınım & NASA DSN Link Bütçesi")
+    if (
+        spec_a is None
+        or spec_b is None
+        or frame_a is None
+        or frame_b is None
+        or frame_a.empty
+        or frame_b.empty
+    ):
+        st.info("ℹ️ DSN link bütçesi analizi için Bölge A ve Bölge B zaman serileri gereklidir.")
+        return
+
+    station_labels = {
+        DSNStation.GOLDSTONE: (
+            f"Goldstone 70m ({DSN_STATIONS[DSNStation.GOLDSTONE].longitude_deg_east:+.2f}° D)"
+        ),
+        DSNStation.MADRID: (
+            f"Madrid 70m ({DSN_STATIONS[DSNStation.MADRID].longitude_deg_east:+.2f}° D)"
+        ),
+        DSNStation.CANBERRA: (
+            f"Canberra 70m ({DSN_STATIONS[DSNStation.CANBERRA].longitude_deg_east:+.2f}° D)"
+        ),
+    }
+    band_labels = {
+        FrequencyBand.S_BAND: "S-Band (2.2 GHz · Telemetri & Kırınım Dayanıklı)",
+        FrequencyBand.KA_BAND: "Ka-Band (26.0 GHz · Yüksek Hızlı Bilim Verisi)",
+        FrequencyBand.OPTICAL_O2O: "Optik O2O (1550 nm · Lazer Haberleşme)",
+    }
+
+    sel_col1, sel_col2 = st.columns(2)
+    with sel_col1:
+        selected_station = st.selectbox(
+            "DSN Yer İstasyonu",
+            options=[DSNStation.GOLDSTONE, DSNStation.MADRID, DSNStation.CANBERRA],
+            format_func=lambda s: station_labels[s],
+            key="risk_dsn_station",
+        )
+    with sel_col2:
+        selected_band = st.selectbox(
+            "Frekans Bandı",
+            options=[FrequencyBand.S_BAND, FrequencyBand.KA_BAND, FrequencyBand.OPTICAL_O2O],
+            format_func=lambda b: band_labels[b],
+            key="risk_freq_band",
+        )
+
+    link_cols = st.columns(2)
+    for idx, (label, spec, frame, accent) in enumerate(
+        (
+            ("Bölge A", spec_a, frame_a, "#38bdf8"),
+            ("Bölge B", spec_b, frame_b, "#3ddc97"),
+        )
+    ):
+        med_obs, peak_obs, em_angle = _earth_obstruction_summary(frame)
+        lb = compute_link_budget(
+            station=selected_station,
+            band=selected_band,
+            obstruction_angle_deg=med_obs,
+        )
+        em = evaluate_emergency_link_margin(obstruction_angle_deg=em_angle)
+        obs_desc = (
+            "Engelsiz görüş (Pik ≤ 0°)"
+            if med_obs is None
+            else f"Medyan engel: {med_obs:.2f}° · Pik engel: {peak_obs:.2f}°"
+        )
+        with link_cols[idx]:
+            st.markdown(
+                f"<div class='ls-card' style='border-left: 4px solid {accent};'>"
+                f"<div class='ls-card-title' style='color:{accent};'>"
+                f"{label} · {spec.label}</div>"
+                f"<div class='ls-card-detail'>{obs_desc}</div></div>",
+                unsafe_allow_html=True,
+            )
+            l1, l2, l3 = st.columns(3)
+            l1.metric("Kırınım Rejimi", str(lb["diffraction_regime"]), border=True)
+            l2.metric("FSPL", f"{lb['fspl_db']:.1f} dB", border=True)
+            l3.metric("Kırınım Kaybı", f"{lb['diffraction_loss_db']:.1f} dB", border=True)
+
+            l4, l5, l6 = st.columns(3)
+            l4.metric(
+                "Link Marjı",
+                f"{lb['link_margin_db']:+.1f} dB",
+                delta=str(lb["status"]),
+                delta_color="normal" if lb["link_closed"] else "inverse",
+                border=True,
+            )
+            l5.metric(
+                "Veri Hızı (Mbps)",
+                f"{lb['achievable_data_rate_mbps']:.3f} Mbps",
+                border=True,
+            )
+            beacon_state = "AÇIK" if em["link_closed"] else "KAPALI"
+            l6.metric(
+                "10W S-Band Acil Durum İşaretçisi",
+                f"{em['link_margin_db']:+.1f} dB",
+                delta=beacon_state,
+                delta_color="normal" if em["link_closed"] else "inverse",
+                border=True,
+            )
+
+
+def render_risk_tab(
+    selected_a: str | None = None,
+    selected_b: str | None = None,
+    spec_a: SiteSpec | None = None,
+    spec_b: SiteSpec | None = None,
+    frame_a: pd.DataFrame | None = None,
+    frame_b: pd.DataFrame | None = None,
+) -> None:
+    """Arazi Riski analiz sekmesini çizer."""
+    st.subheader("🌍 LunarSight — Arazi Riski Analizi")
+
+    with st.spinner("Arazi riski metrikleri hesaplanıyor..."):
+        risk_metrics = analyze_all_sites_risk()
+
+    comparison_text = format_side_by_side_comparison(risk_metrics, selected_a, selected_b)
+    st.code(comparison_text, language=None)
+
+    st.divider()
+    st.markdown("### 📊 Site Bazlı Detaylar")
+
+    top_pair = _resolve_risk_pair(risk_metrics, selected_a, selected_b)
+    if top_pair:
+        cols = st.columns(len(top_pair))
+        pair_colors = ("#38bdf8", "#3ddc97")
+        for idx, site_key in enumerate(top_pair):
+            with cols[idx]:
+                _render_risk_metric_card(
+                    risk_metrics[site_key],
+                    accent_color=pair_colors[idx % len(pair_colors)],
+                )
+
+    with st.expander(
+        f"📋 Tüm Aday Bölgelerin Arazi Riski Özeti ve Veri Kaynakları ({len(risk_metrics)} Bölge)",
+        expanded=False,
+    ):
+        summary_rows = []
+        for m in risk_metrics.values():
+            summary_rows.append(
+                {
+                    "Bölge ID": m.site_id,
+                    "Bölge Adı": m.site_name,
+                    "Koordinat": f"{m.latitude_deg:.4f}° / {m.longitude_deg_east:+.4f}°",
+                    "Ort. Eğim": _fmt_slope_deg(m.slope.mean_deg),
+                    "Maks. Eğim": _fmt_slope_deg(m.slope.max_deg),
+                    "P95 Eğim": _fmt_slope_deg(m.slope.p95_deg),
+                    "Krater Yoğunluğu (/km²)": round(m.crater.density_per_km2, 3),
+                    "En Yakın Krater": (
+                        f"{m.crater.nearest_crater_name} "
+                        f"({m.crater.nearest_crater_distance_m / 1000:.1f} km)"
+                    ),
+                    "Alan İçi Krater": m.crater.craters_in_radius_count,
+                    "DEM Kaynağı": m.dem_source,
+                    "DEM Mevcut": "Evet" if m.dem_available else "Hayır",
+                }
+            )
+        st.dataframe(pd.DataFrame(summary_rows), hide_index=True, use_container_width=True)
+
+        dem_with_meta = [m for m in risk_metrics.values() if m.dem_metadata]
+        if dem_with_meta:
+            st.markdown("**DEM Meta Verileri**")
+            for m in dem_with_meta:
+                meta = m.dem_metadata
+                st.caption(f"{m.site_id} — {m.site_name} ({m.dem_source})")
+                if "dem_file" in meta:
+                    st.json(
+                        {
+                            "dem_file": meta.get("dem_file"),
+                            "dem_resolution_m": meta.get("dem_resolution_m"),
+                            "notes": meta.get("notes"),
+                        }
+                    )
+                else:
+                    crs_val = meta.get("crs")
+                    crs_short = (str(crs_val)[:100] + "...") if crs_val else None
+                    st.json(
+                        {
+                            "product": meta.get("product"),
+                            "pixel_size_m": meta.get("pixel_size_m"),
+                            "width": meta.get("width"),
+                            "height": meta.get("height"),
+                            "crs": crs_short,
+                        }
+                    )
+
+    st.divider()
+    st.markdown("### 📡 Veri Kaynakları ve Kalite")
+    real_dem_count = sum(
+        1 for m in risk_metrics.values() if m.dem_source == RISK_SOURCE_REAL and m.dem_available
+    )
+    precomputed_count = sum(
+        1
+        for m in risk_metrics.values()
+        if m.dem_source == RISK_SOURCE_PRECOMPUTED and m.dem_available
+    )
+    rep_model_count = sum(
+        1
+        for m in risk_metrics.values()
+        if m.dem_source == RISK_SOURCE_REPRESENTATIVE and not np.isnan(m.slope.mean_deg)
+    )
+    total_sites = len(risk_metrics)
+    if total_sites > 0 and real_dem_count == total_sites:
+        st.success(
+            f"✅ Tüm aday bölgeler ({total_sites}/{total_sites}) için canlı yerel LOLA GeoTIFF "
+            "yüklendi; eğim analizi aktif."
+        )
+    elif precomputed_count > 0 or rep_model_count > 0 or real_dem_count > 0:
+        parts: list[str] = []
+        if real_dem_count:
+            parts.append(f"{real_dem_count}/{total_sites} canlı GeoTIFF DEM")
+        if precomputed_count:
+            parts.append(
+                f"{precomputed_count}/{total_sites} Ön-hesaplanmış LOLA DEM "
+                "(`outputs/k2/*_slope_summary.json`)"
+            )
+        if rep_model_count:
+            parts.append(
+                f"{rep_model_count}/{total_sites} Analitik Kutup Yükselti Modeli "
+                "(`representative_model`)"
+            )
+        st.info("ℹ️ Eğim ve krater veri durumu: " + " · ".join(parts) + ".")
+    else:
+        st.warning(
+            "⚠️ Gerçek DEM (GeoTIFF) dosyası bulunamadı. "
+            "`data/cache/lola/` klasörüne aday bölgeler için "
+            "`*_surf.tif`, `*_ldec.tif`, `*_toterr.tif` dosyalarını yerleştirin. "
+            "Şu an yalnızca IAU krater kataloğu metrikleri sunulmaktadır."
+        )
+
+    st.divider()
+    _render_landing_hazard_section(spec_a, spec_b, top_pair)
+    st.divider()
+    _render_gateway_relay_section(spec_a, spec_b, frame_a, frame_b)
+    st.divider()
+    _render_comms_link_section(spec_a, spec_b, frame_a, frame_b)
+
+    st.divider()
+    st.caption(
+        "Not: Eğim hesaplaması LOLA DEM (veya yerel GeoTIFF yoksa ön-hesaplanmış LOLA DEM "
+        "özeti / analitik kutup modeli) üzerinden yapılır. Eğim eşikleri (5°/10°/15°/20°) "
+        "ham ölçümdür; tek başına iniş güvenliği kararı vermez. Krater yoğunluğu IAU onaylı "
+        "13 krater kataloğuyla hesaplanır."
     )
 
 
@@ -2142,7 +2948,7 @@ def main() -> None:
         page_title="LUNA SIGHT · Ay İniş Alanı Navigatörü",
         page_icon="🌙",
         layout="wide",
-        initial_sidebar_state="collapsed",
+        initial_sidebar_state="expanded",
     )
     inject_theme()
 
@@ -2161,10 +2967,6 @@ def main() -> None:
     actual_source = probe.attrs.get("data_source", source_mode)
 
     render_header(actual_source, engine_active, fallback_reason)
-    # Karar bandı en üstte dursun diye yer tutucu açılır; içeriği
-    # metrikler hesaplandıktan sonra doldurulur. Jüri ilk saniyede
-    # sonucu görmeli, metrik kartlarını aşağı kaydırmak zorunda kalmamalı.
-    verdict_slot = st.container()
 
     if fallback_reason:
         st.warning(
@@ -2184,7 +2986,7 @@ def main() -> None:
         )
         st.caption(
             "Kaynak: `outputs/k3/*_visibility.csv` (K3 motoru) + "
-            f"`outputs/k2/*_horizon_4000m.csv` (K2 ufuk profili). {provenance}"
+            f"`outputs/k2/*_horizon_*.csv` (K2 ufuk profili). {provenance}"
         )
     else:
         st.info(
@@ -2194,7 +2996,9 @@ def main() -> None:
         )
 
     # --- Adım 1: A/B aday bölge seçimi -----------------------------------
-    st.markdown("<div class='ls-step'>1 · Aday bölge seçimi</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='ls-step notranslate'>1 · Aday bölge seçimi</div>", unsafe_allow_html=True
+    )
     column_a, column_b = st.columns(2, gap="large")
 
     options = list(catalog)
@@ -2220,10 +3024,7 @@ def main() -> None:
     metrics_a = compute_metrics(frame_a, step_minutes)
     metrics_b = compute_metrics(frame_b, step_minutes)
 
-    with verdict_slot:
-        render_verdict_band(
-            catalog[selected_a], metrics_a, catalog[selected_b], metrics_b
-        )
+    render_verdict_band(catalog[selected_a], metrics_a, catalog[selected_b], metrics_b)
 
     if actual_source == SOURCE_REAL and frame_a.attrs.get("window_truncated"):
         st.warning(
@@ -2265,21 +3066,33 @@ def main() -> None:
 
     # --- Adım 3: görselleştirmeler ----------------------------------------
     st.markdown(
-        "<div class='ls-step'>3 · Karşılaştırma ve ufuk grafikleri</div>",
+        "<div class='ls-step notranslate'>3 · Karşılaştırma ve görselleştirmeler</div>",
         unsafe_allow_html=True,
     )
-    globe_tab, horizon_tab, timeline_tab, map_tab, data_tab = st.tabs(
+    globe_tab, horizon_tab, timeline_tab, map_tab, risk_tab, data_tab = st.tabs(
         [
             "3B Ay küresi",
             "Ufuk görünümü",
             "Zaman çizelgesi",
             "Güney Kutbu Haritası (2D)",
+            "Arazi Riski",
             "Veri ve kaynak",
         ]
     )
 
     with globe_tab:
-        render_globe_tab()
+        render_globe_tab(catalog[selected_a], catalog[selected_b])
+        with st.expander(
+            "🏔️ Etkileşimli 3B Topografik Rölyef ve Krater Modeli (Plotly)",
+            expanded=False,
+        ):
+            render_surface_3d_tab(
+                catalog[selected_a],
+                catalog[selected_b],
+                metrics_a,
+                metrics_b,
+                source_mode,
+            )
 
     with horizon_tab:
         st.caption(
@@ -2384,15 +3197,166 @@ def main() -> None:
                 )
             )
         st.caption(BATTERY_ASSUMPTIONS)
+        with st.expander(
+            "☀️ Penumbra (0.533° Güneş Diski Yarı-Gölge & Limb-Darkening) Güç Analizi",
+            expanded=False,
+        ):
+            st.caption(
+                "Ay Güney Kutbu'nda Güneş ufku düşük eğimle sıyırdığı için 0.533° açısal "
+                "çapı ve fotosfer kenar kararması (limb darkening, u = 0.60) dikkate "
+                "alınarak 1000 W nominal fotovoltaik panel çıktısı noktasal modelle "
+                "karşılaştırılır."
+            )
+            pen_a = compute_penumbra_power(
+                frame_a["sun_alt_deg"].to_numpy(),
+                frame_a["terrain_horizon_sun_deg"].to_numpy(),
+                step_minutes=float(step_minutes),
+                max_power_w=1000.0,
+            )
+            pen_b = compute_penumbra_power(
+                frame_b["sun_alt_deg"].to_numpy(),
+                frame_b["terrain_horizon_sun_deg"].to_numpy(),
+                step_minutes=float(step_minutes),
+                max_power_w=1000.0,
+            )
+            pen_col_a, pen_col_b = st.columns(2)
+            for col, title, spec, frame_site, pen in (
+                (pen_col_a, "Bölge A", catalog[selected_a], frame_a, pen_a),
+                (pen_col_b, "Bölge B", catalog[selected_b], frame_b, pen_b),
+            ):
+                with col:
+                    st.markdown(f"**{title} · {spec.label}**")
+                    pm1, pm2 = st.columns(2)
+                    pm1.metric(
+                        "Noktasal Güneş Saati",
+                        f"{pen['point_source_hours']:.1f} sa",
+                        border=True,
+                    )
+                    pm2.metric(
+                        "Efektif Penumbra Saati",
+                        f"{pen['effective_penumbra_hours']:.1f} sa",
+                        border=True,
+                    )
+                    pm3, pm4 = st.columns(2)
+                    pm3.metric(
+                        "Yarı-Gölge Geçiş Süresi",
+                        f"{pen['penumbra_transition_hours']:.1f} sa",
+                        border=True,
+                    )
+                    pm4.metric(
+                        "Enerji Farkı (Wh)",
+                        f"{pen['energy_delta_wh']:+.0f} Wh",
+                        help=(
+                            f"Noktasal: {pen['point_energy_wh']:.0f} Wh · "
+                            f"Penumbra: {pen['penumbra_energy_wh']:.0f} Wh"
+                        ),
+                        border=True,
+                    )
+                    st.plotly_chart(
+                        build_penumbra_figure(frame_site, pen, f"{title} · {spec.site_id}"),
+                        use_container_width=True,
+                    )
 
     with map_tab:
         st.caption(
             "Ay Güney Kutbu (90°S) merkezli 2D radar haritası. Aday iniş bölgelerinin "
-            "konumlarını, kutba mesafelerini ve iki bölge arasındaki mesafeyi gösterir."
+            "konumlarını, kutba mesafelerini, iki bölge arasındaki mesafeyi ve seçili "
+            "Kalıcı Gölgeli Bölge (PSR) hedeflerine A* güvenli geçiş koridorunu gösterir."
         )
+        map_ctrl_a, map_ctrl_b = st.columns([1.2, 1.5])
+        with map_ctrl_a:
+            show_corridor = st.checkbox(
+                "🛞 Otonom EVA / Rover A* PSR Koridorunu Göster",
+                value=True,
+                key=f"map_corridor_{source_mode}",
+            )
+        corridor_a: dict[str, object] | None = None
+        corridor_b: dict[str, object] | None = None
+        map_spec_a = catalog[selected_a]
+        map_spec_b = catalog[selected_b]
+        both_official = (
+            map_spec_a.site_id in CANDIDATE_SITES and map_spec_b.site_id in CANDIDATE_SITES
+        )
+        if both_official:
+            with map_ctrl_b:
+                psr_choice = st.selectbox(
+                    "Hedef Kalıcı Gölgeli Bölge (PSR)",
+                    options=["En Yakın PSR (Otomatik)", *PSR_TARGETS.keys()],
+                    key=f"map_psr_{source_mode}",
+                )
+            if show_corridor:
+                target_psr = None if psr_choice == "En Yakın PSR (Otomatik)" else psr_choice
+                corridor_a = find_safe_corridor(map_spec_a.site_id, target_psr=target_psr)
+                corridor_b = find_safe_corridor(map_spec_b.site_id, target_psr=target_psr)
+        elif show_corridor:
+            st.info(
+                "ℹ️ Otonom EVA / Rover A* PSR koridor planlaması 12 resmi Artemis III "
+                "aday bölgesi (Gerçek Ekip Çıktısı modu) için hesaplanır.",
+                icon="ℹ️",
+            )
+
         st.plotly_chart(
-            build_south_pole_map(catalog[selected_a], catalog[selected_b]),
+            build_south_pole_map(
+                map_spec_a,
+                map_spec_b,
+                corridor_a=corridor_a,
+                corridor_b=corridor_b,
+            ),
             use_container_width=True,
+        )
+
+        if corridor_a is not None and corridor_b is not None:
+            route_col_a, route_col_b = st.columns(2)
+            for col, title, spec, corridor, accent in (
+                (route_col_a, "Bölge A", map_spec_a, corridor_a, "#3ddc97"),
+                (route_col_b, "Bölge B", map_spec_b, corridor_b, "#fb7185"),
+            ):
+                with col:
+                    st.markdown(
+                        f"<div class='ls-card' style='border-left: 4px solid {accent};'>"
+                        f"<div class='ls-card-title' style='color:{accent};'>"
+                        f"🛞 {title} ({spec.site_id}) → {corridor['target_name']}</div>"
+                        f"<div class='ls-card-detail'>Hız varsayımı: "
+                        f"{DEFAULT_ROVER_SPEED_KMH:.1f} km/sa basınçlı rover / EVA</div>"
+                        "</div>",
+                        unsafe_allow_html=True,
+                    )
+                    rm1, rm2 = st.columns(2)
+                    rm1.metric(
+                        "Rota Mesafesi",
+                        f"{float(corridor['total_distance_km']):.2f} km",
+                        border=True,
+                    )
+                    rm2.metric(
+                        "Tahmini EVA Süresi",
+                        f"{float(corridor['estimated_eva_hours']):.2f} sa",
+                        border=True,
+                    )
+                    rm3, rm4, rm5 = st.columns(3)
+                    rm3.metric(
+                        "Maks. Rota Eğimi",
+                        f"{float(corridor['max_route_slope_deg']):.1f}°",
+                        border=True,
+                    )
+                    rm4.metric(
+                        "Ort. Rota Eğimi",
+                        f"{float(corridor['mean_route_slope_deg']):.1f}°",
+                        border=True,
+                    )
+                    rm5.metric(
+                        "Güneş-Güvenli %",
+                        f"%{float(corridor['solar_safe_fraction_pct']):.1f}",
+                        border=True,
+                    )
+
+    with risk_tab:
+        render_risk_tab(
+            selected_a,
+            selected_b,
+            spec_a=catalog[selected_a],
+            spec_b=catalog[selected_b],
+            frame_a=frame_a,
+            frame_b=frame_b,
         )
 
     with data_tab:

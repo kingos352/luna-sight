@@ -6,6 +6,7 @@ testler doğrudan onları kullanır. Dosyalar yoksa ilgili testler atlanır.
 
 from __future__ import annotations
 
+import ast
 import importlib
 import json
 import re
@@ -211,3 +212,313 @@ def test_flight_briefing_card_generation():
     assert "GO (UÇUŞA UYGUN)" in card
     assert "🟢 GO" in card
     assert "2026-11-16 04:00 UTC" in card
+
+
+@pytest.mark.skipif(not app.REAL_AVAILABLE, reason="gerçek K3 çıktısı yok")
+def test_site_catalog_and_risk_tab_consistency(clean_caches):
+    """de_gerlache boylam tutarlılığı ve Arazi Riski sekmesi DEM durumu doğrulanır."""
+    assert app.SITES["de_gerlache"].longitude_deg_east == pytest.approx(-87.10)
+
+    at = _run_app()
+    assert not at.exception
+    # Karar bandı mevcut olmalı
+    assert any("ls-verdict" in m.value for m in at.markdown)
+    # Metriklerde nan% görünmemeli ve canlı GeoTIFF olmadan yanlış GeoTIFF başarı mesajı basılmamalı
+    metric_vals = [str(m.value) for m in at.metric]
+    assert all("nan%" not in v.lower() and "nan°" not in v.lower() for v in metric_vals)
+    success_msgs = " ".join(s.value for s in at.success)
+    info_msgs = " ".join(i.value for i in at.info)
+    assert "Gerçek LOLA DEM yüklendi" not in success_msgs
+    assert "Ön-hesaplanmış LOLA DEM özeti aktif" in success_msgs
+    assert "11/12 Ön-hesaplanmış LOLA DEM" in info_msgs
+    assert "1/12 Analitik Kutup Yükselti Modeli" in info_msgs
+    # 12 aday bölgenin özet expander başlığı Arazi Riski sekmesinde yer almalı
+    expander_labels = [e.label for e in at.expander]
+    assert any("12 Bölge" in label for label in expander_labels)
+
+
+@pytest.mark.skipif(not app.REAL_AVAILABLE, reason="gerçek K3 çıktısı yok")
+def test_real_sites_discovers_all_12_artemis_sites(clean_caches):
+    expected_ids = [
+        "Site01",
+        "Site02",
+        "Site03",
+        "Site04",
+        "Site05",
+        "Site06",
+        "Site07",
+        "Site08",
+        "Site09",
+        "Site11",
+        "Site12",
+        "Site13",
+    ]
+    assert list(app.REAL_SITES.keys()) == expected_ids
+
+    for site_id in expected_ids:
+        spec = app.REAL_SITES[site_id]
+        assert spec.origin == "real"
+        assert spec.name != site_id
+        assert spec.horizon_csv is not None and spec.horizon_csv.is_file()
+        azimuths, horizons, source = app._site_horizon_profile(spec)
+        assert source == "K2"
+        assert len(azimuths) == len(horizons) == 360
+
+        frame = app.load_site_series(site_id, "2026-11-14T00:00:00+00:00", 7, 60, app.SOURCE_REAL)
+        metrics = app.compute_metrics(frame, 60)
+        assert metrics.total_hours > 0.0
+
+
+def test_normalize_contract_and_engine_preserve_canonical_source_id(clean_caches):
+    site = app.SITES["shackleton"]
+    start_utc = app.dt.datetime(2026, 11, 15, 0, 0, tzinfo=app.dt.UTC)
+    synthetic = app.generate_synthetic_series(site, start_utc, days=1, step_minutes=60)
+
+    # İsteğe bağlı margin sütunları olmadan normalize_contract_frame hatasız çalışmalı
+    minimal = synthetic.loc[:, app.DATA_CONTRACT_COLUMNS].copy()
+    normalized_min = app.normalize_contract_frame(minimal)
+    assert set(app.DATA_CONTRACT_COLUMNS).issubset(normalized_min.columns)
+
+    # String margin değerleri (boşluk dahil) sayısal tipe dönüştürülmeli
+    with_margins = minimal.copy()
+    with_margins["sun_margin_deg"] = ["1.250000"] * (len(with_margins) - 1) + [""]
+    with_margins["earth_margin_deg"] = "-0.500000"
+    with_margins["joint_margin_deg"] = "-0.500000"
+    normalized_margins = app.normalize_contract_frame(with_margins)
+    assert pd.api.types.is_numeric_dtype(normalized_margins["sun_margin_deg"])
+    assert pd.api.types.is_numeric_dtype(normalized_margins["earth_margin_deg"])
+    assert pd.api.types.is_numeric_dtype(normalized_margins["joint_margin_deg"])
+    assert normalized_margins["sun_margin_deg"].iloc[0] == pytest.approx(1.25)
+    assert pd.isna(normalized_margins["sun_margin_deg"].iloc[-1])
+
+    # _evaluate_with_engine kanonik source_id değerini '+K3' eklemeden korumalı
+    canonical = synthetic.copy()
+    canonical["source_id"] = "jpl-horizons"
+    evaluated = app._evaluate_with_engine(canonical, site)
+    if app._engine_available():
+        assert evaluated is not None
+        assert set(evaluated["source_id"]) == {"jpl-horizons"}
+        assert not evaluated["source_id"].astype(str).str.contains(r"\+K3", regex=True).any()
+        assert isinstance(evaluated["timestamp_utc"].dtype, pd.DatetimeTZDtype)
+        for margin_col in ("sun_margin_deg", "earth_margin_deg", "joint_margin_deg"):
+            assert pd.api.types.is_numeric_dtype(evaluated[margin_col])
+
+
+@pytest.mark.skipif(not app.REAL_AVAILABLE, reason="gerçek K3 çıktısı yok")
+def test_selecting_site08_and_site13_runs_cleanly(clean_caches):
+    at = _run_app()
+    at.selectbox(key="site_a_real").set_value("Site08").run()
+    at.selectbox(key="site_b_real").set_value("Site13").run()
+
+    assert not at.exception
+    verdict_html = " ".join(m.value for m in at.markdown if "ls-verdict" in m.value)
+    assert "notranslate" in verdict_html
+    assert "Site08" in verdict_html
+    assert "Site13" in verdict_html
+    code_blocks = "\n".join(c.value for c in at.code)
+    assert "Malapert massif" in code_blocks
+    assert "Mons Mouton" in code_blocks
+    info_msgs = " ".join(i.value for i in at.info)
+    assert "Analitik Kutup Yükselti Modeli özeti aktif" in info_msgs
+
+
+def test_moon_trek_static_data_synced_for_all_12_sites():
+    expected_ids = [
+        "Site01",
+        "Site02",
+        "Site03",
+        "Site04",
+        "Site05",
+        "Site06",
+        "Site07",
+        "Site08",
+        "Site09",
+        "Site11",
+        "Site12",
+        "Site13",
+    ]
+    data_dir = ROOT / "app" / "static" / "moon" / "data"
+
+    windows_payload = json.loads((data_dir / "windows.json").read_text(encoding="utf-8"))
+    assert list(windows_payload.keys()) == expected_ids
+    for site_id in expected_ids:
+        entry = windows_payload[site_id]
+        assert set(entry.keys()) == {"windows", "summary"}
+        assert set(entry["windows"].keys()) == {"sun", "earth", "joint"}
+        lon = entry["summary"]["coordinate"]["longitude_deg_east"]
+        assert -180.0 <= float(lon) <= 180.0
+
+    horizons_payload = json.loads((data_dir / "horizons.json").read_text(encoding="utf-8"))
+    assert list(horizons_payload.keys()) == expected_ids
+    for site_id in expected_ids:
+        site_horizons = horizons_payload[site_id]
+        assert "20000m" in site_horizons
+        assert len(site_horizons["20000m"]["azimuth_deg"]) == 360
+        assert len(site_horizons["20000m"]["horizon_deg"]) == 360
+        assert len(site_horizons["20000m"]["occluder_distance_m"]) == 360
+    assert {"2000m", "4000m", "20000m"}.issubset(horizons_payload["Site01"])
+    assert {"2000m", "4000m", "20000m"}.issubset(horizons_payload["Site04"])
+
+    geojson_payload = json.loads((data_dir / "survey_targets.geojson").read_text(encoding="utf-8"))
+    features = geojson_payload["features"]
+    polygons = [f for f in features if f["geometry"]["type"] == "Polygon"]
+    points = [f for f in features if f["geometry"]["type"] == "Point"]
+    assert len(polygons) == 5
+    assert [p["properties"]["site_id"] for p in points] == expected_ids
+    for point in points:
+        lon, lat = point["geometry"]["coordinates"]
+        assert -180.0 <= float(lon) <= 180.0
+        assert -90.0 <= float(lat) <= 0.0
+        assert point["properties"]["site_name"]
+        assert point["properties"]["description"]
+
+
+def test_render_globe_tab_bridge_query_params(monkeypatch):
+    captured_urls: list[str] = []
+    monkeypatch.setattr(app.components, "iframe", lambda url, **kwargs: captured_urls.append(url))
+    monkeypatch.setattr(app.st, "caption", lambda *args, **kwargs: None)
+
+    url_default = app.render_globe_tab()
+    assert url_default == app.GLOBE_URL
+
+    site_a = app.SiteSpec("Site08", "Malapert massif", -86.0, 2.7)
+    site_b = app.SiteSpec("Site13", "Mons Mouton", -84.6, 31.0)
+    url_pair = app.render_globe_tab(site_a, site_b)
+    assert url_pair == f"{app.GLOBE_URL}?siteA=Site08&siteB=Site13"
+    assert captured_urls == [app.GLOBE_URL, f"{app.GLOBE_URL}?siteA=Site08&siteB=Site13"]
+
+
+def test_build_south_pole_map_corridors_optional():
+    from luna_sight.terrain import find_safe_corridor
+
+    site_a = app.SiteSpec("Site01", "Connecting ridge", -89.463163, -137.489553)
+    site_b = app.SiteSpec("Site04", "Shackleton rim", -89.766811, -171.869898)
+
+    fig_base = app.build_south_pole_map(site_a, site_b)
+    assert len(fig_base.data) == 4
+
+    corridor_a = find_safe_corridor("Site01")
+    corridor_b = find_safe_corridor("Site04")
+    fig_corridor = app.build_south_pole_map(
+        site_a, site_b, corridor_a=corridor_a, corridor_b=corridor_b
+    )
+    assert len(fig_corridor.data) == 8
+    trace_names = [trace.name for trace in fig_corridor.data]
+    assert any("A* Koridor A" in name for name in trace_names)
+    assert any("A* Koridor B" in name for name in trace_names)
+    assert any("PSR Hedef A" in name for name in trace_names)
+    assert any("PSR Hedef B" in name for name in trace_names)
+
+
+def test_slider_order_invariant_for_demo_recorder():
+    """k5_record_demo.py focus_last_slider() her zaman horizon_tab zaman kaydırıcısını seçmeli."""
+    source = APP_PATH.read_text(encoding="utf-8")
+    tree = ast.parse(source)
+
+    def _slider_calls(node: ast.AST) -> list[tuple[int, str]]:
+        calls: list[tuple[int, str]] = []
+        for child in ast.walk(node):
+            if not isinstance(child, ast.Call):
+                continue
+            func = child.func
+            if isinstance(func, ast.Attribute) and func.attr == "slider":
+                label = ""
+                if child.args and isinstance(child.args[0], ast.Constant):
+                    label = str(child.args[0].value)
+                calls.append((child.lineno, label))
+        return sorted(calls)
+
+    # render_risk_tab, render_data_tab ve alt yardımcılarında hiç st.slider olmamalı
+    forbidden_funcs = {
+        "render_risk_tab",
+        "render_data_tab",
+        "_render_landing_hazard_section",
+        "_render_gateway_relay_section",
+        "_render_comms_link_section",
+    }
+    for fn in [n for n in tree.body if isinstance(n, ast.FunctionDef)]:
+        if fn.name in forbidden_funcs:
+            assert _slider_calls(fn) == [], f"{fn.name} içinde st.slider yasak!"
+
+    # main() içindeki son st.slider çağrısı horizon_tab'daki zaman adımı olmalı
+    main_fn = next(n for n in tree.body if isinstance(n, ast.FunctionDef) and n.name == "main")
+    main_sliders = _slider_calls(main_fn)
+    assert main_sliders, "main() içinde zaman adımı kaydırıcısı bulunamadı"
+    assert main_sliders[-1][1] == "Zaman adımı (0 = görev başlangıcı)"
+
+    # timeline_tab / map_tab / risk_tab / data_tab satırlarından sonra slider gelmemeli
+    timeline_line = next(
+        idx for idx, line in enumerate(source.splitlines(), start=1) if "with timeline_tab:" in line
+    )
+    assert main_sliders[-1][0] < timeline_line
+
+
+@pytest.mark.skipif(not app.REAL_AVAILABLE, reason="gerçek K3 çıktısı yok")
+def test_wave2_cockpit_physics_sections_render_cleanly(clean_caches):
+    at = _run_app()
+    assert not at.exception
+
+    # Canlı DOM'daki ana gövdedeki son slider horizon_tab'daki zaman kaydırıcısı olmalı
+    assert at.main.slider[-1].label == "Zaman adımı (0 = görev başlangıcı)"
+
+    expander_labels = [e.label for e in at.expander]
+    assert any("Penumbra" in label for label in expander_labels)
+
+    metric_labels = {m.label for m in at.metric}
+    expected_labels = {
+        # Penumbra (Extra 2)
+        "Noktasal Güneş Saati",
+        "Efektif Penumbra Saati",
+        "Yarı-Gölge Geçiş Süresi",
+        "Enerji Farkı (Wh)",
+        # A* Corridor (Extra 4)
+        "Rota Mesafesi",
+        "Tahmini EVA Süresi",
+        "Maks. Rota Eğimi",
+        "Ort. Rota Eğimi",
+        "Güneş-Güvenli %",
+        # 3σ Hazard (Extra 5)
+        "3σ Güvenli Alan %",
+        "Kayaç Çarpma Olasılığı",
+        "Güvenlik Skoru / 100",
+        "HLS <10° Uyumluluğu",
+        "Karar",
+        # Gateway NRHO (Extra 3)
+        "Doğrudan Dünya %",
+        "Gateway NRHO %",
+        "Birleşik Haberleşme %",
+        "Maks. Kesinti (sa)",
+        "Ort. Gateway Yüksekliği",
+        # DSN Link Budget + ITU-R P.526 (Extra 1)
+        "Kırınım Rejimi",
+        "FSPL",
+        "Kırınım Kaybı",
+        "Link Marjı",
+        "Veri Hızı (Mbps)",
+        "10W S-Band Acil Durum İşaretçisi",
+    }
+    missing = expected_labels - metric_labels
+    assert not missing, f"Eksik metrikler: {sorted(missing)}"
+
+    # Site04 (Shackleton rim) için Gateway röle kurtarma bildirimi görünmeli
+    success_msgs = " ".join(s.value for s in at.success)
+    assert "Gateway Röle Kurtarması (Site04)" in success_msgs
+
+    # Etkileşimli kontroller: DSN istasyon, frekans bandı ve PSR seçimi hatasız çalışmalı
+    at.selectbox(key="risk_dsn_station").set_value(app.DSNStation.MADRID).run()
+    assert not at.exception
+    at.selectbox(key="risk_freq_band").set_value(app.FrequencyBand.KA_BAND).run()
+    assert not at.exception
+    at.selectbox(key="map_psr_real").set_value("Shackleton PSR").run()
+    assert not at.exception
+    at.checkbox(key="map_corridor_real").set_value(False).run()
+    assert not at.exception
+    assert at.main.slider[-1].label == "Zaman adımı (0 = görev başlangıcı)"
+
+    # Mock modunda da A* ve 3σ guardları ile yeni bölümler hatasız çalışmalı
+    at.selectbox(key="source_mode").set_value(app.SOURCE_MOCK).run()
+    assert not at.exception
+    assert at.main.slider[-1].label == "Zaman adımı (0 = görev başlangıcı)"
+
+    # Geriye dönük 2-argümanlı render_risk_tab sözleşmesi korunmalı
+    app.render_risk_tab("Site01", "Site04")

@@ -1,10 +1,10 @@
 # LUNA SIGHT — 120 Saniyelik Demo Video Senaryosu
 
-> **Durum:** Gerçek veri sürümü · `main` üzerinde doğrulandı
+> **Durum:** Gerçek veri sürümü · `fix/k1-k5-full-sync` üzerinde doğrulandı (`main` adayı)
 > **Hedef kitle:** sunum ekibi, jüri provası
 > **Süre:** 120 saniye (±3 sn) · **Çözünürlük:** 1920×1080, 30 fps
-> **Uygulama:** `app/app.py` · **Dal:** `main`
-> **Son güncelleme:** 2026-11-14 19:30 UTC
+> **Uygulama:** `app/app.py` · **Dal:** `fix/k1-k5-full-sync`
+> **Son güncelleme:** 2026-11-15
 
 > ### Bu sürümde ne değişti
 >
@@ -54,17 +54,17 @@ gelmeden kayda başlamayın.
 | Ayar | Değer |
 |---|---|
 | Veri Kaynağı | **Gerçek Ekip Çıktısı (K2/K3)** |
-| Bölge A | **Site01 · Connecting ridge** |
-| Bölge B | **Site04 · Shackleton rim** |
+| Bölge A | **Site01 · Connecting ridge** (12 Artemis III adayından varsayılan A) |
+| Bölge B | **Site04 · Shackleton rim** (12 Artemis III adayından varsayılan B) |
 | Görev süresi (gün) | **7** |
 | Zaman örnekleme aralığı | **1 saat** |
 | Zaman adımı kaydırıcısı | **0** |
-| Açık sekme | **Ufuk görünümü** |
+| Açılış / hedef sekme | Açılışta **3B Ay küresi** (3B Plotly rölyef açılır kutusu kapalı); Segment 3'te **Ufuk görünümü** |
 | "Yöntem ve sınırlar" açılır kutusu | **Kapalı** |
 
 ### Ekranda görünecek değerler
 
-Bu tablo `main` üzerinde uygulamadan okundu (7 gün, 1 saat örnekleme, 169 örnek).
+Bu tablo `fix/k1-k5-full-sync` üzerinde uygulamadan doğrulandı (7 gün, 1 saat örnekleme, 169 örnek; varsayılan A/B çifti `Site01` vs `Site04`).
 Kayıt sırasında birebir bu sayılar görünmeli.
 
 | Metrik | Site01 · Connecting ridge | Site04 · Shackleton rim |
@@ -105,13 +105,31 @@ gösteriyor; kısa kesintiler bu çözünürlükte kayboluyor. Jüri sorarsa do�
 süre üç ayrı pencereye bölünüyor ve en uzunu 53.7 saat." Bunu gizlemek yerine
 söylemek güvenilirliği artırır.
 
-### Adlandırma notu (veri bütünlüğü)
+### Adlandırma notu (veri bütünlüğü — 12 Artemis III aday bölgesi)
 
-- **Site01 = Connecting ridge** (−89.463163, doğu-pozitif −137.489553)
-- **Site04 = Shackleton rim** (−89.766811, doğu-pozitif −171.869898)
+Katalog ve gerçek `outputs/k2`, `outputs/k3` çıktıları artık **12 NASA Artemis III
+aday bölgesinin** tamamını kapsar (`Site01`–`Site09`, `Site11`–`Site13`):
+
+| Site | Bölge | Enlem (°) | Boylam doğu-pozitif (°) | K2 profil çözünürlüğü |
+|---|---|---|---|---|
+| **Site01** | Connecting ridge | −89.463163 | −137.489553 | 5 m/piksel (2/4 km) + 240 m/piksel (20 km) |
+| **Site02** | Connecting ridge extension | −89.300000 | −150.000000 | 240 m/piksel bölgesel (20 km) |
+| **Site03** | de Gerlache rim 1 | −88.500000 | −68.000000 | 240 m/piksel bölgesel (20 km) |
+| **Site04** | Shackleton rim | −89.766811 | −171.869898 | 5 m/piksel (2/4 km) + 240 m/piksel (20 km) |
+| **Site05** | de Gerlache rim 2 | −88.710000 | −64.000000 | 240 m/piksel bölgesel (20 km) |
+| **Site06** | de Gerlache-Kocher massif | −85.800000 | −116.300000 | 240 m/piksel bölgesel (20 km) |
+| **Site07** | Haworth | −87.450000 | −5.000000 | 240 m/piksel bölgesel (20 km) |
+| **Site08** | Malapert massif | −86.000000 | +2.700000 | 240 m/piksel bölgesel (20 km) |
+| **Site09** | Leibnitz beta plateau | −85.200000 | +33.000000 | 240 m/piksel bölgesel (20 km) |
+| **Site11** | Nobile rim 2 | −84.100000 | +59.700000 | 240 m/piksel bölgesel (20 km) |
+| **Site12** | Amundsen rim | −84.500000 | +85.000000 | 240 m/piksel bölgesel (20 km) |
+| **Site13** | Mons Mouton | −84.600000 | +31.000000 | 240 m/piksel bölgesel (20 km) |
 
 Ekipte "Site01 = Shackleton" gibi bir kısaltma dolaşsa da **videoda verideki adlar
-kullanılmalıdır.** Shackleton bölgesi bu veri setinde **Site04**'tür.
+kullanılmalıdır.** Shackleton bölgesi bu veri setinde **Site04**'tür. Demo
+senaryosu, 5 m/piksel yüksek çözünürlüklü LOLA DEM karşılaştırmasını sunmak için
+varsayılan A/B çifti olan `Site01` ve `Site04`'e odaklanır; diğer 10 aday ise
+240 m/piksel bölgesel DEM üst sınır profilleriyle arayüzde seçilebilir.
 
 ---
 
@@ -171,10 +189,13 @@ engel özeti" açılır kutusu.
 > yüz altmış beş ile yüz yetmiş bir derece azimut aralığında kalıyor ve orada
 > krater duvarı altı ile dokuz derece yükseklikte. Dünya librasyonunun en yükseği
 > dört nokta bir derece; duvarı hiç aşamıyor. Yani doğrudan Dünya bağlantısı
-> gereken bir görev için bu veri setinde tek aday Site01.
+> gereken bir görev için bu iki 5 m/piksel referans aday arasında tek seçenek Site01.
 
 **Sunucu ipucu:** Bu, videonun en güçlü cümlesi. Yavaş söyleyin. "Sıfır" rakamını
-atlamayın; jüri için ikna edici olan tam da keskinliği.
+atlamayın; jüri için ikna edici olan tam da keskinliği. Katalog artık 12 Artemis III
+adayının tamamını (`Site01`–`Site09`, `Site11`–`Site13`) içerdiği için jüri diğer
+adayları sorarsa, onların 240 m/piksel bölgesel DEM üst sınır profilleriyle
+ekranda seçilebildiğini belirtin.
 
 **Jüri sorusu beklentisi.** "Site04 kötü bir bölge mi?" Doğru cevap: "Bu veri
 setinde ve bu pencerede doğrudan Dünya görüşü vermiyor. Güneş tarafında Site01
@@ -269,7 +290,7 @@ türetilmemiş. Bunu söylemeden geçmek tek gerçek risk.
 - [ ] Ekranda **mutlak dosya yolu görünmüyor** (yollar depo köküne göre).
 - [ ] Batarya grafiği gösterildiyse varsayım beyanı da okundu.
 - [ ] Dosya adı: `luna_sight_demo_120s_v2.mp4`; 1080p, H.264.
-- [ ] Altyazı dosyası: `luna_sight_demo_120s_v2.tr.srt` (Türkçe).
+- [ ] Altyazı dosyası: `artifacts/luna_sight_demo_120s_v2.en.srt` (İngilizce, 17 girdi; `docs/demo_narration_en.json` tek kaynağından üretilir).
 
 ---
 
@@ -280,16 +301,18 @@ türetilmemiş. Bunu söylemeden geçmek tek gerçek risk.
 $env:PYTHONPATH = "src"
 .\.venv\Scripts\python.exe -m streamlit run app\app.py
 
-# Statik kontroller, testler, sözleşme denetimi
-.\.venv\Scripts\python.exe -m ruff check .
-.\.venv\Scripts\python.exe -m pytest --record-mode=none -q
+# Biçimlendirme, statik kontroller, testler, sözleşme denetimi
+.\.venv\Scripts\ruff.exe format --check .
+.\.venv\Scripts\ruff.exe check .
+.\.venv\Scripts\python.exe -m pytest -q --record-mode=none
 .\.venv\Scripts\python.exe scripts\check_governance.py
 
 # Sağlık kontrolü (uygulama açıkken)
 Invoke-WebRequest http://localhost:8501/_stcore/health
 ```
 
-Beklenen: `ruff` temiz, **209 test** geçer, sözleşme denetimi `Sonuc: gecti`,
+Beklenen: `ruff format --check .` temiz (`79 files already formatted`), `ruff check .`
+temiz, **228 test** geçer (`228 passed`), sözleşme denetimi `Sonuc: gecti. 0 uyari.`,
 health yanıtı `ok`.
 
 Veriyi sıfırdan üretmek için `docs/REAL_RUN.md` bölüm 7.
@@ -328,12 +351,15 @@ atlanır ve kendi ses dosyanız `k5_build_video.py` çıktısına bindirilir.
 
 ## 7. Sunum ekibi için tek paragraflık özet
 
-> LUNA SIGHT, Ay'ın güney kutbundaki aday iniş bölgelerini Güneş ve Dünya
-> görünürlüğü açısından karşılaştırır. Güneş ve Dünya konumları JPL Horizons'tan
-> gelir (DE441 efemeris çekirdeği, atmosfersiz görünür konum), topoğrafik ufuk
-> LRO/LOLA beş metre çözünürlüklü DEM'den hesaplanır, görünürlük sınıflandırması
-> geçiş bandını ayrı tutan bir motorla yapılır. Yedi günlük pencerede iki aday da
-> kesintisiz Güneş görüyor; ama doğrudan Dünya görüşü yalnızca Connecting
-> ridge'de var — elli dört saat. Shackleton rim'de Dünya krater duvarını hiç
-> aşmıyor. Her satır kaynak, sürüm, model ve parametre taşır; eksik veri görünür
-> sayılmaz. Araç bir ön değerlendirme sunar, iniş güvenliği kararı vermez.
+> LUNA SIGHT, Ay'ın güney kutbundaki **12 NASA Artemis III aday iniş bölgesini**
+> (`Site01`–`Site09`, `Site11`–`Site13`) Güneş ve Dünya görünürlüğü açısından
+> karşılaştırır. Güneş ve Dünya konumları JPL Horizons'tan gelir (DE441 efemeris
+> çekirdeği, atmosfersiz görünür konum), topoğrafik ufuk LRO/LOLA DEM'den (varsayılan
+> `Site01`/`Site04` referans çifti için 5 m/piksel, tüm 12 bölge genelinde 240 m/piksel
+> bölgesel üst sınır profilleriyle) hesaplanır, görünürlük sınıflandırması geçiş
+> bandını ayrı tutan bir motorla yapılır. Yedi günlük pencerede 5 m/piksel A/B
+> referans çiftinin ikisi de kesintisiz Güneş görüyor; ama doğrudan Dünya görüşü
+> yalnızca Connecting ridge'de (`Site01`) var — elli dört saat. Shackleton rim'de
+> (`Site04`) Dünya krater duvarını hiç aşmıyor. Her satır kaynak, sürüm, model ve
+> parametre taşır; eksik veri görünür sayılmaz. Araç bir ön değerlendirme sunar,
+> iniş güvenliği kararı vermez.

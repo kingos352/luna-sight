@@ -1,0 +1,30 @@
+{
+  "site_id": "Site01",
+  "site_name": "Connecting ridge",
+  "latitude_deg": -89.463163,
+  "longitude_deg_east": -137.489553,
+  "analysis_radius_m": 5000.0,
+  "source_id": "pgda-lola-5mpp",
+  "dem_source": "precomputed_lola_dem",
+  "dem_file": "data/cache/lola/eray_regions/CONNECTING_RIDGE_EXT.tif",
+  "dem_resolution_m": 150.0,
+  "slope": {
+    "mean_deg": 10.213,
+    "max_deg": 26.067,
+    "median_deg": 9.35,
+    "std_deg": 5.041,
+    "p95_deg": 19.027,
+    "fraction_above_5deg": 0.8465,
+    "fraction_above_10deg": 0.4529,
+    "fraction_above_15deg": 0.2226,
+    "fraction_above_20deg": 0.0155,
+    "valid_fraction": 1.0
+  },
+  "boulder_hazard": {
+    "mean_hazard_prob": 0.2847,
+    "p95_hazard_prob": 0.4407,
+    "landing_safety_score": 61.44,
+    "footprint_3sigma_safe_pct": 54.71
+  },
+  "notes": "Computed from NASA LRO LOLA Regional DEM tile CONNECTING_RIDGE_EXT.tif (150 m/px) covering (-11000.0, -12000.0) m; tile center offset 418.9 m."
+}

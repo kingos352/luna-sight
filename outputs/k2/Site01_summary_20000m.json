@@ -22,5 +22,14 @@
   "notes": [
     "İstenen yarıçap DEM kapsamını aşıyor; tüm azimutlarda güvenilir yarıçap 19920 m."
   ],
-  "site_name": "Connecting ridge"
+  "site_name": "Connecting ridge",
+  "coordinate": {
+    "lon_deg_east": -137.489553,
+    "lat_deg": -89.463163
+  },
+  "dem": {
+    "source_id": "pgda-lola-240mpp",
+    "datum": "MOON_ME (JPL DE421)",
+    "pixel_size_m": 240.0
+  }
 }

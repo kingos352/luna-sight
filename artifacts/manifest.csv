@@ -1,16 +1,18 @@
 dosya,tur,surum,sahip,konum,drive_baglantisi,dogrulama_durumu,sha256
-app/app.py,uygulama,f6b361c,K4,git,,209 test + health 200,824fc8f779699411e3e039371804167384cc4899e0fa31ac5b63c873aa02204b
+app/app.py,uygulama,v3.0.0,K4,git,,"302 passed (pytest --record-mode=none) + ruff + check_governance; 12 Artemis III aday bolgesi + Moon Trek sync + LunarSight AI bileseni + Gateway/Penumbra/Comms/Pathfinder/Hazard",3a06b836d91552e4bce1cbca26adc07e0243a0423dfeabbaab5521a246332fa9
 outputs/k3/Site01_visibility.csv,gorunurluk_tablosu,f6b361c,K3,git,,"jpl-horizons/DE441/valid, 2017 satir",52621ebca2d4eefe8e98d2001bcfb39478886518b68b368171ac5d987e36a2ba
 outputs/k3/Site04_visibility.csv,gorunurluk_tablosu,f6b361c,K3,git,,"jpl-horizons/DE441/valid, 2017 satir",399537a8acd6ad71c17fc2f79b015d4a631462ac5ba87bf3c209c15cc077baf8
-outputs/k3/Site01_windows.json,pencere_ozeti,f6b361c,K3,git,,"3 ortak pencere, en uzun 53.68 sa",880252f6430e2438a0e4df7a9a607e255b0b05d0c0edd073798db23270e3c0f8
-outputs/k3/Site04_windows.json,pencere_ozeti,f6b361c,K3,git,,ortak pencere yok,c6500db14526f8169c1bc226f812c28078a9c01bd45b331fa77aeb98f86b6253
-outputs/k3/sensitivity.csv,duyarlilik_taramasi,f6b361c,K3,git,,"54 satir, 3 profil x 3 marj",03e6d8525ec65c46aca6eddb78f6f748c9d30d52d86d1990078b69efb38a146d
+outputs/k3/Site01_windows.json,pencere_ozeti,f6b361c,K3,git,,"1 kesintisiz ortak gorunur pencere 53.68 sa (window_count=3 durum kosusu)",880252f6430e2438a0e4df7a9a607e255b0b05d0c0edd073798db23270e3c0f8
+outputs/k3/Site04_windows.json,pencere_ozeti,f6b361c,K3,git,,"ortak pencere yok",c6500db14526f8169c1bc226f812c28078a9c01bd45b331fa77aeb98f86b6253
+outputs/k3/sensitivity.csv,duyarlilik_taramasi,v3.0.0,K3,git,,"144 satir, 16 profil x 3 marj x 3 govde (jpl-horizons DE441)",1997fb3975da7795be722ec73eaecf049780c82107a4e0a16b1fd22c06fafa1a
 outputs/k2/Site01_horizon_4000m.csv,ufuk_profili,f6b361c,K2,git,,"5 m/piksel LOLA, valid",04019eb3368f48a003705167c0d54e5356807d5967d98dc2a578a413a9eb50bc
 outputs/k2/Site04_horizon_4000m.csv,ufuk_profili,f6b361c,K2,git,,"5 m/piksel LOLA, valid",aa5570563c08084c9c9d86725c5549c100247152c0f281b43edd0076854a11d2
-docs/DEMO_SCRIPT.md,demo_senaryosu,v2,K5,git,,gercek sayilarla dogrulandi,c6ff17e854a2aba8f7d28136bbc0e77efe656b0b5f6005240b9d9ac89c807a12
-docs/REAL_RUN.md,kosu_kaydi,f6b361c,K5,git,,koken zinciri ve sinirlar,3800bb86607d3a4eb290fb56497cc1384149d29ec67e6cd60dfb013a46470a22
-artifacts/DELIVERY.md,teslim_kaydi,f6b361c,K5,git,,bu belge,18e81f5d35bf324191806d60cf7548fdc437d4510b54ad20292affe5149124dc
-luna_sight_demo_120s_v2.mp4,demo_videosu,f6b361c+video,K5,yerel,,"121.81 sn, 1920x1080, 30 fps, H.264+AAC; Drive yuklemesi bekliyor",0079d3201c465204778008527dc65bfcda2c5223efdf066de89b3c004d39ad05
-artifacts/luna_sight_demo_120s_v2.en.srt,altyazi,f6b361c+video,K5,git,,"17 altyazi girdisi, anlatimin tamami kapsaniyor",eab63af3c5dcc3642a3f343fdb2ba3375aa6f80907dbbbbdb344e897e3670b39
+outputs/k2/regional_20000m_comparison.json,bolgesel_karsilastirma,fix/k1-k5-full-sync,K2,git,,"12 Artemis III aday bolgesi, 240 m/piksel LOLA, partial (ust sinir)",7199d29934adf3baa5061ddb2291a06feb93723cec52a0507ad6d1ae8d044b2a
+docs/DEMO_SCRIPT.md,demo_senaryosu,v2.1,K5,git,,"12 bolge + .en.srt + 228 passed ile guncellendi",f09b856f1fbf016e17a49d30407921e8caed454aa49c838bb3a0faf33aa67a69
+docs/REAL_RUN.md,kosu_kaydi,f6b361c,K5,git,,"koken zinciri ve sinirlar",3800bb86607d3a4eb290fb56497cc1384149d29ec67e6cd60dfb013a46470a22
+artifacts/DELIVERY.md,teslim_kaydi,v3.0.0,K5,git,,"bu belge (12 bolge + 5 kapatilan bosluk + 5 ucus fizigi modulu + origin/main 3ec7011 birlesimi + 302 passed)",b447fb9a725e2979643ba77dbaf00bbfb56d7b74a9f2932b15916c41c2578990
+docs/LUNA_SIGHT_MASTER_PROJE_RAPORU.pdf,master_rapor,v3.0.0,K5,git,,"Turkce master proje raporu v3.0.0 (200768 bayt)",2ba217f941e06ba773bb64231230b285f0570d1593e562a71ccba92627d8e303
+luna_sight_demo_120s_v2.mp4,demo_videosu,f6b361c+video,K5,yerel_yok,,"onceki uretim (121.81 sn, 1920x1080, 30 fps, H.264+AAC) bu calisma alaninda mevcut degil (build/ izlenmez); k5_record_demo.py duzeltmesi sonrasi yeniden uretim ve Drive yuklemesi bekliyor",0079d3201c465204778008527dc65bfcda2c5223efdf066de89b3c004d39ad05
+artifacts/luna_sight_demo_120s_v2.en.srt,altyazi,f6b361c+video,K5,git,,"17 altyazi girdisi, LF disk SHA-256 dogrulandi",257b5d0d7ebc6b6cbd330e79ab957c90dd60f78d10bd19f6604e29947dab0ba9
 docs/demo_narration_en.json,anlatim_kaynagi,v2,K5,git,,"ses, gomulu altyazi ve .srt tek kaynaktan uretilir",e3f1d3adfa74823ec32410ece24cf117773fb43a86344ddd89f056ad6382a71c
-luna_sight_sunum.pdf,sunum_destesi,-,K5,drive,,EKSIK,
+artifacts/luna_sight_sunum.pdf,sunum_destesi,v3.0.0,K5,git,,"12 slayt yatay Turkce juri sunum destesi (158059 bayt, scripts/generate_presentation_pdf.py)",9ecf57d79b63d5a4fc02d86265a6da651b73edcb315e1597e628f1045518ec23

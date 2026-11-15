@@ -21,7 +21,7 @@ LEVEL = 3
 COLS = 16
 ROWS = 8
 TILE_SIZE = 256
-WIDTH = COLS * TILE_SIZE   # 4096
+WIDTH = COLS * TILE_SIZE  # 4096
 HEIGHT = ROWS * TILE_SIZE  # 2048
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -42,7 +42,7 @@ def fetch_tile(url: str, retries: int = 4) -> bytes | None:
         except Exception as e:
             if attempt == retries - 1:
                 print(f"Failed {url}: {e}", file=sys.stderr)
-            time.sleep(0.5 * (2 ** attempt))
+            time.sleep(0.5 * (2**attempt))
     return None
 
 

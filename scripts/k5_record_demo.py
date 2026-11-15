@@ -185,11 +185,15 @@ class Chrome:
         """Verilen ögeyi kadrajın ortasına getir.
 
         Kaydırma değeriyle uğraşmak yerine hedefi doğrudan ortalamak, düzen
-        değiştiğinde de doğru kadrajı verir.
+        değiştiğinde de doğru kadrajı verir. Yalnızca görünür ögeleri
+        (offsetWidth > 0 && offsetHeight > 0) eşler; böylece kapalı expander
+        veya etkin olmayan sekmedeki 0x0 grafikler atlanır.
         """
         script = f"""
         (() => {{
-          const el = document.querySelector({json.dumps(css)});
+          const el = Array.from(document.querySelectorAll({json.dumps(css)})).find(
+            node => node.offsetWidth > 0 && node.offsetHeight > 0
+          );
           if (!el) return false;
           el.scrollIntoView({{block: 'center', inline: 'center'}});
           return true;

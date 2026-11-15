@@ -122,20 +122,23 @@ def make_card(path: Path, heading: str, subtitle: str, footer: str) -> Path:
     block = len(heading_lines) * 112 + 40 + len(subtitle_lines) * 58
     y = (HEIGHT - block) / 2 - 40
     for line in heading_lines:
-        draw.text(((WIDTH - heading_font.getlength(line)) / 2, y), line,
-                  font=heading_font, fill=TEXT)
+        draw.text(
+            ((WIDTH - heading_font.getlength(line)) / 2, y), line, font=heading_font, fill=TEXT
+        )
         y += 112
     y += 40
     for line in subtitle_lines:
-        draw.text(((WIDTH - subtitle_font.getlength(line)) / 2, y), line,
-                  font=subtitle_font, fill=ACCENT)
+        draw.text(
+            ((WIDTH - subtitle_font.getlength(line)) / 2, y), line, font=subtitle_font, fill=ACCENT
+        )
         y += 58
 
     footer_lines = _wrap(footer, footer_font, WIDTH - 420)
     y = HEIGHT - 140
     for line in footer_lines:
-        draw.text(((WIDTH - footer_font.getlength(line)) / 2, y), line,
-                  font=footer_font, fill=MUTED)
+        draw.text(
+            ((WIDTH - footer_font.getlength(line)) / 2, y), line, font=footer_font, fill=MUTED
+        )
         y += 40
 
     card.save(path)
@@ -262,17 +265,39 @@ def build_audio(narration: dict, audio_dir: Path, work: Path) -> Path:
     first = audio_dir / narration["segments"][0]["wav"]
     rate = probe(first, "stream=sample_rate", stream="a:0").splitlines()[0]
     silence = work / "silence.wav"
-    run(["ffmpeg", "-y", "-f", "lavfi", "-t", f"{CARD_SECONDS}",
-         "-i", f"anullsrc=r={rate}:cl=mono", str(silence)])
+    run(
+        [
+            "ffmpeg",
+            "-y",
+            "-f",
+            "lavfi",
+            "-t",
+            f"{CARD_SECONDS}",
+            "-i",
+            f"anullsrc=r={rate}:cl=mono",
+            str(silence),
+        ]
+    )
 
     listing = work / "audio_concat.txt"
     parts = [silence] + [audio_dir / s["wav"] for s in narration["segments"]] + [silence]
-    listing.write_text(
-        "\n".join(f"file '{p.as_posix()}'" for p in parts) + "\n", encoding="utf-8"
-    )
+    listing.write_text("\n".join(f"file '{p.as_posix()}'" for p in parts) + "\n", encoding="utf-8")
     merged = work / "narration_full.wav"
-    run(["ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(listing),
-         "-c", "copy", str(merged)])
+    run(
+        [
+            "ffmpeg",
+            "-y",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            str(listing),
+            "-c",
+            "copy",
+            str(merged),
+        ]
+    )
     return merged
 
 
@@ -327,20 +352,50 @@ def main(argv: list[str] | None = None) -> int:
     write_concat(rendered, listing)
     silent = work / "video_silent.mp4"
     print("video kodlaniyor")
-    run([
-        "ffmpeg", "-y", "-f", "concat", "-safe", "0", "-i", str(listing),
-        "-vf", f"fps={FPS},format=yuv420p", "-c:v", "libx264", "-crf", "18",
-        "-preset", "medium", str(silent),
-    ])
+    run(
+        [
+            "ffmpeg",
+            "-y",
+            "-f",
+            "concat",
+            "-safe",
+            "0",
+            "-i",
+            str(listing),
+            "-vf",
+            f"fps={FPS},format=yuv420p",
+            "-c:v",
+            "libx264",
+            "-crf",
+            "18",
+            "-preset",
+            "medium",
+            str(silent),
+        ]
+    )
 
     print("ses hazirlaniyor")
     audio = build_audio(narration, args.audio, work)
 
     print("ses ve goruntu birlestiriliyor")
-    run([
-        "ffmpeg", "-y", "-i", str(silent), "-i", str(audio),
-        "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", str(args.out),
-    ])
+    run(
+        [
+            "ffmpeg",
+            "-y",
+            "-i",
+            str(silent),
+            "-i",
+            str(audio),
+            "-c:v",
+            "copy",
+            "-c:a",
+            "aac",
+            "-b:a",
+            "192k",
+            "-shortest",
+            str(args.out),
+        ]
+    )
 
     srt = args.out.with_suffix(".en.srt")
     write_srt(rendered, srt)

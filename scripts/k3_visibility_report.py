@@ -53,10 +53,14 @@ def load_site_coordinate(site_id: str) -> tuple[float | None, float | None]:
     """
     path = ROOT / "outputs" / "k2" / f"{site_id}_summary.json"
     if not path.exists():
+        path = ROOT / "outputs" / "k2" / f"{site_id}_summary_20000m.json"
+    if not path.exists():
         return None, None
     data = json.loads(path.read_text(encoding="utf-8-sig"))
-    coordinate = data.get("coordinate", {})
-    return coordinate.get("lon_deg_east"), coordinate.get("lat_deg")
+    coordinate = data.get("coordinate") or {}
+    lon = coordinate.get("lon_deg_east", data.get("lon_deg_east"))
+    lat = coordinate.get("lat_deg", data.get("lat_deg"))
+    return lon, lat
 
 
 def main() -> int:
@@ -133,7 +137,7 @@ def main() -> int:
             "latitude_deg": lat_deg,
             "longitude_deg_east": lon_deg_east,
         },
-        "profile": str(profile_path.relative_to(ROOT)),
+        "profile": profile_path.relative_to(ROOT).as_posix(),
         "profile_summary": profile.summary(),
         "config": config.as_dict(),
         "series": {

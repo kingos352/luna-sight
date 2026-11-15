@@ -1,0 +1,35 @@
+{
+  "site_id": "Site06",
+  "x_m": -114225.9,
+  "y_m": -56454.0,
+  "lon_deg_east": -116.3,
+  "lat_deg": -85.800001,
+  "quality_flag": "partial",
+  "azimuth_count": 360,
+  "horizon_min_deg": -8.87775,
+  "horizon_max_deg": 4.264855,
+  "horizon_mean_deg": -0.122009,
+  "mean_gap_fraction": 0.0,
+  "mean_native_coverage": 1.0,
+  "parameters": {
+    "azimuth_step_deg": 1.0,
+    "radial_step_m": 240.0,
+    "max_radius_m": 20000.0,
+    "observer_height_m": 2.0,
+    "gap_tolerance": 0.05,
+    "coverage_tolerance": 0.05
+  },
+  "notes": [
+    "İstenen yarıçap DEM kapsamını aşıyor; tüm azimutlarda güvenilir yarıçap 19920 m."
+  ],
+  "site_name": "de Gerlache-Kocher massif",
+  "coordinate": {
+    "lon_deg_east": -116.3,
+    "lat_deg": -85.800001
+  },
+  "dem": {
+    "source_id": "pgda-lola-240mpp",
+    "datum": "MOON_ME (JPL DE421)",
+    "pixel_size_m": 240.0
+  }
+}
