@@ -22,6 +22,14 @@ Bölgesel DEM karosu yalnızca `Site01` ve `Site04` için mevcut
 (`data/cache/lola/<site>_final_adj_5mpp_surf.tif`). Kalan bölgeler
 konum bağlamıdır: haritada yer gösterirler, ölçüm sağlamazlar.
 
+Konum tutarlılığı: `x_m`/`y_m`, kutup stereografik izdüşümünde
+`latitude_deg`/`longitude_deg_east` değerinden türetilir
+(`luna_sight.terrain.polar.lonlat_to_xy`). Katalog ilk hâlinde 14
+bölgenin 11'inde bu ikisi birbiriyle çelişiyordu; sapma `CABEUS_RIDGE`
+için 202 km'ye çıkıyordu. Enlem/boylam atıf verilebilir nicelik olduğu
+için türetilmiş `x_m`/`y_m` yeniden hesaplandı. `tests/test_terrain_sites.py`
+bu tutarlılığı tüm bölgeler için ±50 m toleransla denetler.
+
 Kimlik uyarısı: bu liste NASA'nın Artemis III resmi aday bölge listesi
 **değildir**. Gerçek yer adları (Shackleton, Sverdrup, Haworth, Cabeus…)
 literatürden alınmıştır; o adların bu depoda doğrulanmış bir ölçümü
@@ -127,8 +135,8 @@ CANDIDATE_SITES: dict[str, CandidateSite] = {
         site_name="Malapert Massif",
         latitude_deg=-86.04,
         longitude_deg_east=2.7,
-        x_m=3690.0,
-        y_m=-10750.0,
+        x_m=5658.8,
+        y_m=119994.9,
         operational_role="Artemis III Birincil İnsanlı İniş & Kalıcı Artemis Base Camp Ana Konumu",
         description=(
             "Ay güney kutbunun simgesi olan devasa dağ kütlesi. Zirve platosu sürekli güneş "
@@ -140,8 +148,8 @@ CANDIDATE_SITES: dict[str, CandidateSite] = {
         site_name="Connecting Ridge Extension",
         latitude_deg=-89.47,
         longitude_deg_east=-136.2,
-        x_m=-8750.0,
-        y_m=-9700.0,
+        x_m=-11123.8,
+        y_m=-11599.8,
         operational_role=(
             "Artemis III Mürettebatlı İniş & Geceleme Öncesi Solar İstasyon Konuşlandırma"
         ),
@@ -155,8 +163,8 @@ CANDIDATE_SITES: dict[str, CandidateSite] = {
         site_name="Leibnitz Beta Plateau",
         latitude_deg=-85.82,
         longitude_deg_east=29.5,
-        x_m=18200.0,
-        y_m=-9800.0,
+        x_m=62443.2,
+        y_m=110367.9,
         operational_role="Alternatif Artemis III İniş Platosu & Genişletilmiş Yüzey Keşif Üssü",
         description=(
             "Geniş ve son derece düşük eğimli plato alanı. Yüksek iniş güvenliği ve geniş "
@@ -168,8 +176,8 @@ CANDIDATE_SITES: dict[str, CandidateSite] = {
         site_name="de Gerlache Rim 1",
         latitude_deg=-88.71,
         longitude_deg_east=-68.7,
-        x_m=-14500.0,
-        y_m=-6200.0,
+        x_m=-36446.6,
+        y_m=14209.9,
         operational_role="Bilimsel Keşif ve Kalıcı Gölge Bölgesi (PSR) Örnekleme Noktası",
         description=(
             "de Gerlache kraterinin doğu sırt hattı. Krater içine doğrudan robotik kol veya "
@@ -181,8 +189,8 @@ CANDIDATE_SITES: dict[str, CandidateSite] = {
         site_name="de Gerlache Rim 2",
         latitude_deg=-88.35,
         longitude_deg_east=-67.8,
-        x_m=-15200.0,
-        y_m=-7800.0,
+        x_m=-46327.8,
+        y_m=18906.0,
         operational_role="Yedek İniş Bölgesi & Çift Görevli İletişim İstasyonu",
         description="de Gerlache kraterinin kuzeydoğu kenar platosu.",
     ),
@@ -191,8 +199,8 @@ CANDIDATE_SITES: dict[str, CandidateSite] = {
         site_name="Amundsen Rim",
         latitude_deg=-84.45,
         longitude_deg_east=85.6,
-        x_m=42500.0,
-        y_m=-18200.0,
+        x_m=167929.9,
+        y_m=12921.5,
         operational_role="Derin Krater Kenar Keşfi & Magmatik Malzeme İncelemesi",
         description=(
             "Devasa Amundsen kraterinin güneybatı sırtı. Teraslı duvar yapısı ve merkezi dağ "
@@ -204,8 +212,8 @@ CANDIDATE_SITES: dict[str, CandidateSite] = {
         site_name="Nobile Rim 2",
         latitude_deg=-85.28,
         longitude_deg_east=36.15,
-        x_m=28100.0,
-        y_m=-14500.0,
+        x_m=84478.1,
+        y_m=115636.3,
         operational_role="Uçucu Madde Haritalama & Robotik-İnsanlı İş Birliği Üssü",
         description=(
             "Nobile kraterinin batı kenar platosu. VIPER keşif rotasıyla doğrudan entegrasyon "
@@ -217,8 +225,8 @@ CANDIDATE_SITES: dict[str, CandidateSite] = {
         site_name="de Gerlache-Kocher Massif",
         latitude_deg=-85.78,
         longitude_deg_east=-123.35,
-        x_m=-24100.0,
-        y_m=-16800.0,
+        x_m=-106940.7,
+        y_m=-70380.6,
         operational_role="Yüksek İrtifa Radyo Röle İstasyonu & Uzun Dönemli Gözlem Noktası",
         description="de Gerlache ile Kocher arasındaki yüksek dağlık masif.",
     ),
@@ -227,8 +235,8 @@ CANDIDATE_SITES: dict[str, CandidateSite] = {
         site_name="Haworth",
         latitude_deg=-87.87,
         longitude_deg_east=-5.1,
-        x_m=-1800.0,
-        y_m=-19200.0,
+        x_m=-5742.2,
+        y_m=64340.4,
         operational_role="Aşırı Düşük Sıcaklık Bilimsel İstasyonu (Kriyojenik Tuzaklar)",
         description=(
             "Haworth krateri kuzey kenarı. Güneş sisteminin en soğuk noktalarına sınır teşkil "
@@ -240,8 +248,8 @@ CANDIDATE_SITES: dict[str, CandidateSite] = {
         site_name="Faustini Rim",
         latitude_deg=-86.4925,
         longitude_deg_east=80.7183,
-        x_m=34200.0,
-        y_m=-15100.0,
+        x_m=104999.4,
+        y_m=17159.9,
         operational_role="Su Buzu Teyit Üssü & Kalıcı İletişim İstasyonu",
         description=(
             "Faustini kraterinin yüksek kuzey sırtı; düşük yamaç eğimi ve stabil radyo "
@@ -253,8 +261,8 @@ CANDIDATE_SITES: dict[str, CandidateSite] = {
         site_name="Cabeus Ridge",
         latitude_deg=-83.7961,
         longitude_deg_east=-41.0726,
-        x_m=-21000.0,
-        y_m=-32000.0,
+        x_m=-123720.5,
+        y_m=141960.5,
         operational_role="LCROSS İmpakt Doğrulama Sahası & Volatil Madde Keşfi",
         description=(
             "Cabeus kraterini kuşatan yüksek sırt; Dünya ile sürekli doğrudan görüş hattına "
