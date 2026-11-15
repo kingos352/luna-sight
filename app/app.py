@@ -31,6 +31,7 @@ import json
 import math
 import os
 import sys
+import textwrap
 import zlib
 from dataclasses import dataclass, fields, replace
 from pathlib import Path
@@ -1401,8 +1402,9 @@ def inject_theme() -> None:
         }
         /* Teknik/panel karakteri için Fira ailesi; yüklenemezse sistem yazı
            tipine düşer, metin görünmez kalmaz. */
-        html, body, [class*="css"] {
+        html, body, [class*="css"], [data-testid="stAppViewContainer"] {
             font-family: "Fira Sans", "Segoe UI", system-ui, sans-serif;
+            -webkit-font-smoothing: antialiased;
         }
         code, pre, [data-testid="stMetricValue"] {
             font-family: "Fira Code", "Cascadia Mono", ui-monospace, monospace;
@@ -2018,9 +2020,9 @@ def render_verdict_band(
         )
 
     blocked = " is-blocked" if other.joint_hours <= 0 else ""
-    st.markdown(
+    verdict_html = textwrap.dedent(
         f"""
-        <div class="ls-verdict">
+        <div class="ls-verdict notranslate" translate="no">
           <div>
             <span class="ls-verdict-kicker">Karşılaştırma sonucu</span>
             <p class="ls-verdict-text">{headline}</p>
@@ -2036,9 +2038,9 @@ def render_verdict_band(
             </div>
           </div>
         </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        """
+    ).strip()
+    st.markdown(verdict_html, unsafe_allow_html=True)
 
 
 def render_globe_tab() -> None:
@@ -2139,10 +2141,6 @@ def main() -> None:
     actual_source = probe.attrs.get("data_source", source_mode)
 
     render_header(actual_source, engine_active, fallback_reason)
-    # Karar bandı en üstte dursun diye yer tutucu açılır; içeriği
-    # metrikler hesaplandıktan sonra doldurulur. Jüri ilk saniyede
-    # sonucu görmeli, metrik kartlarını aşağı kaydırmak zorunda kalmamalı.
-    verdict_slot = st.container()
 
     if fallback_reason:
         st.warning(
@@ -2172,7 +2170,7 @@ def main() -> None:
         )
 
     # --- Adım 1: A/B aday bölge seçimi -----------------------------------
-    st.markdown("<div class='ls-step'>1 · Aday bölge seçimi</div>", unsafe_allow_html=True)
+    st.markdown("<div class='ls-step notranslate'>1 · Aday bölge seçimi</div>", unsafe_allow_html=True)
     column_a, column_b = st.columns(2, gap="large")
 
     options = list(catalog)
@@ -2198,10 +2196,10 @@ def main() -> None:
     metrics_a = compute_metrics(frame_a, step_minutes)
     metrics_b = compute_metrics(frame_b, step_minutes)
 
-    with verdict_slot:
-        render_verdict_band(
-            catalog[selected_a], metrics_a, catalog[selected_b], metrics_b
-        )
+    # Karşılaştırma karar bandı doğrudan doğal sırada render edilir (React DOM hatasını önler)
+    render_verdict_band(
+        catalog[selected_a], metrics_a, catalog[selected_b], metrics_b
+    )
 
     if actual_source == SOURCE_REAL and frame_a.attrs.get("window_truncated"):
         st.warning(
@@ -2243,7 +2241,7 @@ def main() -> None:
 
     # --- Adım 3: görselleştirmeler ----------------------------------------
     st.markdown(
-        "<div class='ls-step'>3 · Karşılaştırma ve ufuk grafikleri</div>",
+        "<div class='ls-step notranslate'>3 · Karşılaştırma ve ufuk grafikleri</div>",
         unsafe_allow_html=True,
     )
     globe_tab, horizon_tab, timeline_tab, map_tab, data_tab = st.tabs(
