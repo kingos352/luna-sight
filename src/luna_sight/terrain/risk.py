@@ -11,6 +11,7 @@ Gerçek DEM (GeoTIFF) mevcutsa ondan hesaplar; yoksa temsili model
 
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -24,8 +25,11 @@ from luna_sight.terrain.surface_3d import IAU_CRATERS
 # ─── Sabitler ───
 
 RISK_SOURCE_REAL = "real_dem"
+RISK_SOURCE_PRECOMPUTED = "precomputed_lola_dem"
 RISK_SOURCE_REPRESENTATIVE = "representative_model"
 RISK_SOURCE_MISSING = "missing"
+
+PRECOMPUTED_SLOPE_DIR = Path(__file__).resolve().parents[3] / "outputs" / "k2"
 
 DEFAULT_ANALYSIS_RADIUS_M = 5000.0  # 5 km analiz yarıçapı
 DEFAULT_SLOPE_WINDOW_M = 100.0  # Eğim penceresi (100 m)
@@ -98,7 +102,7 @@ class SiteRiskMetrics:
     slope: SlopeStats
     crater: CraterMetrics
 
-    dem_source: str  # "real_dem" | "representative_model" | "missing"
+    dem_source: str  # "real_dem" | "precomputed_lola_dem" | "representative_model" | "missing"
     dem_metadata: dict[str, object] | None
     dem_available: bool
 
@@ -311,14 +315,73 @@ def compute_crater_metrics(
     )
 
 
+def load_precomputed_slope_summary(
+    site_id: str,
+    precomputed_dir: Path | str | None = None,
+) -> dict[str, object] | None:
+    """Önceden hesaplanmış LOLA DEM eğim özet JSON dosyasını yükler."""
+    base_dir = Path(precomputed_dir) if precomputed_dir is not None else PRECOMPUTED_SLOPE_DIR
+    if precomputed_dir is None and not base_dir.exists():
+        cwd_dir = Path("outputs/k2")
+        if cwd_dir.exists():
+            base_dir = cwd_dir
+
+    summary_path = base_dir / f"{site_id}_slope_summary.json"
+    if not summary_path.is_file():
+        return None
+
+    try:
+        payload = json.loads(summary_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+
+    if not isinstance(payload, dict) or not isinstance(payload.get("slope"), dict):
+        return None
+    return payload
+
+
+def _slope_stats_from_dict(slope_dict: dict[str, object]) -> SlopeStats | None:
+    """JSON sözlüğünden SlopeStats oluşturur; eksik veya hatalıysa None döner."""
+    required_keys = (
+        "mean_deg",
+        "max_deg",
+        "median_deg",
+        "std_deg",
+        "p95_deg",
+        "fraction_above_5deg",
+        "fraction_above_10deg",
+        "fraction_above_15deg",
+        "fraction_above_20deg",
+        "valid_fraction",
+    )
+    if any(k not in slope_dict for k in required_keys):
+        return None
+    try:
+        return SlopeStats(
+            mean_deg=float(slope_dict["mean_deg"]),
+            max_deg=float(slope_dict["max_deg"]),
+            median_deg=float(slope_dict["median_deg"]),
+            std_deg=float(slope_dict["std_deg"]),
+            p95_deg=float(slope_dict["p95_deg"]),
+            fraction_above_5deg=float(slope_dict["fraction_above_5deg"]),
+            fraction_above_10deg=float(slope_dict["fraction_above_10deg"]),
+            fraction_above_15deg=float(slope_dict["fraction_above_15deg"]),
+            fraction_above_20deg=float(slope_dict["fraction_above_20deg"]),
+            valid_fraction=float(slope_dict["valid_fraction"]),
+        )
+    except (TypeError, ValueError):
+        return None
+
+
 def analyze_site_risk(
     site: CandidateSite,
     analysis_radius_m: float = DEFAULT_ANALYSIS_RADIUS_M,
+    use_precomputed: bool = True,
 ) -> SiteRiskMetrics:
     """Tek bir site için tam arazi riski analizi."""
     dem = _load_site_dem(site)
 
-    dem_metadata = None
+    dem_metadata: dict[str, object] | None = None
     dem_available = False
     if dem is not None:
         dem_available = True
@@ -327,19 +390,36 @@ def analyze_site_risk(
             dem_metadata = dem.metadata.as_dict()
         slope_stats = compute_slope_stats(dem, site.x_m, site.y_m, analysis_radius_m)
     else:
-        dem_source = RISK_SOURCE_REPRESENTATIVE
-        slope_stats = SlopeStats(
-            mean_deg=np.nan,
-            max_deg=np.nan,
-            median_deg=np.nan,
-            std_deg=np.nan,
-            p95_deg=np.nan,
-            fraction_above_5deg=np.nan,
-            fraction_above_10deg=np.nan,
-            fraction_above_15deg=np.nan,
-            fraction_above_20deg=np.nan,
-            valid_fraction=0.0,
+        payload = load_precomputed_slope_summary(site.site_id) if use_precomputed else None
+        precomputed_slope = (
+            _slope_stats_from_dict(payload["slope"])
+            if payload is not None and isinstance(payload.get("slope"), dict)
+            else None
         )
+        if payload is not None and precomputed_slope is not None:
+            dem_available = True
+            dem_source = str(payload.get("dem_source", RISK_SOURCE_PRECOMPUTED))
+            dem_metadata = {
+                "dem_file": payload.get("dem_file"),
+                "dem_resolution_m": payload.get("dem_resolution_m"),
+                "source_id": payload.get("source_id"),
+                "notes": payload.get("notes"),
+            }
+            slope_stats = precomputed_slope
+        else:
+            dem_source = RISK_SOURCE_REPRESENTATIVE
+            slope_stats = SlopeStats(
+                mean_deg=np.nan,
+                max_deg=np.nan,
+                median_deg=np.nan,
+                std_deg=np.nan,
+                p95_deg=np.nan,
+                fraction_above_5deg=np.nan,
+                fraction_above_10deg=np.nan,
+                fraction_above_15deg=np.nan,
+                fraction_above_20deg=np.nan,
+                valid_fraction=0.0,
+            )
 
     # Krater metrikleri (IAU kataloğu her zaman kullanılabilir)
     crater_metrics = compute_crater_metrics(
@@ -362,10 +442,11 @@ def analyze_site_risk(
 
 def analyze_all_sites_risk(
     analysis_radius_m: float = DEFAULT_ANALYSIS_RADIUS_M,
+    use_precomputed: bool = True,
 ) -> dict[str, SiteRiskMetrics]:
     """Tüm aday siteler için arazi riski analizi."""
     return {
-        site_id: analyze_site_risk(site, analysis_radius_m)
+        site_id: analyze_site_risk(site, analysis_radius_m, use_precomputed=use_precomputed)
         for site_id, site in CANDIDATE_SITES.items()
     }
 
@@ -516,7 +597,9 @@ def format_side_by_side_comparison(
 
 __all__ = [
     "DEFAULT_ANALYSIS_RADIUS_M",
+    "PRECOMPUTED_SLOPE_DIR",
     "RISK_SOURCE_MISSING",
+    "RISK_SOURCE_PRECOMPUTED",
     "RISK_SOURCE_REAL",
     "RISK_SOURCE_REPRESENTATIVE",
     "CraterMetrics",
@@ -527,4 +610,5 @@ __all__ = [
     "compute_crater_metrics",
     "compute_slope_stats",
     "format_side_by_side_comparison",
+    "load_precomputed_slope_summary",
 ]

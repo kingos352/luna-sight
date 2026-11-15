@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
+import pandas as pd
 import plotly.graph_objects as go
 import pytest
 
@@ -17,12 +18,29 @@ if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
 from luna_sight.terrain.dem import DemGrid  # noqa: E402
+from luna_sight.terrain.hazard import (  # noqa: E402
+    LUNAR_RADIUS_M,
+    apply_curvature_correction,
+    calculate_curvature_drop,
+    calculate_horizon_distance,
+    compute_aspect_map,
+    compute_boulder_hazard_map,
+    compute_boulder_hazard_probability,
+    compute_solar_incidence_cosine,
+    compute_surface_normals,
+    evaluate_landing_footprint,
+)
+from luna_sight.terrain.horizon import merge_hybrid_profiles  # noqa: E402
+from luna_sight.terrain.pathfinder import PSR_TARGETS, find_safe_corridor  # noqa: E402
 from luna_sight.terrain.risk import (  # noqa: E402
+    RISK_SOURCE_PRECOMPUTED,
+    RISK_SOURCE_REPRESENTATIVE,
     analyze_all_sites_risk,
     analyze_site_risk,
     compute_crater_metrics,
     compute_slope_stats,
     format_side_by_side_comparison,
+    load_precomputed_slope_summary,
 )
 from luna_sight.terrain.sites import CANDIDATE_SITES  # noqa: E402
 from luna_sight.terrain.surface_3d import (  # noqa: E402
@@ -307,3 +325,179 @@ def test_side_by_side_comparison_fallbacks():
     assert "Site01" in missing_a
     assert "Site02" in missing_a
     assert "nan%" not in missing_a
+
+
+def test_precomputed_slope_summaries_and_tier2_fallback(tmp_path: Path):
+    """Önceden hesaplanmış LOLA DEM eğim özetleri ve 3 katmanlı geri dönüş doğrulanmalıdır."""
+    for site_id in CANDIDATE_SITES:
+        payload = load_precomputed_slope_summary(site_id)
+        assert payload is not None
+        assert payload["site_id"] == site_id
+        assert -180.0 <= float(payload["longitude_deg_east"]) <= 180.0
+        assert "slope" in payload
+        assert "boulder_hazard" in payload
+        if site_id == "Site13":
+            assert payload["source_id"] == "synthetic-analytic"
+            assert payload["dem_source"] == RISK_SOURCE_REPRESENTATIVE
+        else:
+            assert payload["source_id"] == "pgda-lola-5mpp"
+            assert payload["dem_source"] == RISK_SOURCE_PRECOMPUTED
+
+    assert load_precomputed_slope_summary("Site01", precomputed_dir=tmp_path) is None
+
+    site01_pre = analyze_site_risk(CANDIDATE_SITES["Site01"], use_precomputed=True)
+    assert site01_pre.dem_available is True
+    assert site01_pre.dem_source == RISK_SOURCE_PRECOMPUTED
+    assert math.isfinite(site01_pre.slope.mean_deg)
+    assert site01_pre.dem_metadata is not None
+
+    all_pre = analyze_all_sites_risk(use_precomputed=True)
+    cmp_pre = format_side_by_side_comparison(all_pre, "Site01", "Site07")
+    assert "DEM bekleniyor" not in cmp_pre
+
+    site01_no_pre = analyze_site_risk(CANDIDATE_SITES["Site01"], use_precomputed=False)
+    assert site01_no_pre.dem_available is False
+    assert site01_no_pre.dem_source == RISK_SOURCE_REPRESENTATIVE
+    assert math.isnan(site01_no_pre.slope.mean_deg)
+
+
+def test_merge_hybrid_profiles():
+    """Hibrit ufuk birleştirici azimut hizalaması, max engel seçimi ve meta veriyi korumalıdır."""
+    near = pd.DataFrame(
+        {
+            "azimuth_deg": [0.0, 90.0, 180.0, 270.0],
+            "horizon_elevation_deg": [4.0, 1.0, 3.0, np.nan],
+            "horizon_distance_m": [300.0, 500.0, 400.0, np.nan],
+            "site_id": ["Site01"] * 4,
+        }
+    )
+    far = pd.DataFrame(
+        {
+            "azimuth_deg": [0.0, 180.0],
+            "horizon_elevation_deg": [2.0, 6.0],
+            "horizon_distance_m": [15000.0, 18000.0],
+            "site_id": ["Site01"] * 2,
+        }
+    )
+
+    merged = merge_hybrid_profiles(near, far)
+    assert list(merged["azimuth_deg"]) == [0.0, 90.0, 180.0, 270.0]
+    assert merged["source_range"].eq("hybrid").all()
+    assert merged["site_id"].eq("Site01").all()
+
+    # 0°: yakın (4.0° > 2.0°) seçilir -> mesafe 300 m
+    assert merged.loc[0, "horizon_elevation_deg"] == pytest.approx(4.0)
+    assert merged.loc[0, "horizon_distance_m"] == pytest.approx(300.0)
+    # 90°: uzak profil 0° (2.0°) ile 180° (6.0°) arasında 4.0° enterpole eder (> 1.0°)
+    assert merged.loc[1, "horizon_elevation_deg"] == pytest.approx(4.0)
+    # 180°: uzak (6.0° > 3.0°) seçilir -> mesafe 18000 m
+    assert merged.loc[2, "horizon_elevation_deg"] == pytest.approx(6.0)
+    assert merged.loc[2, "horizon_distance_m"] == pytest.approx(18000.0)
+    # 270°: yakın NaN iken uzak enterpole (4.0°) değeri doldurur
+    assert merged.loc[3, "horizon_elevation_deg"] == pytest.approx(4.0)
+
+    # K2 CSV şeması (horizon_deg + occluder_distance_m) uyumluluğu
+    near_csv_schema = near.rename(
+        columns={
+            "horizon_elevation_deg": "horizon_deg",
+            "horizon_distance_m": "occluder_distance_m",
+        }
+    )
+    far_csv_schema = far.rename(
+        columns={
+            "horizon_elevation_deg": "horizon_deg",
+            "horizon_distance_m": "occluder_distance_m",
+        }
+    )
+    merged_csv = merge_hybrid_profiles(near_csv_schema, far_csv_schema)
+    assert "horizon_deg" in merged_csv.columns
+    assert "occluder_distance_m" in merged_csv.columns
+    assert merged_csv.loc[2, "occluder_distance_m"] == pytest.approx(18000.0)
+
+
+def test_hazard_physics_and_landing_footprint():
+    """Eğrilik, yüzey normalleri, kayaç tehlikesi ve HLS ayak izi değerlendirmesi çalışmalıdır."""
+    drop_10km = calculate_curvature_drop(10_000.0)
+    assert drop_10km == pytest.approx((10_000.0**2) / (2.0 * LUNAR_RADIUS_M), rel=1e-6)
+    assert apply_curvature_correction(100.0, 10_000.0) == pytest.approx(100.0 - drop_10km)
+    assert calculate_horizon_distance(2.0) == pytest.approx(
+        math.sqrt(2.0 * LUNAR_RADIUS_M * 2.0 + 4.0)
+    )
+
+    # Düzlem ve doğuya yükselen yamaçta yüzey normali / yön / güneş geliş kosinüsü
+    flat = np.zeros((10, 10), dtype=float)
+    normals_flat = compute_surface_normals(flat, cell_size_m=10.0)
+    assert normals_flat.shape == (10, 10, 3)
+    assert np.allclose(normals_flat[5, 5], [0.0, 0.0, 1.0], atol=1e-6)
+    aspect_flat = compute_aspect_map(flat, cell_size_m=10.0)
+    assert np.allclose(aspect_flat, 0.0)
+
+    xs = np.arange(10, dtype=float) * 10.0
+    east_rising = np.tile(0.2 * xs, (10, 1))
+    aspect_east = compute_aspect_map(east_rising, cell_size_m=10.0)
+    assert aspect_east[5, 5] == pytest.approx(270.0, abs=0.5)  # iniş yönü batı (270°)
+    normals_east = compute_surface_normals(east_rising, cell_size_m=10.0)
+    cos_west_sun = compute_solar_incidence_cosine(normals_east, 270.0, 15.0)
+    cos_east_sun = compute_solar_incidence_cosine(normals_east, 90.0, 15.0)
+    assert cos_west_sun[5, 5] > cos_east_sun[5, 5]
+
+    # Kayaç çarpma olasılığı tekil ve matris çağrıları
+    low_risk = compute_boulder_hazard_probability(2.0, 5000.0)
+    high_risk = compute_boulder_hazard_probability(20.0, 200.0)
+    assert isinstance(low_risk, dict) and isinstance(high_risk, dict)
+    assert high_risk["collision_probability"] > low_risk["collision_probability"]
+
+    bhi_map = compute_boulder_hazard_map(np.array([[2.0, 15.0]]), np.array([[5000.0, 300.0]]))
+    assert bhi_map.shape == (1, 2)
+    assert 0.0 <= bhi_map[0, 0] < bhi_map[0, 1] <= 100.0
+
+    # İniş ayak izi değerlendirmesi
+    fp_haworth = evaluate_landing_footprint("Site07")
+    fp_shackleton = evaluate_landing_footprint("Site04")
+    fp_site01_10 = evaluate_landing_footprint("Site01", max_safe_slope_deg=10.0)
+    fp_site01_15 = evaluate_landing_footprint("Site01", max_safe_slope_deg=15.0)
+
+    assert fp_haworth["hls_10deg_compliant"] is True
+    assert fp_haworth["hls_15deg_compliant"] is True
+    assert fp_haworth["landing_safety_score"] > fp_shackleton["landing_safety_score"]
+    assert fp_shackleton["hls_10deg_compliant"] is False
+    assert fp_site01_15["footprint_safe_pct"] >= fp_site01_10["footprint_safe_pct"]
+    assert "verdict" in fp_haworth
+
+    with pytest.raises(KeyError):
+        evaluate_landing_footprint("Site99")
+    with pytest.raises(ValueError):
+        evaluate_landing_footprint("Site01", semi_major_m=-10.0)
+
+
+def test_pathfinder_psr_corridors():
+    """PSR hedefleri ve A* güvenli rota planlayıcı kanonik sözleşmeye uymalıdır."""
+    assert len(PSR_TARGETS) >= 9
+    for target in PSR_TARGETS.values():
+        assert -180.0 <= float(target["longitude_deg_east"]) <= 180.0
+        assert float(target["radius_km"]) > 0.0
+
+    corridor = find_safe_corridor("Site01", grid_size=25, max_slope_deg=15.0)
+    assert corridor["site_id"] == "Site01"
+    assert corridor["target_name"] == "Shackleton PSR"
+    assert -180.0 <= float(corridor["target_lon_deg_east"]) <= 180.0
+    assert float(corridor["total_distance_km"]) > 0.0
+    assert float(corridor["estimated_eva_hours"]) > 0.0
+    assert 0.0 <= float(corridor["solar_safe_fraction_pct"]) <= 100.0
+    assert float(corridor["mean_route_slope_deg"]) <= float(corridor["max_route_slope_deg"])
+
+    waypoints = corridor["waypoints"]
+    assert len(waypoints) >= 2
+    assert waypoints[0]["step"] == 0
+    assert waypoints[0]["cumulative_km"] == pytest.approx(0.0)
+    assert waypoints[-1]["cumulative_km"] == pytest.approx(corridor["total_distance_km"])
+    for idx, wp in enumerate(waypoints):
+        assert -180.0 <= float(wp["lon_deg_east"]) <= 180.0
+        if idx > 0:
+            assert float(wp["cumulative_km"]) >= float(waypoints[idx - 1]["cumulative_km"])
+
+    explicit = find_safe_corridor("Site08", target_psr="Haworth", grid_size=21)
+    assert explicit["target_name"] == "Haworth PSR"
+
+    with pytest.raises(KeyError):
+        find_safe_corridor("Site01", target_psr="BilinmeyenPSR")

@@ -1,0 +1,30 @@
+{
+  "site_id": "Site08",
+  "site_name": "Malapert massif",
+  "latitude_deg": -86.0,
+  "longitude_deg_east": 2.7,
+  "analysis_radius_m": 5000.0,
+  "source_id": "pgda-lola-5mpp",
+  "dem_source": "precomputed_lola_dem",
+  "dem_file": "data/cache/lola/eray_regions/MALAPERT_MASSIF.tif",
+  "dem_resolution_m": 150.0,
+  "slope": {
+    "mean_deg": 12.806,
+    "max_deg": 22.883,
+    "median_deg": 13.327,
+    "std_deg": 4.961,
+    "p95_deg": 20.401,
+    "fraction_above_5deg": 0.9209,
+    "fraction_above_10deg": 0.7061,
+    "fraction_above_15deg": 0.3821,
+    "fraction_above_20deg": 0.0627,
+    "valid_fraction": 1.0
+  },
+  "boulder_hazard": {
+    "mean_hazard_prob": 0.3279,
+    "p95_hazard_prob": 0.4718,
+    "landing_safety_score": 44.52,
+    "footprint_3sigma_safe_pct": 29.39
+  },
+  "notes": "Computed from NASA LRO LOLA Regional DEM tile MALAPERT_MASSIF.tif (150 m/px) covering (5716.0, 121208.0) m; tile center offset 1214.4 m."
+}

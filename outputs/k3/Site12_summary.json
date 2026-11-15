@@ -1,7 +1,7 @@
 {
   "site_id": "Site12",
   "coordinate": {
-    "latitude_deg": -84.499999,
+    "latitude_deg": -84.5,
     "longitude_deg_east": 85.0
   },
   "profile": "outputs/k2/Site12_horizon_20000m.csv",

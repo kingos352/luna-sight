@@ -1,7 +1,7 @@
 {
   "type": "FeatureCollection",
   "metadata": {
-    "description": "LUNA SIGHT supplementary survey candidate target patches",
+    "description": "LUNA SIGHT survey targets: Site01 candidate patches + all 12 Artemis III candidate landing sites",
     "target_body": "Moon",
     "site_id": "Site01",
     "site_name": "Connecting ridge",
@@ -245,6 +245,270 @@
         "coordinate_frame": "MOON_ME (JPL DE421)",
         "projection": "South Polar Stereographic",
         "units": "meters (projected) / degrees (geographic)",
+        "longitude_direction": "East positive (-180 to +180)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -137.489553,
+          -89.463163
+        ]
+      },
+      "properties": {
+        "name": "Site01_Connecting ridge",
+        "site_id": "Site01",
+        "site_name": "Connecting ridge",
+        "description": "Shackleton ve de Gerlache kraterleri arasındaki bağlantı sırtı.",
+        "x_m": -11000.0,
+        "y_m": -12000.0,
+        "target_body": "Moon",
+        "coordinate_frame": "MOON_ME (JPL DE421)",
+        "projection": "South Polar Stereographic",
+        "longitude_direction": "East positive (-180 to +180)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -150.0,
+          -89.3
+        ]
+      },
+      "properties": {
+        "name": "Site02_Connecting ridge extension",
+        "site_id": "Site02",
+        "site_name": "Connecting ridge extension",
+        "description": "Connecting Ridge uzantısı; elverişli aydınlanma ve PSR yakınlığı.",
+        "x_m": -10613.3,
+        "y_m": -18382.8,
+        "target_body": "Moon",
+        "coordinate_frame": "MOON_ME (JPL DE421)",
+        "projection": "South Polar Stereographic",
+        "longitude_direction": "East positive (-180 to +180)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -68.0,
+          -88.5
+        ]
+      },
+      "properties": {
+        "name": "Site03_de Gerlache rim 1",
+        "site_id": "Site03",
+        "site_name": "de Gerlache rim 1",
+        "description": "de Gerlache kraterinin kuzeybatı sırtı.",
+        "x_m": -42175.4,
+        "y_m": 17040.0,
+        "target_body": "Moon",
+        "coordinate_frame": "MOON_ME (JPL DE421)",
+        "projection": "South Polar Stereographic",
+        "longitude_direction": "East positive (-180 to +180)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -171.869898,
+          -89.766811
+        ]
+      },
+      "properties": {
+        "name": "Site04_Shackleton rim",
+        "site_id": "Site04",
+        "site_name": "Shackleton rim",
+        "description": "Shackleton kraterinin güney sırtı ve zirve noktası.",
+        "x_m": -1000.0,
+        "y_m": -7000.0,
+        "target_body": "Moon",
+        "coordinate_frame": "MOON_ME (JPL DE421)",
+        "projection": "South Polar Stereographic",
+        "longitude_direction": "East positive (-180 to +180)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -64.0,
+          -88.71
+        ]
+      },
+      "properties": {
+        "name": "Site05_de Gerlache rim 2",
+        "site_id": "Site05",
+        "site_name": "de Gerlache rim 2",
+        "description": "de Gerlache kraterinin güneydoğu sırtı.",
+        "x_m": -35159.7,
+        "y_m": 17148.5,
+        "target_body": "Moon",
+        "coordinate_frame": "MOON_ME (JPL DE421)",
+        "projection": "South Polar Stereographic",
+        "longitude_direction": "East positive (-180 to +180)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -116.3,
+          -85.8
+        ]
+      },
+      "properties": {
+        "name": "Site06_de Gerlache-Kocher massif",
+        "site_id": "Site06",
+        "site_name": "de Gerlache-Kocher massif",
+        "description": "de Gerlache ve Kocher kraterleri arasındaki masif dağ kütlesi.",
+        "x_m": -114225.9,
+        "y_m": -56454.0,
+        "target_body": "Moon",
+        "coordinate_frame": "MOON_ME (JPL DE421)",
+        "projection": "South Polar Stereographic",
+        "longitude_direction": "East positive (-180 to +180)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          -5.0,
+          -87.45
+        ]
+      },
+      "properties": {
+        "name": "Site07_Haworth",
+        "site_id": "Site07",
+        "site_name": "Haworth",
+        "description": "Haworth krateri çevresi ve kalıcı gölgeli bölge (PSR) kenarları.",
+        "x_m": -6740.4,
+        "y_m": 77043.0,
+        "target_body": "Moon",
+        "coordinate_frame": "MOON_ME (JPL DE421)",
+        "projection": "South Polar Stereographic",
+        "longitude_direction": "East positive (-180 to +180)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          2.7,
+          -86.0
+        ]
+      },
+      "properties": {
+        "name": "Site08_Malapert massif",
+        "site_id": "Site08",
+        "site_name": "Malapert massif",
+        "description": "Malapert Dağı sırtı; Dünya ile yüksek görüş hattı ve iletişim avantajı.",
+        "x_m": 5716.0,
+        "y_m": 121208.0,
+        "target_body": "Moon",
+        "coordinate_frame": "MOON_ME (JPL DE421)",
+        "projection": "South Polar Stereographic",
+        "longitude_direction": "East positive (-180 to +180)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          33.0,
+          -85.2
+        ]
+      },
+      "properties": {
+        "name": "Site09_Leibnitz beta plateau",
+        "site_id": "Site09",
+        "site_name": "Leibnitz beta plateau",
+        "description": "Leibnitz Beta yüksek platosu; geniş iniş alanı ve düz topoğrafya.",
+        "x_m": 79319.7,
+        "y_m": 122141.7,
+        "target_body": "Moon",
+        "coordinate_frame": "MOON_ME (JPL DE421)",
+        "projection": "South Polar Stereographic",
+        "longitude_direction": "East positive (-180 to +180)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          59.7,
+          -84.1
+        ]
+      },
+      "properties": {
+        "name": "Site11_Nobile rim 2",
+        "site_id": "Site11",
+        "site_name": "Nobile rim 2",
+        "description": "Nobile krateri doğu sırtı alternatifi.",
+        "x_m": 154604.8,
+        "y_m": 90343.8,
+        "target_body": "Moon",
+        "coordinate_frame": "MOON_ME (JPL DE421)",
+        "projection": "South Polar Stereographic",
+        "longitude_direction": "East positive (-180 to +180)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          85.0,
+          -84.5
+        ]
+      },
+      "properties": {
+        "name": "Site12_Amundsen rim",
+        "site_id": "Site12",
+        "site_name": "Amundsen rim",
+        "description": "Amundsen krateri yüksek sırtı; antik kabuk materyali erişimi.",
+        "x_m": 166271.5,
+        "y_m": 14546.9,
+        "target_body": "Moon",
+        "coordinate_frame": "MOON_ME (JPL DE421)",
+        "projection": "South Polar Stereographic",
+        "longitude_direction": "East positive (-180 to +180)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Point",
+        "coordinates": [
+          31.0,
+          -84.6
+        ]
+      },
+      "properties": {
+        "name": "Site13_Mons Mouton",
+        "site_id": "Site13",
+        "site_name": "Mons Mouton",
+        "description": "Mons Mouton (Faustini Rim A) düz zirveli yüksek dağ platosu.",
+        "x_m": 84398.0,
+        "y_m": 140461.8,
+        "target_body": "Moon",
+        "coordinate_frame": "MOON_ME (JPL DE421)",
+        "projection": "South Polar Stereographic",
         "longitude_direction": "East positive (-180 to +180)"
       }
     }

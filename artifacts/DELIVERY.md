@@ -12,7 +12,7 @@ bilinmeyen bir boşluk, bilinen bir boşluktan daha pahalıdır.
 | Alan | Değer |
 |---|---|
 | Dal | `fix/k1-k5-full-sync` (`main` adayı) |
-| Temel Commit | `3a37d78` + çalışma alanı K1–K5 tam senkronizasyon güncellemeleri |
+| Temel Commit | `3a37d78` + `v3.0.0` K1–K5 tam senkronizasyon, 5 kapatılan boşluk ve 5 uçuş fiziği modülü |
 | Zaman | 2026-11-15 |
 | Python | 3.12 (`.python-version`) |
 | Giriş noktası | `app/app.py` (Streamlit — 6 sekme, 12 Artemis III aday bölgesi) |
@@ -27,11 +27,11 @@ Hepsi `fix/k1-k5-full-sync` çalışma alanında güncel durumla koşturuldu.
 | Kontrol | Komut | Sonuç |
 |---|---|---|
 | Bağımlılık ağacı | `.venv\Scripts\python.exe -m pip check` | `No broken requirements found.` |
-| Biçimlendirme | `.venv\Scripts\ruff.exe format --check .` | `79 files already formatted` |
+| Biçimlendirme | `.venv\Scripts\ruff.exe format --check .` | `86 files already formatted` |
 | Kod denetimi | `.venv\Scripts\ruff.exe check .` | `All checks passed!` |
-| Testler | `.venv\Scripts\python.exe -m pytest -q --record-mode=none` | **228 passed** |
+| Testler | `.venv\Scripts\python.exe -m pytest -q --record-mode=none` | **248 passed** |
 | Kanonik sözleşme | `.venv\Scripts\python.exe scripts/check_governance.py` | `Sonuc: gecti. 0 uyari.` |
-| Uygulama duman testi | `tests/test_app_smoke.py` (`pytest` içinde) | Geçti (canlı `/_stcore/health` bu koşuda ayrıca başlatılmadı; önceki `f6b361c` sürümünde `200 ok`) |
+| Uygulama ve uçuş fiziği testleri | `tests/test_app_smoke.py`, `tests/test_flight_physics.py`, `tests/test_surface_3d.py` (`pytest` içinde) | Geçti (canlı `/_stcore/health` bu koşuda ayrıca başlatılmadı; önceki `f6b361c` sürümünde `200 ok`) |
 
 CI kapıları `main` üzerinde zorunlu (ADR-500): `structure`,
 `Kanonik sözleşme`, `ubuntu-latest / Python 3.12`, `windows-latest / Python 3.12`.
@@ -110,19 +110,19 @@ GeoTIFF ve Horizons önbellek dosyaları Git'e eklenmez (`data/cache/`,
 
 | Varlık | Yer | Durum |
 |---|---|---|
-| Çalışan uygulama | `app/app.py`, `fix/k1-k5-full-sync` | **hazır** — 6 sekme, 12 Artemis III adayı |
-| Bilimsel modüller | `src/luna_sight/{ephemeris,terrain,visibility}` | **hazır** — 3B rölyef (`surface_3d.py`) ve eğim/krater riski (`risk.py`) dahil |
-| Görünürlük çıktıları | `outputs/k3/SiteXX_{visibility.csv,windows.json,summary.json}` | **hazır** (12 bölge × 3 = 36 dosya + `sensitivity.csv`; `Site02..13` dosyaları çalışma alanında henüz Git'e izlenmemiş/CRLF) |
-| Ufuk profilleri | `outputs/k2/` | **hazır** — 12 bölge, 33 dosya (`regional_20000m_comparison.json` ve `dem` meta verili `*_summary_20000m.json` dahil) |
-| Duyarlılık taraması | `outputs/k3/sensitivity.csv` (54 satır) | **hazır** |
+| Çalışan uygulama | `app/app.py`, `fix/k1-k5-full-sync` | **hazır** — 6 sekme, 12 Artemis III adayı, Moon Trek `?siteA=...&siteB=...` URL senkronu, Gateway NRHO / Penumbra / ITU-R P.526 / A* / `3σ` BHI |
+| Bilimsel modüller | `src/luna_sight/{ephemeris,terrain,visibility}` | **hazır** — 3B rölyef (`surface_3d.py`), 3 kademeli eğim riski (`risk.py`), `horizon.py` (`merge_hybrid_profiles`), `hazard.py`, `pathfinder.py`, `gateway.py`, `penumbra.py`, `comms.py` |
+| Görünürlük çıktıları | `outputs/k3/SiteXX_{visibility.csv,windows.json,summary.json}` | **hazır** (12 bölge × 3 = 36 dosya + `sensitivity.csv`; 12 bölgenin tamamı `CANDIDATE_SITES` ile `0.0°` hizalı ve Git'e hazır) |
+| Ufuk ve eğim profilleri | `outputs/k2/` | **hazır** — 12 bölge, 45 dosya (`regional_20000m_comparison.json`, `*_summary_20000m.json` ve 12 adet çevrimdışı `Site*_slope_summary.json` dahil) |
+| Duyarlılık taraması | `outputs/k3/sensitivity.csv` (144 satır = 16 profil × 3 marj × 3 gövde) | **hazır** (`scripts/k3_sensitivity.py --series-dir`, gerçek `jpl-horizons` `DE441`) |
 | Ürün kayıtları | `docs/K1_EPHEMERIS.md`, `K2_HORIZON.md`, `K3_VISIBILITY.md`, `REAL_RUN.md` | **hazır** (`K1_EPHEMERIS.md` 12 bölge özetiyle güncellendi) |
-| Master proje raporu | `docs/MASTER_PROJECT_REPORT_TR.md`, `docs/LUNA_SIGHT_MASTER_PROJE_RAPORU.pdf` | **hazır** |
+| Master proje raporu | `docs/MASTER_PROJECT_REPORT_TR.md`, `docs/LUNA_SIGHT_MASTER_PROJE_RAPORU.pdf` | **hazır** — Sürüm `3.0.0` (`200568` bayt) |
 | Entegrasyon sözleşmesi | `docs/GOVERNANCE.md`, `governance/registry.json` | **hazır** |
-| Demo senaryosu | `docs/DEMO_SCRIPT.md` | **hazır**, 12 bölge + `.en.srt` + `228 passed` ile güncellendi |
-| Demo videosu | `build/luna_sight_demo_120s_v2.mp4` | **yerelde mevcut değil / yeniden üretim bekliyor** — önceki üretim (`f6b361c+video`: 121.81 sn, 1920×1080, 30 fps, H.264+AAC) `build/` altında gitignored olduğu için bu çalışma alanında yok; `k5_record_demo.py` düzeltmesi sonrası yeniden üretilip Drive'a yüklenmeli |
+| Demo senaryosu | `docs/DEMO_SCRIPT.md` | **hazır**, 12 bölge + `.en.srt` + `228 passed` sürümünden güncellendi |
+| Demo videosu | `build/luna_sight_demo_120s_v2.mp4` | **yerelde mevcut değil / Drive veya yerel derleme** — >20 MB CI sınırı nedeniyle Git dışındadır (`build/` `.gitignore` altındadır); `k5_record_demo.py` ile yeniden üretilebilir |
 | Altyazı dosyası | `artifacts/luna_sight_demo_120s_v2.en.srt` | **hazır** — 17 girdi, LF satır sonlu SHA-256 manifestte güncellendi |
 | Anlatım kaynağı | `docs/demo_narration_en.json` | **hazır** — ses, gömülü altyazı ve `.srt` tek kaynaktan |
-| Sunum destesi | `luna_sight_sunum.pdf` (Drive) | **EKSİK** (yerelde ve Drive'da yok) |
+| Sunum destesi | `artifacts/luna_sight_sunum.pdf` (`scripts/generate_presentation_pdf.py`) | **hazır** — 12 slayt (`297mm × 167mm` 16:9 yatay), `158062` bayt, Türkçe vektörel PDF |
 
 ### Demo videosu nasıl üretildi
 
@@ -154,13 +154,14 @@ Dosya adı, Drive bağlantısı, sürüm, sahip ve doğrulama durumu
 
 Teslimle birlikte açıkça beyan edilir.
 
-1. **Demo videosu yerelde mevcut değil ve Drive'a yüklenmedi.** `build/`
-   klasörü Git tarafından izlenmediği için önceki `.mp4` çıktısı (`f6b361c+video`)
-   bu çalışma alanında bulunmuyor; `k5_record_demo.py` düzeltmesi sonrasında
-   videonun yeniden üretilip Drive'a yüklenmesi gerekiyor (önceki SHA-256 kaydı
-   manifestte referans olarak korunur). Sunum destesi (`luna_sight_sunum.pdf`)
-   hâlâ eksik. Videonun anlatımı sentezlenmiş İngilizce sestir; insan seslendirmesi
-   istenirse aynı `.srt` zamanlamasıyla değiştirilebilir.
+1. **Demo videosu >20 MB CI sınırı nedeniyle Git dışındadır.** `build/`
+   klasörü Git tarafından izlenmediği için `.mp4` çıktısı çalışma alanında
+   depo dışındadır ve gerektiğinde `k5_record_demo.py` ile yeniden üretilebilir
+   (önceki SHA-256 kaydı manifestte referans olarak korunur). Sunum destesi
+   (`artifacts/luna_sight_sunum.pdf`) ise **v3.0.0 sürümünde üretilmiş ve
+   reponun `artifacts/` dizinine eklenmiştir**. Videonun anlatımı sentezlenmiş
+   İngilizce sestir; insan seslendirmesi istenirse aynı `.srt` zamanlamasıyla
+   değiştirilebilir.
 2. **Gözlemci noktası DEM karo merkezidir**, optimize edilmiş iniş elipsi değil.
 3. **5 m/piksel yüzeyde gerçek LOLA dönüş oranı %8–11**; gerisi
    enterpolasyonlu. Ufuk açısında sistematik belirsizlik yaratır.
@@ -174,20 +175,29 @@ Teslimle birlikte açıkça beyan edilir.
    Horizons'ın mutlak doğruluğunu kanıtlamaz; o SPICE çekirdeğiyle yapılır ve bu
    koşuda yapılmadı (ADR-100).
 6. **Tek hafta penceresi** incelendi; yıllık mevsimsel değişim kapsam dışı.
-7. **Batarya eğrisi gösterim amaçlıdır**, güç bütçesi değildir. Oranlar bir araç
-   tasarımından türetilmemiştir ve bu beyan arayüzde grafiğin altında görünür.
-8. **Yörünge röle bağlantısı modellenmemiştir.** "Doğrudan Dünya görüşü yok"
-   ifadesi "iletişim yok" anlamına gelmez.
-9. **Araç iniş güvenliği kararı vermez.** Ön değerlendirme sunar.
+7. **Temel zaman çizelgesi sekmesindeki `% SoC` batarya eğrisi gösterim amaçlıdır.** Oranlar bir araç
+   tasarımından türetilmemiştir ve bu beyan arayüzde grafiğin altında görünür;
+   ayrıca `0.533°` Güneş diski penumbra modeli (`penumbra.py`) açılır panelde
+   Wh kıyaslaması sunar.
+8. **Yörünge röle bağlantısı v3.0.0 ile modellenmiştir (`gateway.py`).** "Doğrudan
+   Dünya görüşü yok" (`Site04 = %0.00`) ifadesi "iletişim yok" anlamına gelmez;
+   Lunar Gateway 9:2 NRHO katmanı `Site04`'te `%97.72` röle penceresi gösterir.
+9. **Araç uçuş sertifikalı iniş emri vermez.** `hazard.py` (`3σ` iniş ayak izi
+   skoru ve BHI) ve `pathfinder.py` (`A*` PSR güvenli koridoru) ile birlikte ön
+   değerlendirme karar desteği sunar.
 
 ## 7. Açık iş
 
 | Konu | Sahip | Durum |
 |---|---|---|
-| Demo videosunun (`k5_record_demo.py` düzeltmesi sonrası) yeniden üretilmesi, Drive'a yüklenmesi ve bağlantının manifeste yazılması | K5 | **Açık** |
-| Sunum destesi (`luna_sight_sunum.pdf`) | K5 | **Açık (Eksik)** |
-| `scripts/k3_sensitivity.py` çok bölgeli `--series` kabul etmiyor | K3 | **Açık** |
-| ADR-006 (pandera ile sözleşme doğrulaması) kararı | ekip | **Açık (proposed)** |
-| `outputs/k3/Site{02,03,05..13}_*` dosyalarının CRLF→LF normalizasyonu ile Git'e eklenmesi | K3/K5 | **Açık (izlenmeyen çalışma alanı çıktıları)** |
-| `app/app.py` içinde `source_id` değerine `"+K3"` eklenmesi | K4 | **Kapatıldı** (`fix/k1-k5-full-sync` içinde kaldırıldı) |
-| `outputs/k2/*_summary_20000m.json` dosyalarında `dem` köken bölümünün eksikliği | K2 | **Kapatıldı** (`coordinate` ve `dem` 12 bölgeye eklendi) |
+| Demo videosunun (`k5_record_demo.py` düzeltmesi sonrası) yeniden üretilmesi, Drive'a yüklenmesi ve bağlantının manifeste yazılması | K5 | **Açık (isteğe bağlı dış medya — `build/` >20 MB CI dışı)** |
+| Sunum destesi (`artifacts/luna_sight_sunum.pdf`, 12 slayt) | K5 | **Kapatıldı (`v3.0.0`, `scripts/generate_presentation_pdf.py`)** |
+| `scripts/k3_sensitivity.py` çok bölgeli `--series-dir` ve 144 satırlı `sensitivity.csv` | K3 | **Kapatıldı (`v3.0.0`)** |
+| Çevrimdışı LOLA eğim özetleri (`outputs/k2/Site*_slope_summary.json` + 3 kademeli `risk.py`) | K2 | **Kapatıldı (`v3.0.0`)** |
+| Hibrit ufuk (`merge_hybrid_profiles`) + `outputs/k3/Site*_summary.json` `0.0°` koordinat hizalaması | K2/K3 | **Kapatıldı (`v3.0.0`)** |
+| Moon Trek 3B küresinin 12 bölge verisi ve `?siteA=...&siteB=...` sorgusuyla senkronizasyonu | K4 | **Kapatıldı (`v3.0.0`)** |
+| 5 ileri uçuş fiziği modülü (`gateway.py`, `penumbra.py`, `comms.py`, `pathfinder.py`, `hazard.py`) ve kokpit entegrasyonu | K2/K3/K4 | **Kapatıldı (`v3.0.0`, `tests/test_flight_physics.py`)** |
+| `outputs/k3/Site{02,03,05..13}_*` dosyalarının LF normalizasyonu ile Git'e eklenmesi | K3/K5 | **Kapatıldı (`v3.0.0`)** |
+| ADR-006 (pandera ile sözleşme doğrulaması) kararı | ekip | **Açık (`proposed`)** |
+| `app/app.py` içinde `source_id` değerine `"+K3"` eklenmesi | K4 | **Kapatıldı (`fix/k1-k5-full-sync` içinde kaldırıldı)** |
+| `outputs/k2/*_summary_20000m.json` dosyalarında `dem` köken bölümünün eksikliği | K2 | **Kapatıldı (`coordinate` ve `dem` 12 bölgeye eklendi)** |

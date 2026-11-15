@@ -1,0 +1,30 @@
+{
+  "site_id": "Site11",
+  "site_name": "Nobile rim 2",
+  "latitude_deg": -84.1,
+  "longitude_deg_east": 59.7,
+  "analysis_radius_m": 5000.0,
+  "source_id": "pgda-lola-5mpp",
+  "dem_source": "precomputed_lola_dem",
+  "dem_file": "data/cache/lola/eray_regions/NOBILE_RIM_2.tif",
+  "dem_resolution_m": 150.0,
+  "slope": {
+    "mean_deg": 11.147,
+    "max_deg": 24.965,
+    "median_deg": 10.897,
+    "std_deg": 5.479,
+    "p95_deg": 21.375,
+    "fraction_above_5deg": 0.856,
+    "fraction_above_10deg": 0.5586,
+    "fraction_above_15deg": 0.2425,
+    "fraction_above_20deg": 0.0687,
+    "valid_fraction": 1.0
+  },
+  "boulder_hazard": {
+    "mean_hazard_prob": 0.5945,
+    "p95_hazard_prob": 0.8314,
+    "landing_safety_score": 42.7,
+    "footprint_3sigma_safe_pct": 44.14
+  },
+  "notes": "CANDIDATE_SITES['Site11'] coords (154604.8, 90343.8) m are offset from NOBILE_RIM_2.tif crop; sampled 5 km radius around tile center (84478.1, 115636.3) m (150 m/px LRO LOLA Regional DEM)."
+}
