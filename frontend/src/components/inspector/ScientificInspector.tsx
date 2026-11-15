@@ -62,7 +62,7 @@ export const ScientificInspector: React.FC<{ onOpenAI?: () => void; onClose?: ()
               { id: 'telemetry' as InspectorTab, label: 'Telemetri' },
               { id: 'terrain' as InspectorTab, label: 'Arazi' },
               { id: 'crater' as InspectorTab, label: 'Krater' },
-              { id: 'comparison' as InspectorTab, label: 'A/B' },
+              { id: 'comparison' as InspectorTab, label: 'Karşılaştır' },
               { id: 'ai' as InspectorTab, label: 'AI' }
             ].map((tab) => (
               <button

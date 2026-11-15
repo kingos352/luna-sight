@@ -188,21 +188,21 @@ export const MissionToolbar: React.FC<{ onOpenAI?: () => void }> = ({ onOpenAI }
         {/* Parameters (SUHAIL) Trigger */}
         <button
           onClick={() => setIsParametersDrawerOpen(true)}
-          className="px-2.5 py-1 bg-gmat-bg text-gmat-textMuted hover:text-sky-300 hover:bg-sky-950/40 border border-gmat-border hover:border-sky-600/40 text-xs rounded font-medium flex items-center gap-1.5 transition-all"
-          title="Görev Parametreleri & SUHAIL Kısıtları (2. Adım)"
+          className="px-2.5 py-1 bg-sky-950/40 text-sky-300 hover:text-sky-200 hover:bg-sky-900/60 border border-sky-500/40 text-xs rounded font-medium flex items-center gap-1.5 transition-all shadow-xs"
+          title="Görev Parametreleri & SUHAIL Kısıtları (Fotoğraf 2)"
         >
           <Sliders className="w-3.5 h-3.5 text-sky-400" />
-          <span className="hidden xl:inline">Parametreler</span>
+          <span className="inline font-semibold">Parametreler</span>
         </button>
 
         {/* A/B Comparison Scorecard Trigger */}
         <button
           onClick={() => setIsComparisonModalOpen(true)}
-          className="px-2.5 py-1 bg-gmat-bg text-gmat-textMuted hover:text-emerald-300 hover:bg-emerald-950/40 border border-gmat-border hover:border-emerald-600/40 text-xs rounded font-medium flex items-center gap-1.5 transition-all"
-          title="Site01 vs Site04 Karşılaştırmalı Değerlendirme & Uçuş Kartları"
+          className="px-2.5 py-1 bg-emerald-950/40 text-emerald-300 hover:text-emerald-200 hover:bg-emerald-900/60 border border-emerald-500/40 text-xs rounded font-medium flex items-center gap-1.5 transition-all shadow-xs"
+          title="Site01 vs Site04 Karşılaştırmalı Değerlendirme & Görev Riski Kartları (Fotoğraf 3)"
         >
-          <Scale className="w-3.5 h-3.5 text-gmat-green" />
-          <span className="hidden xl:inline">A/B Karşılaştır</span>
+          <Scale className="w-3.5 h-3.5 text-emerald-400" />
+          <span className="inline font-semibold">A/B Karşılaştır</span>
         </button>
 
         {/* Measurement Tool Toggle */}
