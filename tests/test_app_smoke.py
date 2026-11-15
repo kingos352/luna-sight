@@ -96,7 +96,7 @@ def test_horizon_profile_comes_from_k2(clean_caches):
 
 @pytest.mark.skipif(not app.REAL_AVAILABLE, reason="gerçek K3 çıktısı yok")
 def test_longest_joint_window_matches_k3_summary(clean_caches):
-    frame = app.load_site_series("Site01", "2026-11-15T00:00:00+00:00", 7, 60, app.SOURCE_REAL)
+    frame = app.load_site_series("shackleton", "2026-11-15T00:00:00+00:00", 7, 60, app.SOURCE_REAL)
     metrics = app.compute_metrics(frame, 60)
 
     summary = json.loads(
@@ -129,7 +129,7 @@ def test_missing_real_file_falls_back_to_synthetic(clean_caches, monkeypatch, tm
     app.load_real_site_data.clear()
     app.load_site_series.clear()
 
-    frame = app.load_site_series("Site01", "2026-11-15T00:00:00+00:00", 1, 60, app.SOURCE_REAL)
+    frame = app.load_site_series("shackleton", "2026-11-15T00:00:00+00:00", 1, 60, app.SOURCE_REAL)
 
     assert not frame.empty
     assert frame.attrs["data_source"] == app.SOURCE_MOCK
