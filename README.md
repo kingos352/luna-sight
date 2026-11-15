@@ -58,6 +58,9 @@ $env:PYTHONPATH = "src"
 
 ## Depo haritası
 
+3B küredeki mevcut **LunarSight AI** penceresi, gerçek görsel analiz ve model bağlantısı:
+[AI yüzey analizi](docs/AI_SURFACE_ANALYSIS.md).
+
 ```text
 app/                 Kullanıcı arayüzü
 src/luna_sight/      Bilimsel ve teknik modüller

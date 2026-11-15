@@ -43,6 +43,8 @@ build/
 Thumbs.db
 .idea/
 .vscode/
+.opencode/
+node_modules/
 
 # Local work files
 work/

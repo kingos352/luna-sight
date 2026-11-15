@@ -13,3 +13,13 @@
 
 Yeni kararlar kısa tutulur. Önceki bir karar değişirse yeni satır açılır ve eski ID'ye bağlantı verilir.
 
+## AI yüzey analizi (2026-11-15)
+
+- Görsel yorum bilimsel ölçümlerden ayrıdır; K2/K3 çıktıları korunur.
+- DEM hillshade topoğrafya içindir; fotoğraf, gerçek Güneş gölgesi veya küçük kaya kanıtı değildir.
+- `.env` okuma için python-dotenv çalışma zamanı bağımlılığına taşındı;
+  görüntü hazırlama için kullanılan Pillow doğrudan bağımlılık olarak sabitlendi.
+- Kullanıcı, kapalı Cosmos Reason2 API'si yerine erişilebilir bir NVIDIA görsel
+  modelinin araştırılmasını ve denenmesini onayladı. Model seçimi yapılandırmada
+  açıktır ve analiz kaydında saklanır. Ayrıntılar: `AI_SURFACE_ANALYSIS.md`.
+

@@ -40,7 +40,6 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
-import streamlit.components.v1 as components
 
 # `src/` düzenindeki bilimsel modüller (K1/K2/K3) birleştiğinde içe aktarılabilsin.
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -1966,10 +1965,9 @@ def render_source_cards(spec_a: SiteSpec, spec_b: SiteSpec, frame_a: pd.DataFram
     )
 
 
-#: 3B küre, derlenmiş bir React/three.js uygulamasıdır ve `static/moon/`
-#: altından sunulur. Streamlit `enableStaticServing` ile bu klasörü
-#: `/app/static/` yoluna açar, yani ayrı bir sunucu süreci gerekmez.
-GLOBE_DIR = Path(__file__).resolve().parent / "static" / "moon"
+#: 3B küre, frontend/ kaynaklarından derlenir. Streamlit component protokolü
+#: LunarSight AI isteklerini aynı oturumdaki Python sunucusuna taşır.
+GLOBE_DIR = Path(__file__).resolve().parent / "components" / "lunar"
 GLOBE_URL = "/app/static/moon/index.html"
 GLOBE_HEIGHT = 760
 
@@ -2042,19 +2040,25 @@ def render_globe_tab() -> None:
     """
     if not (GLOBE_DIR / "index.html").exists():
         st.warning(
-            "3B küre varlıkları bulunamadı (`static/moon/`). Depo eksiksiz "
+            "3B küre varlıkları bulunamadı (`components/lunar/`). Depo eksiksiz "
             "klonlanmadıysa bu sekme boş kalır; diğer sekmeler etkilenmez.",
             icon="⚠️",
         )
         return
 
     st.caption(
-        "Taban harita: **NASA Moon Trek / LRO WAC** mozaiği. Kabartma ve normal "
-        "haritaları **LRO LOLA** yükseklik modelinden türetilmiştir. Küre, bu "
-        "arayüzle aynı efemeris ve aynı aday bölgeleri kullanır "
+        "Taban harita: **NASA Moon Trek / LRO WAC** doğal fotomozaik ve **QuickMap / LOLA** "
+        "renkli topoğrafya haritası. Sağ üstteki katman butonları ile Doğal WAC, QuickMap "
+        "renkli yükseklik ve 3B arazi kabartması arasında geçiş yapabilirsiniz. "
+        "Küre, bu arayüzle aynı efemeris ve aynı aday bölgeleri kullanır "
         "(JPL Horizons · DE441 · `coord@301` · AIRLESS)."
     )
-    components.iframe(GLOBE_URL, height=GLOBE_HEIGHT, scrolling=False)
+    from streamlit.components.v1 import declare_component
+
+    from luna_sight.ai.component import render_lunar_component
+
+    lunar_component = declare_component("lunar_sight", path=str(GLOBE_DIR))
+    render_lunar_component(lunar_component)
     st.caption(
         "Fare ile döndür, tekerlekle yakınlaş. Küre ayrı bir pencere gibi "
         "çalışır; kenar çubuğundaki seçimler bu görünümü değiştirmez."

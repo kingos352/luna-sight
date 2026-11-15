@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-space-950 text-slate-100 font-sans antialiased;
+  }
+}
+
+/* Özel ince koyu scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #0c1017;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #1e293b;
+  border-radius: 3px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #334155;
+}
+
+/* Three.js Drei HTML etiketlerinin modal veya menülerin önüne geçmesini engelleyen sınırlandırma */
+#luna-sight-webgl-container {
+  isolation: isolate;
+}
+#luna-sight-webgl-container > div:not(:has(canvas)) {
+  pointer-events: none !important;
+}

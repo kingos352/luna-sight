@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import importlib
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -38,6 +39,26 @@ def _run_app() -> AppTest:
     at = AppTest.from_file(str(APP_PATH), default_timeout=120)
     at.run()
     return at
+
+
+def test_globe_is_bidirectional_component_and_has_no_duplicate_ai_tab():
+    at = _run_app()
+    assert not at.exception
+    assert not any(tab.label == "AI yüzey analizi" for tab in at.tabs)
+    assert any(tab.label == "3B Ay küresi" for tab in at.tabs)
+    components = at.get("component_instance")
+    assert components
+    assert "lunar_sight" in components[0].proto.component_name
+
+
+def test_globe_build_contains_real_python_bridge():
+    html = (app.GLOBE_DIR / "index.html").read_text(encoding="utf-8")
+    scripts = re.findall(r'src="\./(assets/[^\"]+\.js)"', html)
+    assert scripts, "AI component build is missing"
+    bundle = "".join((app.GLOBE_DIR / path).read_text(encoding="utf-8") for path in scripts)
+    assert "streamlit:setComponentValue" in bundle
+    assert "streamlit:componentReady" in bundle
+    assert "Moondream" not in bundle
 
 
 @pytest.mark.skipif(not app.REAL_AVAILABLE, reason="gerçek K3 çıktısı yok")
