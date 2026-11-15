@@ -378,13 +378,51 @@ def _fmt_pct(val: float) -> str:
     return "— (DEM bekleniyor)" if np.isnan(val) else f"{val:.1%}"
 
 
-def format_side_by_side_comparison(metrics: dict[str, SiteRiskMetrics]) -> str:
-    """İki site için yan yana metrik karşılaştırma metni."""
-    if len(metrics) != 2:
-        return "Karşılaştırma için tam 2 site gerekli."
+def _select_comparison_keys(
+    metrics: dict[str, SiteRiskMetrics],
+    site_a_id: str | None,
+    site_b_id: str | None,
+) -> tuple[str, str]:
+    """Karşılaştırılacak iki site anahtarını seçer (eksikse mantıklı geri dönüş uygular)."""
+    keys = list(metrics.keys())
+    key_a = site_a_id if (site_a_id is not None and site_a_id in metrics) else None
+    key_b = site_b_id if (site_b_id is not None and site_b_id in metrics) else None
 
-    items = list(metrics.values())
-    a, b = items[0], items[1]
+    if key_a is not None and key_b is not None:
+        return key_a, key_b
+
+    if key_a is not None:
+        fallback_b = (
+            "Site04"
+            if ("Site04" in metrics and key_a != "Site04")
+            else next(k for k in keys if k != key_a)
+        )
+        return key_a, fallback_b
+
+    if key_b is not None:
+        fallback_a = (
+            "Site01"
+            if ("Site01" in metrics and key_b != "Site01")
+            else next(k for k in keys if k != key_b)
+        )
+        return fallback_a, key_b
+
+    if "Site01" in metrics and "Site04" in metrics:
+        return "Site01", "Site04"
+    return keys[0], keys[1]
+
+
+def format_side_by_side_comparison(
+    metrics: dict[str, SiteRiskMetrics],
+    site_a_id: str | None = None,
+    site_b_id: str | None = None,
+) -> str:
+    """İki site için yan yana metrik karşılaştırma metni."""
+    if len(metrics) < 2:
+        return "Karşılaştırma için en az 2 site gerekli."
+
+    key_a, key_b = _select_comparison_keys(metrics, site_a_id, site_b_id)
+    a, b = metrics[key_a], metrics[key_b]
 
     a_coord = f"{a.latitude_deg:.4f}°/{a.longitude_deg_east:+.4f}°"
     b_coord = f"{b.latitude_deg:.4f}°/{b.longitude_deg_east:+.4f}°"
@@ -469,7 +507,7 @@ def format_side_by_side_comparison(metrics: dict[str, SiteRiskMetrics]) -> str:
         "NOTLAR:",
         "- Eğim: 5 m/piksel LOLA DEM'den merkezi farklar ile (central differences)",
         "- Eğim eşikleri: 5°/10°/15°/20° sadece ham ölçüm; güvenli/güvensiz kararı verilmez",
-        "- Krater yoğunluğu: IAU onaylı kataloğu (14 krater) kullanılarak",
+        "- Krater yoğunluğu: IAU onaylı kataloğu (13 krater) kullanılarak",
         "- DEM yoksa eğim hesaplanmaz; gerçek DEM indirilene kadar krater metrikleri sunulur",
         "",
     ]

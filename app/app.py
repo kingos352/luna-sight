@@ -31,6 +31,7 @@ import json
 import math
 import os
 import sys
+import textwrap
 import zlib
 from dataclasses import dataclass, fields, replace
 from pathlib import Path
@@ -107,6 +108,9 @@ NUMERIC_COLUMNS = [
     "earth_alt_deg",
     "terrain_horizon_sun_deg",
     "terrain_horizon_earth_deg",
+    "sun_margin_deg",
+    "earth_margin_deg",
+    "joint_margin_deg",
 ]
 
 # K3 motoru bağlandığında gelen isteğe bağlı tanılama sütunları.
@@ -304,12 +308,17 @@ def _discover_real_sites() -> dict[str, SiteSpec]:
         if not site_id:
             continue
 
-        k2_summary = _read_json(OUTPUT_K2_DIR / f"{site_id}_summary.json")
+        k2_summary_path = OUTPUT_K2_DIR / f"{site_id}_summary.json"
+        if not k2_summary_path.is_file():
+            k2_summary_path = OUTPUT_K2_DIR / f"{site_id}_summary_20000m.json"
+        k2_summary = _read_json(k2_summary_path)
         name = str(k2_summary.get("site_name") or site_id)
 
         horizon_csv = OUTPUT_K2_DIR / f"{site_id}_horizon_4000m.csv"
         if not horizon_csv.is_file():
             horizon_csv = OUTPUT_K2_DIR / f"{site_id}_horizon_2000m.csv"
+        if not horizon_csv.is_file():
+            horizon_csv = OUTPUT_K2_DIR / f"{site_id}_horizon_20000m.csv"
         discovered[site_id] = SiteSpec(
             site_id=site_id,
             name=name,
@@ -486,7 +495,8 @@ def normalize_contract_frame(frame: pd.DataFrame) -> pd.DataFrame:
         normalized["timestamp_utc"], utc=True, errors="raise"
     )
     for column in NUMERIC_COLUMNS:
-        normalized[column] = pd.to_numeric(normalized[column], errors="coerce")
+        if column in normalized.columns:
+            normalized[column] = pd.to_numeric(normalized[column], errors="coerce")
 
     for column in ("sun_visible", "earth_visible", "joint_visible"):
         normalized[column] = (
@@ -689,8 +699,7 @@ def _evaluate_with_engine(frame: pd.DataFrame, site: SiteSpec) -> pd.DataFrame |
     evaluated["parameters"] = evaluated["parameters"].map(
         lambda raw: _merge_parameters(raw, engine_info)
     )
-    evaluated["source_id"] = evaluated["source_id"].astype(str) + "+K3"
-    return evaluated
+    return normalize_contract_frame(evaluated)
 
 
 class RealDataError(RuntimeError):
@@ -1405,8 +1414,9 @@ def inject_theme() -> None:
         }
         /* Teknik/panel karakteri için Fira ailesi; yüklenemezse sistem yazı
            tipine düşer, metin görünmez kalmaz. */
-        html, body, [class*="css"] {
+        html, body, [data-testid="stAppViewContainer"], [class*="css"] {
             font-family: "Fira Sans", "Segoe UI", system-ui, sans-serif;
+            -webkit-font-smoothing: antialiased;
         }
         code, pre, [data-testid="stMetricValue"] {
             font-family: "Fira Code", "Cascadia Mono", ui-monospace, monospace;
@@ -1640,7 +1650,7 @@ def _integration_badges_html() -> str:
     return "<div class='ls-badge-row'>" + "".join(items) + "</div>"
 
 
-def render_sidebar_controls() -> tuple[int, int, dt.datetime, str]:
+def render_sidebar_controls() -> tuple[int, int, dt.datetime, str, int, int]:
     """Adım 2: veri kaynağı, görev süresi, örnekleme ve başlangıç zamanı."""
     st.sidebar.markdown(
         "<div class='ls-step'>2 · Görev parametreleri</div>", unsafe_allow_html=True
@@ -1756,7 +1766,7 @@ def render_sidebar_controls() -> tuple[int, int, dt.datetime, str]:
             "K2 · LOLA DEM ufuk profili",
             OUTPUT_K2_DIR,
             k2_ready,
-            "outputs/k2/*_horizon_4000m.csv (azimuth_deg, horizon_deg)",
+            "outputs/k2/*_horizon_*.csv (azimuth_deg, horizon_deg)",
         ),
         unsafe_allow_html=True,
     )
@@ -2021,24 +2031,26 @@ def render_verdict_band(
 
     blocked = " is-blocked" if other.joint_hours <= 0 else ""
     st.markdown(
-        f"""
-        <div class="ls-verdict">
-          <div>
-            <span class="ls-verdict-kicker">Karşılaştırma sonucu</span>
-            <p class="ls-verdict-text">{headline}</p>
-          </div>
-          <div class="ls-verdict-stats">
-            <div class="ls-verdict-stat">
-              <span class="ls-verdict-label">{best_spec.site_id} ortak</span>
-              <span class="ls-verdict-value">{best.joint_hours:.1f} sa</span>
+        textwrap.dedent(
+            f"""
+            <div class="ls-verdict notranslate" translate="no">
+              <div>
+                <span class="ls-verdict-kicker">Karşılaştırma sonucu</span>
+                <p class="ls-verdict-text">{headline}</p>
+              </div>
+              <div class="ls-verdict-stats">
+                <div class="ls-verdict-stat">
+                  <span class="ls-verdict-label">{best_spec.site_id} ortak</span>
+                  <span class="ls-verdict-value">{best.joint_hours:.1f} sa</span>
+                </div>
+                <div class="ls-verdict-stat">
+                  <span class="ls-verdict-label">{other_spec.site_id} ortak</span>
+                  <span class="ls-verdict-value{blocked}">{other.joint_hours:.1f} sa</span>
+                </div>
+              </div>
             </div>
-            <div class="ls-verdict-stat">
-              <span class="ls-verdict-label">{other_spec.site_id} ortak</span>
-              <span class="ls-verdict-value{blocked}">{other.joint_hours:.1f} sa</span>
-            </div>
-          </div>
-        </div>
-        """,
+            """
+        ).strip(),
         unsafe_allow_html=True,
     )
 
@@ -2253,9 +2265,9 @@ def _fmt_slope_pct(value: float) -> str:
     return "—" if np.isnan(value) else f"{value:.1%}"
 
 
-def _render_risk_metric_card(metrics) -> None:
+def _render_risk_metric_card(metrics, accent_color: str | None = None) -> None:
     """Tek bir site için arazi riski metrik kartını çizer."""
-    color = "#38bdf8" if metrics.site_id == "Site01" else "#3ddc97"
+    color = accent_color or ("#38bdf8" if metrics.site_id == "Site01" else "#3ddc97")
     coord_text = f"{metrics.latitude_deg:.4f}° G / {metrics.longitude_deg_east:+.4f}° D"
 
     st.markdown(
@@ -2304,61 +2316,126 @@ def _render_risk_metric_card(metrics) -> None:
         st.error("❌ Gerçek DEM yok — eğim analizi yapılamıyor")
 
 
-def render_risk_tab() -> None:
+def _resolve_risk_pair(
+    risk_metrics: dict[str, object],
+    selected_a: str | None,
+    selected_b: str | None,
+) -> list[str]:
+    """Seçilen A/B bölgelerini arazi riski sözlüğünde güvenli iki anahtara eşler."""
+    keys = list(risk_metrics)
+    if not keys:
+        return []
+    key_a = selected_a if (selected_a and selected_a in risk_metrics) else None
+    key_b = selected_b if (selected_b and selected_b in risk_metrics) else None
+    if key_a is not None and key_b is not None:
+        return [key_a, key_b]
+    if key_a is not None:
+        fallback_b = next((k for k in keys if k != key_a), key_a)
+        return [key_a, fallback_b]
+    if key_b is not None:
+        fallback_a = next((k for k in keys if k != key_b), key_b)
+        return [fallback_a, key_b]
+    return keys[:2]
+
+
+def render_risk_tab(
+    selected_a: str | None = None,
+    selected_b: str | None = None,
+) -> None:
     """Arazi Riski analiz sekmesini çizer."""
     st.subheader("🌍 LunarSight — Arazi Riski Analizi")
 
     with st.spinner("Arazi riski metrikleri hesaplanıyor..."):
         risk_metrics = analyze_all_sites_risk()
 
-    comparison_text = format_side_by_side_comparison(risk_metrics)
+    comparison_text = format_side_by_side_comparison(risk_metrics, selected_a, selected_b)
     st.code(comparison_text, language=None)
 
     st.divider()
     st.markdown("### 📊 Site Bazlı Detaylar")
 
-    cols = st.columns(2)
-    for i, (_site_id, metrics) in enumerate(risk_metrics.items()):
-        with cols[i % 2]:
-            _render_risk_metric_card(metrics)
+    top_pair = _resolve_risk_pair(risk_metrics, selected_a, selected_b)
+    if top_pair:
+        cols = st.columns(len(top_pair))
+        pair_colors = ("#38bdf8", "#3ddc97")
+        for idx, site_key in enumerate(top_pair):
+            with cols[idx]:
+                _render_risk_metric_card(
+                    risk_metrics[site_key],
+                    accent_color=pair_colors[idx % len(pair_colors)],
+                )
+
+    with st.expander(
+        f"📋 Tüm Aday Bölgelerin Arazi Riski Özeti ve Veri Kaynakları ({len(risk_metrics)} Bölge)",
+        expanded=False,
+    ):
+        summary_rows = []
+        for m in risk_metrics.values():
+            summary_rows.append(
+                {
+                    "Bölge ID": m.site_id,
+                    "Bölge Adı": m.site_name,
+                    "Koordinat": f"{m.latitude_deg:.4f}° / {m.longitude_deg_east:+.4f}°",
+                    "Ort. Eğim": _fmt_slope_deg(m.slope.mean_deg),
+                    "Maks. Eğim": _fmt_slope_deg(m.slope.max_deg),
+                    "P95 Eğim": _fmt_slope_deg(m.slope.p95_deg),
+                    "Krater Yoğunluğu (/km²)": round(m.crater.density_per_km2, 3),
+                    "En Yakın Krater": (
+                        f"{m.crater.nearest_crater_name} "
+                        f"({m.crater.nearest_crater_distance_m / 1000:.1f} km)"
+                    ),
+                    "Alan İçi Krater": m.crater.craters_in_radius_count,
+                    "DEM Kaynağı": m.dem_source,
+                    "DEM Mevcut": "Evet" if m.dem_available else "Hayır",
+                }
+            )
+        st.dataframe(pd.DataFrame(summary_rows), hide_index=True, use_container_width=True)
+
+        dem_with_meta = [m for m in risk_metrics.values() if m.dem_metadata]
+        if dem_with_meta:
+            st.markdown("**DEM Meta Verileri**")
+            for m in dem_with_meta:
+                meta = m.dem_metadata
+                crs_val = meta.get("crs")
+                crs_short = (str(crs_val)[:100] + "...") if crs_val else None
+                st.caption(f"{m.site_id} — {m.site_name} ({m.dem_source})")
+                st.json(
+                    {
+                        "product": meta.get("product"),
+                        "pixel_size_m": meta.get("pixel_size_m"),
+                        "width": meta.get("width"),
+                        "height": meta.get("height"),
+                        "crs": crs_short,
+                    }
+                )
 
     st.divider()
     st.markdown("### 📡 Veri Kaynakları ve Kalite")
-    for _site_id, metrics in risk_metrics.items():
-        with st.expander(f"{metrics.site_id} — {metrics.site_name} ({metrics.dem_source})"):
-            col1, col2 = st.columns(2)
-            with col1:
-                st.metric("DEM Kaynağı", metrics.dem_source)
-                st.metric("DEM Mevcut", "Evet" if metrics.dem_available else "Hayır")
-                if metrics.dem_metadata:
-                    meta = metrics.dem_metadata
-                    crs_val = meta.get("crs")
-                    crs_short = (str(crs_val)[:100] + "...") if crs_val else None
-                    st.json(
-                        {
-                            "product": meta.get("product"),
-                            "pixel_size_m": meta.get("pixel_size_m"),
-                            "width": meta.get("width"),
-                            "height": meta.get("height"),
-                            "crs": crs_short,
-                        }
-                    )
-            with col2:
-                if not metrics.dem_available:
-                    st.warning(
-                        "⚠️ Gerçek DEM (GeoTIFF) dosyası bulunamadı. "
-                        "`data/cache/lola/` klasörüne Site01 ve Site04 için "
-                        "`*_surf.tif`, `*_ldec.tif`, `*_toterr.tif` dosyalarını yerleştirin. "
-                        "Şu an yalnızca IAU krater kataloğu metrikleri sunulmaktadır."
-                    )
-                else:
-                    st.success("✅ Gerçek LOLA DEM yüklendi; eğim analizi aktif.")
+    dem_available_count = sum(1 for m in risk_metrics.values() if m.dem_available)
+    total_sites = len(risk_metrics)
+    if total_sites > 0 and dem_available_count == total_sites:
+        st.success(
+            f"✅ Tüm aday bölgeler ({total_sites}/{total_sites}) için gerçek LOLA DEM yüklendi; "
+            "eğim analizi aktif."
+        )
+    elif dem_available_count > 0:
+        st.info(
+            f"ℹ️ {dem_available_count}/{total_sites} aday bölge için gerçek LOLA DEM yüklendi; "
+            "diğer bölgelerde IAU krater kataloğu metrikleri sunulmaktadır."
+        )
+    else:
+        st.warning(
+            "⚠️ Gerçek DEM (GeoTIFF) dosyası bulunamadı. "
+            "`data/cache/lola/` klasörüne aday bölgeler için "
+            "`*_surf.tif`, `*_ldec.tif`, `*_toterr.tif` dosyalarını yerleştirin. "
+            "Şu an yalnızca IAU krater kataloğu metrikleri sunulmaktadır."
+        )
 
     st.divider()
     st.caption(
         "Not: Eğim hesaplaması 5 m/piksel LOLA DEM'den merkezi farklar (central differences) ile "
         "yapılır. Eğim eşikleri (5°/10°/15°/20°) ham ölçümdür; tek başına iniş güvenliği kararı "
-        "vermez. Krater yoğunluğu IAU onaylı 14 krater kataloğuyla hesaplanır; DEM dosyaları "
+        "vermez. Krater yoğunluğu IAU onaylı 13 krater kataloğuyla hesaplanır; DEM dosyaları "
         "`data/cache/lola/` altında aranır."
     )
 
@@ -2432,10 +2509,6 @@ def main() -> None:
     actual_source = probe.attrs.get("data_source", source_mode)
 
     render_header(actual_source, engine_active, fallback_reason)
-    # Karar bandı en üstte dursun diye yer tutucu açılır; içeriği
-    # metrikler hesaplandıktan sonra doldurulur. Jüri ilk saniyede
-    # sonucu görmeli, metrik kartlarını aşağı kaydırmak zorunda kalmamalı.
-    verdict_slot = st.container()
 
     if fallback_reason:
         st.warning(
@@ -2455,7 +2528,7 @@ def main() -> None:
         )
         st.caption(
             "Kaynak: `outputs/k3/*_visibility.csv` (K3 motoru) + "
-            f"`outputs/k2/*_horizon_4000m.csv` (K2 ufuk profili). {provenance}"
+            f"`outputs/k2/*_horizon_*.csv` (K2 ufuk profili). {provenance}"
         )
     else:
         st.info(
@@ -2465,7 +2538,9 @@ def main() -> None:
         )
 
     # --- Adım 1: A/B aday bölge seçimi -----------------------------------
-    st.markdown("<div class='ls-step'>1 · Aday bölge seçimi</div>", unsafe_allow_html=True)
+    st.markdown(
+        "<div class='ls-step notranslate'>1 · Aday bölge seçimi</div>", unsafe_allow_html=True
+    )
     column_a, column_b = st.columns(2, gap="large")
 
     options = list(catalog)
@@ -2491,8 +2566,7 @@ def main() -> None:
     metrics_a = compute_metrics(frame_a, step_minutes)
     metrics_b = compute_metrics(frame_b, step_minutes)
 
-    with verdict_slot:
-        render_verdict_band(catalog[selected_a], metrics_a, catalog[selected_b], metrics_b)
+    render_verdict_band(catalog[selected_a], metrics_a, catalog[selected_b], metrics_b)
 
     if actual_source == SOURCE_REAL and frame_a.attrs.get("window_truncated"):
         st.warning(
@@ -2534,7 +2608,7 @@ def main() -> None:
 
     # --- Adım 3: görselleştirmeler ----------------------------------------
     st.markdown(
-        "<div class='ls-step'>3 · Karşılaştırma ve görselleştirmeler</div>",
+        "<div class='ls-step notranslate'>3 · Karşılaştırma ve görselleştirmeler</div>",
         unsafe_allow_html=True,
     )
     globe_tab, horizon_tab, timeline_tab, map_tab, risk_tab, data_tab = st.tabs(
@@ -2677,7 +2751,7 @@ def main() -> None:
         )
 
     with risk_tab:
-        render_risk_tab()
+        render_risk_tab(selected_a, selected_b)
 
     with data_tab:
         render_data_tab(frame_a, frame_b, catalog[selected_a], catalog[selected_b])

@@ -206,3 +206,89 @@ def test_site_catalog_and_risk_tab_consistency(clean_caches):
     assert all("nan%" not in v.lower() and "nan°" not in v.lower() for v in metric_vals)
     success_msgs = " ".join(s.value for s in at.success)
     assert "Gerçek LOLA DEM yüklendi" not in success_msgs
+    # 12 aday bölgenin özet expander başlığı Arazi Riski sekmesinde yer almalı
+    expander_labels = [e.label for e in at.expander]
+    assert any("12 Bölge" in label for label in expander_labels)
+
+
+@pytest.mark.skipif(not app.REAL_AVAILABLE, reason="gerçek K3 çıktısı yok")
+def test_real_sites_discovers_all_12_artemis_sites(clean_caches):
+    expected_ids = [
+        "Site01",
+        "Site02",
+        "Site03",
+        "Site04",
+        "Site05",
+        "Site06",
+        "Site07",
+        "Site08",
+        "Site09",
+        "Site11",
+        "Site12",
+        "Site13",
+    ]
+    assert list(app.REAL_SITES.keys()) == expected_ids
+
+    for site_id in expected_ids:
+        spec = app.REAL_SITES[site_id]
+        assert spec.origin == "real"
+        assert spec.name != site_id
+        assert spec.horizon_csv is not None and spec.horizon_csv.is_file()
+        azimuths, horizons, source = app._site_horizon_profile(spec)
+        assert source == "K2"
+        assert len(azimuths) == len(horizons) == 360
+
+        frame = app.load_site_series(site_id, "2026-11-14T00:00:00+00:00", 7, 60, app.SOURCE_REAL)
+        metrics = app.compute_metrics(frame, 60)
+        assert metrics.total_hours > 0.0
+
+
+def test_normalize_contract_and_engine_preserve_canonical_source_id(clean_caches):
+    site = app.SITES["shackleton"]
+    start_utc = app.dt.datetime(2026, 11, 15, 0, 0, tzinfo=app.dt.UTC)
+    synthetic = app.generate_synthetic_series(site, start_utc, days=1, step_minutes=60)
+
+    # İsteğe bağlı margin sütunları olmadan normalize_contract_frame hatasız çalışmalı
+    minimal = synthetic.loc[:, app.DATA_CONTRACT_COLUMNS].copy()
+    normalized_min = app.normalize_contract_frame(minimal)
+    assert set(app.DATA_CONTRACT_COLUMNS).issubset(normalized_min.columns)
+
+    # String margin değerleri (boşluk dahil) sayısal tipe dönüştürülmeli
+    with_margins = minimal.copy()
+    with_margins["sun_margin_deg"] = ["1.250000"] * (len(with_margins) - 1) + [""]
+    with_margins["earth_margin_deg"] = "-0.500000"
+    with_margins["joint_margin_deg"] = "-0.500000"
+    normalized_margins = app.normalize_contract_frame(with_margins)
+    assert pd.api.types.is_numeric_dtype(normalized_margins["sun_margin_deg"])
+    assert pd.api.types.is_numeric_dtype(normalized_margins["earth_margin_deg"])
+    assert pd.api.types.is_numeric_dtype(normalized_margins["joint_margin_deg"])
+    assert normalized_margins["sun_margin_deg"].iloc[0] == pytest.approx(1.25)
+    assert pd.isna(normalized_margins["sun_margin_deg"].iloc[-1])
+
+    # _evaluate_with_engine kanonik source_id değerini '+K3' eklemeden korumalı
+    canonical = synthetic.copy()
+    canonical["source_id"] = "jpl-horizons"
+    evaluated = app._evaluate_with_engine(canonical, site)
+    if app._engine_available():
+        assert evaluated is not None
+        assert set(evaluated["source_id"]) == {"jpl-horizons"}
+        assert not evaluated["source_id"].astype(str).str.contains(r"\+K3", regex=True).any()
+        assert isinstance(evaluated["timestamp_utc"].dtype, pd.DatetimeTZDtype)
+        for margin_col in ("sun_margin_deg", "earth_margin_deg", "joint_margin_deg"):
+            assert pd.api.types.is_numeric_dtype(evaluated[margin_col])
+
+
+@pytest.mark.skipif(not app.REAL_AVAILABLE, reason="gerçek K3 çıktısı yok")
+def test_selecting_site08_and_site13_runs_cleanly(clean_caches):
+    at = _run_app()
+    at.selectbox(key="site_a_real").set_value("Site08").run()
+    at.selectbox(key="site_b_real").set_value("Site13").run()
+
+    assert not at.exception
+    verdict_html = " ".join(m.value for m in at.markdown if "ls-verdict" in m.value)
+    assert "notranslate" in verdict_html
+    assert "Site08" in verdict_html
+    assert "Site13" in verdict_html
+    code_blocks = "\n".join(c.value for c in at.code)
+    assert "Malapert massif" in code_blocks
+    assert "Mons Mouton" in code_blocks

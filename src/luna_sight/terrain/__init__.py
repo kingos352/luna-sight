@@ -76,6 +76,4 @@ __all__ = [
     "xy_to_lonlat",
     "analyze_all_sites_risk",
     "analyze_site_risk",
-    "compute_crater_metrics",
-    "compute_slope_stats",
 ]

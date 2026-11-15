@@ -27,7 +27,7 @@ from typing import Any
 import pandas as pd
 import requests
 
-from luna_sight.ephemeris.horizons import Site, build_session
+from luna_sight.ephemeris.horizons import SOURCE_ID, Site, build_session
 from luna_sight.ephemeris.series import build_site_timeseries
 
 #: K3 protokolünün beklediği kolonlar.
@@ -87,6 +87,9 @@ class HorizonsEphemeris:
     session: requests.Session | None = None
     timeout: float = 60.0
     last_responses: dict[str, Any] = field(default_factory=dict, repr=False)
+    source_id: str = SOURCE_ID
+    source_version: str = "1.2"
+    model_id: str = "DE441"
 
     def __post_init__(self) -> None:
         if self.session is None:
@@ -113,6 +116,13 @@ class HorizonsEphemeris:
             session=self.session,
         )
         self.last_responses = dict(responses)
+        if not frame.empty:
+            version = str(frame["source_version"].iloc[0]).strip()
+            model = str(frame["model_id"].iloc[0]).strip()
+            if version and version != "unknown":
+                self.source_version = version
+            if model and model != "unknown":
+                self.model_id = model
 
         # Horizons ızgarası istenen damgalarla birebir eşleşmezse eksik hücre
         # NaN kalır. Doldurma yapılmaz: K3 bunu uncertain olarak sınıflar.

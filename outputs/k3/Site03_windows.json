@@ -1,0 +1,98 @@
+{
+  "sun": [
+    {
+      "body": "sun",
+      "state": "blocked",
+      "start_utc": "2026-11-14T00:00:00+00:00",
+      "end_utc": "2026-11-19T04:46:08.453576+00:00",
+      "duration_hours": 124.769,
+      "start_refined": false,
+      "end_refined": true,
+      "reason": "occluded"
+    },
+    {
+      "body": "sun",
+      "state": "uncertain",
+      "start_utc": "2026-11-19T04:46:08.453576+00:00",
+      "end_utc": "2026-11-19T07:10:47.299556+00:00",
+      "duration_hours": 2.4108,
+      "start_refined": true,
+      "end_refined": true,
+      "reason": "transition_band"
+    },
+    {
+      "body": "sun",
+      "state": "visible",
+      "start_utc": "2026-11-19T07:10:47.299556+00:00",
+      "end_utc": "2026-11-21T00:00:00+00:00",
+      "duration_hours": 40.8202,
+      "start_refined": true,
+      "end_refined": false,
+      "reason": "clear"
+    }
+  ],
+  "earth": [
+    {
+      "body": "earth",
+      "state": "blocked",
+      "start_utc": "2026-11-14T00:00:00+00:00",
+      "end_utc": "2026-11-16T06:26:22.373460+00:00",
+      "duration_hours": 54.4395,
+      "start_refined": false,
+      "end_refined": true,
+      "reason": "occluded"
+    },
+    {
+      "body": "earth",
+      "state": "uncertain",
+      "start_utc": "2026-11-16T06:26:22.373460+00:00",
+      "end_utc": "2026-11-16T10:08:18.461097+00:00",
+      "duration_hours": 3.6989,
+      "start_refined": true,
+      "end_refined": true,
+      "reason": "transition_band"
+    },
+    {
+      "body": "earth",
+      "state": "visible",
+      "start_utc": "2026-11-16T10:08:18.461097+00:00",
+      "end_utc": "2026-11-21T00:00:00+00:00",
+      "duration_hours": 109.8615,
+      "start_refined": true,
+      "end_refined": false,
+      "reason": "clear"
+    }
+  ],
+  "joint": [
+    {
+      "body": "joint",
+      "state": "blocked",
+      "start_utc": "2026-11-14T00:00:00+00:00",
+      "end_utc": "2026-11-19T04:46:08.453576+00:00",
+      "duration_hours": 124.769,
+      "start_refined": false,
+      "end_refined": true,
+      "reason": "occluded"
+    },
+    {
+      "body": "joint",
+      "state": "uncertain",
+      "start_utc": "2026-11-19T04:46:08.453576+00:00",
+      "end_utc": "2026-11-19T07:10:47.299556+00:00",
+      "duration_hours": 2.4108,
+      "start_refined": true,
+      "end_refined": true,
+      "reason": "transition_band"
+    },
+    {
+      "body": "joint",
+      "state": "visible",
+      "start_utc": "2026-11-19T07:10:47.299556+00:00",
+      "end_utc": "2026-11-21T00:00:00+00:00",
+      "duration_hours": 40.8202,
+      "start_refined": true,
+      "end_refined": false,
+      "reason": "clear"
+    }
+  ]
+}

@@ -1,0 +1,78 @@
+{
+  "sun": [
+    {
+      "body": "sun",
+      "state": "blocked",
+      "start_utc": "2026-11-14T00:00:00+00:00",
+      "end_utc": "2026-11-18T18:42:45.908186+00:00",
+      "duration_hours": 114.7128,
+      "start_refined": false,
+      "end_refined": true,
+      "reason": "occluded"
+    },
+    {
+      "body": "sun",
+      "state": "uncertain",
+      "start_utc": "2026-11-18T18:42:45.908186+00:00",
+      "end_utc": "2026-11-18T21:16:10.008082+00:00",
+      "duration_hours": 2.5567,
+      "start_refined": true,
+      "end_refined": true,
+      "reason": "transition_band"
+    },
+    {
+      "body": "sun",
+      "state": "visible",
+      "start_utc": "2026-11-18T21:16:10.008082+00:00",
+      "end_utc": "2026-11-21T00:00:00+00:00",
+      "duration_hours": 50.7306,
+      "start_refined": true,
+      "end_refined": false,
+      "reason": "clear"
+    }
+  ],
+  "earth": [
+    {
+      "body": "earth",
+      "state": "visible",
+      "start_utc": "2026-11-14T00:00:00+00:00",
+      "end_utc": "2026-11-21T00:00:00+00:00",
+      "duration_hours": 168.0,
+      "start_refined": false,
+      "end_refined": false,
+      "reason": "clear"
+    }
+  ],
+  "joint": [
+    {
+      "body": "joint",
+      "state": "blocked",
+      "start_utc": "2026-11-14T00:00:00+00:00",
+      "end_utc": "2026-11-18T18:42:45.908186+00:00",
+      "duration_hours": 114.7128,
+      "start_refined": false,
+      "end_refined": true,
+      "reason": "occluded"
+    },
+    {
+      "body": "joint",
+      "state": "uncertain",
+      "start_utc": "2026-11-18T18:42:45.908186+00:00",
+      "end_utc": "2026-11-18T21:16:10.008082+00:00",
+      "duration_hours": 2.5567,
+      "start_refined": true,
+      "end_refined": true,
+      "reason": "transition_band"
+    },
+    {
+      "body": "joint",
+      "state": "visible",
+      "start_utc": "2026-11-18T21:16:10.008082+00:00",
+      "end_utc": "2026-11-21T00:00:00+00:00",
+      "duration_hours": 50.7306,
+      "start_refined": true,
+      "end_refined": false,
+      "reason": "clear"
+    }
+  ]
+}

@@ -247,8 +247,63 @@ def test_risk_analysis_and_comparison_no_nan_strings():
     assert site_risk.analysis_radius_m == pytest.approx(5000.0)
 
     all_risk = analyze_all_sites_risk()
-    assert set(all_risk) == {"Site01", "Site04"}
+    expected_sites = {
+        "Site01",
+        "Site02",
+        "Site03",
+        "Site04",
+        "Site05",
+        "Site06",
+        "Site07",
+        "Site08",
+        "Site09",
+        "Site11",
+        "Site12",
+        "Site13",
+    }
+    assert len(all_risk) == 12
+    assert set(all_risk) == expected_sites
+    assert set(all_risk) == set(CANDIDATE_SITES)
 
     comparison = format_side_by_side_comparison(all_risk)
+    assert "Site01" in comparison
+    assert "Site04" in comparison
+    assert "13 krater" in comparison
+    assert "Karşılaştırma için" not in comparison
     assert "nan°" not in comparison
     assert "nan%" not in comparison
+
+    comparison_custom = format_side_by_side_comparison(all_risk, "Site01", "Site08")
+    assert "Site01" in comparison_custom
+    assert "Site08" in comparison_custom
+    assert "Connecting ridge" in comparison_custom
+    assert "Malapert massif" in comparison_custom
+    assert "nan°" not in comparison_custom
+    assert "nan%" not in comparison_custom
+
+
+def test_side_by_side_comparison_fallbacks():
+    """Eksik site veya 2'den az site durumlarında güvenli geri dönüş sağlanmalıdır."""
+    all_risk = analyze_all_sites_risk()
+
+    assert format_side_by_side_comparison({}) == "Karşılaştırma için en az 2 site gerekli."
+    assert (
+        format_side_by_side_comparison({"Site01": all_risk["Site01"]})
+        == "Karşılaştırma için en az 2 site gerekli."
+    )
+
+    subset = {"Site02": all_risk["Site02"], "Site08": all_risk["Site08"]}
+    subset_cmp = format_side_by_side_comparison(subset)
+    assert "Site02" in subset_cmp
+    assert "Site08" in subset_cmp
+    assert "nan%" not in subset_cmp
+
+    missing_b = format_side_by_side_comparison(all_risk, "Site08", "Site99")
+    assert "Site08" in missing_b
+    assert "Site04" in missing_b
+    assert "nan%" not in missing_b
+
+    missing_a = format_side_by_side_comparison(all_risk, "Site99", "Site01")
+    assert "Site01" in missing_a
+    assert "Site02" in missing_a
+    assert "nan%" not in missing_a
