@@ -192,10 +192,14 @@ def main(argv: list[str] | None = None) -> int:
     worst_az = max(records, key=lambda r: r["delta_az_deg"])
     worst_alt = max(records, key=lambda r: r["delta_alt_deg"])
     print("=== ozet (20 karsilastirma: 2 bolge x 5 damga x 2 govde) ===")
-    print(f"en buyuk azimut farki   : {worst_az['delta_az_deg']:.4f} derece "
-          f"({worst_az['site_id']} {worst_az['body']} {worst_az['timestamp_utc']})")
-    print(f"en buyuk yukseklik farki: {worst_alt['delta_alt_deg']:.4f} derece "
-          f"({worst_alt['site_id']} {worst_alt['body']} {worst_alt['timestamp_utc']})")
+    print(
+        f"en buyuk azimut farki   : {worst_az['delta_az_deg']:.4f} derece "
+        f"({worst_az['site_id']} {worst_az['body']} {worst_az['timestamp_utc']})"
+    )
+    print(
+        f"en buyuk yukseklik farki: {worst_alt['delta_alt_deg']:.4f} derece "
+        f"({worst_alt['site_id']} {worst_alt['body']} {worst_alt['timestamp_utc']})"
+    )
 
     if args.json:
         args.json.write_text(json.dumps(records, indent=2), encoding="utf-8")

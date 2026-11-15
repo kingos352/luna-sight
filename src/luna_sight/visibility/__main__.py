@@ -75,9 +75,7 @@ def _build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--windows-json", type=Path, default=None, help="Pencereleri JSON olarak yaz"
     )
-    parser.add_argument(
-        "--summary-json", type=Path, default=None, help="Özeti JSON olarak yaz"
-    )
+    parser.add_argument("--summary-json", type=Path, default=None, help="Özeti JSON olarak yaz")
     return parser
 
 
@@ -91,13 +89,9 @@ def _resolve_series_site(args, samples: list[Sample]) -> Site:
     first = samples[0]
     site_id = args.site_id or first.site_id or "series"
     latitude = args.latitude if args.latitude is not None else first.latitude_deg
-    longitude = (
-        args.longitude if args.longitude is not None else first.longitude_deg_east
-    )
+    longitude = args.longitude if args.longitude is not None else first.longitude_deg_east
     missing = [
-        name
-        for name, value in (("latitude", latitude), ("longitude", longitude))
-        if value is None
+        name for name, value in (("latitude", latitude), ("longitude", longitude)) if value is None
     ]
     if missing:
         raise SystemExit(
@@ -139,9 +133,7 @@ def _summary_payload(site: Site, results, frame, config) -> dict[str, object]:
     summary = summarize(frame)
     table_row = json.loads(summary.to_json(orient="index"))[site.site_id]
     quality = sorted({sample.sample.quality_flag for sample in results})
-    source_ids = sorted(
-        {sample.sample.source_id for sample in results if sample.sample.source_id}
-    )
+    source_ids = sorted({sample.sample.source_id for sample in results if sample.sample.source_id})
     return {
         # K4 ve eski tüketiciler için üst düzey uyumluluk alanları
         "site_id": site.site_id,
@@ -159,8 +151,7 @@ def _summary_payload(site: Site, results, frame, config) -> dict[str, object]:
         },
         "table": table_row,
         "bodies": {
-            body: breakdown(results, body, config.visibility_config()).as_dict()
-            for body in BODIES
+            body: breakdown(results, body, config.visibility_config()).as_dict() for body in BODIES
         },
     }
 
@@ -196,9 +187,7 @@ def main(argv=None) -> int:
         results = evaluate_series(samples, horizon, config.visibility_config())
         frame = results_to_frame(results)
 
-        step_hours = (
-            samples[1].timestamp_utc - samples[0].timestamp_utc
-        ).total_seconds() / 3600.0
+        step_hours = (samples[1].timestamp_utc - samples[0].timestamp_utc).total_seconds() / 3600.0
         span = (
             results[-1].sample.timestamp_utc - results[0].sample.timestamp_utc
         ).total_seconds() / 3600.0

@@ -85,9 +85,7 @@ def main() -> int:
         synthetic = False
         print(f"Seri: {args.series} ({len(samples)} örnek)")
     else:
-        start = datetime.fromisoformat(args.start.replace("Z", "+00:00")).astimezone(
-            UTC
-        )
+        start = datetime.fromisoformat(args.start.replace("Z", "+00:00")).astimezone(UTC)
         samples = synthetic_series(
             start_utc=start,
             hours=args.hours,
@@ -106,9 +104,7 @@ def main() -> int:
             replace(
                 sample,
                 site_id=sample.site_id or site_id,
-                latitude_deg=(
-                    sample.latitude_deg if sample.latitude_deg is not None else lat_deg
-                ),
+                latitude_deg=(sample.latitude_deg if sample.latitude_deg is not None else lat_deg),
                 longitude_deg_east=(
                     sample.longitude_deg_east
                     if sample.longitude_deg_east is not None
@@ -128,10 +124,7 @@ def main() -> int:
     ).total_seconds() / 3600.0
 
     windows_by_body = {
-        body: [
-            window.as_dict()
-            for window in build_windows(results, body, config)
-        ]
+        body: [window.as_dict() for window in build_windows(results, body, config)]
         for body in (BODY_SUN, BODY_EARTH, BODY_JOINT)
     }
     summary = {
@@ -153,9 +146,7 @@ def main() -> int:
             "quality_flag": samples[0].quality_flag,
         },
         "bodies": {
-            body: summarize_windows(
-                build_windows(results, body, config), span_hours=span_hours
-            )
+            body: summarize_windows(build_windows(results, body, config), span_hours=span_hours)
             for body in (BODY_SUN, BODY_EARTH, BODY_JOINT)
         },
         "generated_utc": datetime.now(UTC).replace(microsecond=0).isoformat(),
@@ -166,9 +157,7 @@ def main() -> int:
         json.dumps(windows_by_body, indent=2, ensure_ascii=False), encoding="utf-8"
     )
     summary_path = out_dir / f"{site_id}_summary.json"
-    summary_path.write_text(
-        json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8"
-    )
+    summary_path.write_text(json.dumps(summary, indent=2, ensure_ascii=False), encoding="utf-8")
 
     print(f"\n{site_id} — {len(samples)} örnek, {span_hours:.1f} saat")
     print(f"{'gövde':<6} {'görünür %':>10} {'pencere':>8} {'en uzun (sa)':>13}")
@@ -180,8 +169,10 @@ def main() -> int:
             f"{body:<6} {('-' if fraction is None else f'{fraction * 100:.1f}'):>10} "
             f"{stats['window_count']:>8} {('-' if longest is None else f'{longest:.2f}'):>13}"
         )
-    print(f"\nÇıktı: {csv_path.relative_to(ROOT)}, {windows_path.relative_to(ROOT)}, "
-          f"{summary_path.relative_to(ROOT)}")
+    print(
+        f"\nÇıktı: {csv_path.relative_to(ROOT)}, {windows_path.relative_to(ROOT)}, "
+        f"{summary_path.relative_to(ROOT)}"
+    )
     return 0
 
 

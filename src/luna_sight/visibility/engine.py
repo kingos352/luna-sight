@@ -134,9 +134,7 @@ def _evaluate_body(
     if azimuth_deg is None or altitude_deg is None:
         return BodyState(UNCERTAIN, REASON_MISSING_EPHEMERIS, None, None)
     horizon = profile.elevation_at(azimuth_deg)
-    state, reason = classify(
-        altitude_deg, horizon, quality_flag=quality_flag, config=config
-    )
+    state, reason = classify(altitude_deg, horizon, quality_flag=quality_flag, config=config)
     margin = None if horizon is None else altitude_deg - horizon
     return BodyState(state, reason, horizon, margin)
 
@@ -315,9 +313,7 @@ def build_windows(
         if config.refine_boundaries:
             m0, m1 = margins[end_index], margins[next_index]
             if m0 is not None and m1 is not None:
-                level = _boundary_level(
-                    states[end_index], states[next_index], config.margin_deg
-                )
+                level = _boundary_level(states[end_index], states[next_index], config.margin_deg)
                 refined_time = refine_crossing_time(
                     times[end_index], times[next_index], m0, m1, level
                 )
@@ -346,9 +342,7 @@ def build_windows(
     return windows
 
 
-def summarize_windows(
-    windows: list[Window], span_hours: float | None = None
-) -> dict[str, object]:
+def summarize_windows(windows: list[Window], span_hours: float | None = None) -> dict[str, object]:
     """Durum bazlı toplam süre ve görünürlük istatistikleri."""
     totals = {state: 0.0 for state in (VISIBLE, BLOCKED, UNCERTAIN)}
     for window in windows:
@@ -362,16 +356,8 @@ def summarize_windows(
         "window_count": len(windows),
         "total_hours": round(total_hours, 4),
         "state_hours": {state: round(value, 4) for state, value in totals.items()},
-        "visible_fraction": (
-            round(totals[VISIBLE] / total_hours, 6) if total_hours > 0 else None
-        ),
-        "longest_visible_hours": (
-            None if longest is None else round(longest.duration_hours, 4)
-        ),
-        "longest_visible_start_utc": (
-            None if longest is None else longest.start_utc.isoformat()
-        ),
-        "refined_boundaries": sum(
-            1 for w in windows if w.start_refined or w.end_refined
-        ),
+        "visible_fraction": (round(totals[VISIBLE] / total_hours, 6) if total_hours > 0 else None),
+        "longest_visible_hours": (None if longest is None else round(longest.duration_hours, 4)),
+        "longest_visible_start_utc": (None if longest is None else longest.start_utc.isoformat()),
+        "refined_boundaries": sum(1 for w in windows if w.start_refined or w.end_refined),
     }

@@ -99,8 +99,7 @@ class SyntheticEphemeris:
             {
                 "timestamp_utc": grid,
                 "sun_az_deg": azimuth,
-                "sun_alt_deg": self.sun_base_alt_deg
-                + self.sun_swing_alt_deg * np.sin(phase),
+                "sun_alt_deg": self.sun_base_alt_deg + self.sun_swing_alt_deg * np.sin(phase),
                 "earth_az_deg": np.mod(azimuth + self.earth_azimuth_offset_deg, 360.0),
                 "earth_alt_deg": self.earth_base_alt_deg
                 + self.earth_swing_alt_deg * np.sin(2.0 * phase + 1.0),

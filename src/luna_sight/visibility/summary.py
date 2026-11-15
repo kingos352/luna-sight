@@ -87,9 +87,7 @@ def summarize(frame: pd.DataFrame) -> pd.DataFrame:
             state: float((intervals["joint_visible"] == state).sum()) * step_hours
             for state in (VISIBLE, BLOCKED, UNCERTAIN)
         }
-        window_count, longest_samples = _run_stats(
-            intervals["joint_visible"] == VISIBLE
-        )
+        window_count, longest_samples = _run_stats(intervals["joint_visible"] == VISIBLE)
 
         rows.append(
             {

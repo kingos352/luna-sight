@@ -46,9 +46,7 @@ class BodyBreakdown:
         for state in STATES:
             row[f"{state}_hours"] = self.state_hours[state]
             fraction = self.state_fractions[state]
-            row[f"{state}_fraction"] = (
-                None if fraction is None else round(fraction, 6)
-            )
+            row[f"{state}_fraction"] = None if fraction is None else round(fraction, 6)
         row["window_count"] = self.window_count
         row["longest_visible_hours"] = self.longest_visible_hours
         row["refined_boundaries"] = self.refined_boundaries
