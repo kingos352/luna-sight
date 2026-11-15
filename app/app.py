@@ -40,6 +40,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+import streamlit.components.v1 as components
 
 # `src/` düzenindeki bilimsel modüller (K1/K2/K3) birleştiğinde içe aktarılabilsin.
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -1373,6 +1374,71 @@ def inject_theme() -> None:
     st.markdown(
         """
         <style>
+        /* Tasarım belirteçleri. Bileşenlerde ham hex yerine bunlar kullanılır;
+           tek yerden değiştirilir ve açık/koyu ayrımı tutarlı kalır. */
+        :root {
+            --ls-space-900: #070a14;   /* en derin zemin */
+            --ls-space-800: #0b1020;   /* sayfa zemini */
+            --ls-space-700: #141a2e;   /* yüzey */
+            --ls-nasa-blue: #0b3d91;   /* NASA mavisi: yüzey ve kenarlık */
+            --ls-azure:     #5aa9ff;   /* etkileşim rengi (koyu zeminde okunur) */
+            --ls-azure-dim: rgba(90,169,255,0.16);
+            --ls-text:      #e8ecf8;
+            --ls-text-dim:  #b9c3dc;
+            --ls-ok:        #3ddc97;
+            --ls-warn:      #f5b942;
+            --ls-danger:    #fc3d21;   /* NASA kırmızısı: yalnızca engel/hata */
+            --ls-radius:    12px;
+        }
+        /* Teknik/panel karakteri için Fira ailesi; yüklenemezse sistem yazı
+           tipine düşer, metin görünmez kalmaz. */
+        html, body, [class*="css"] {
+            font-family: "Fira Sans", "Segoe UI", system-ui, sans-serif;
+        }
+        code, pre, [data-testid="stMetricValue"] {
+            font-family: "Fira Code", "Cascadia Mono", ui-monospace, monospace;
+        }
+        /* Sayı sütunları kaydıkça zıplamasın. */
+        [data-testid="stMetricValue"], .ls-verdict-value {
+            font-variant-numeric: tabular-nums;
+        }
+        /* Karar bandı: jürinin ilk saniyede okuması gereken tek cümle. */
+        .ls-verdict {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 0.9rem 1.6rem;
+            padding: 0.85rem 1.1rem;
+            margin: 0 0 1rem 0;
+            border-radius: var(--ls-radius);
+            border: 1px solid var(--ls-azure-dim);
+            border-left: 3px solid var(--ls-azure);
+            background: linear-gradient(
+                90deg, rgba(11,61,145,0.35) 0%, rgba(20,26,46,0.55) 60%
+            );
+        }
+        .ls-verdict-kicker {
+            font-size: 0.68rem;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--ls-azure);
+        }
+        .ls-verdict-text {font-size: 1.02rem; color: var(--ls-text); margin: 0.1rem 0 0 0;}
+        .ls-verdict-text strong {color: #ffffff;}
+        .ls-verdict-stats {display: flex; gap: 1.4rem; margin-left: auto;}
+        .ls-verdict-stat {text-align: right;}
+        .ls-verdict-label {
+            display: block;
+            font-size: 0.66rem;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--ls-text-dim);
+        }
+        .ls-verdict-value {font-size: 1.25rem; font-weight: 600; color: var(--ls-text);}
+        .ls-verdict-value.is-blocked {color: var(--ls-danger);}
+        @media (max-width: 900px) {
+            .ls-verdict-stats {margin-left: 0; width: 100%; justify-content: space-between;}
+        }
         .block-container {
             padding-top: 1.4rem;
             padding-bottom: 2rem;
@@ -1900,6 +1966,101 @@ def render_source_cards(spec_a: SiteSpec, spec_b: SiteSpec, frame_a: pd.DataFram
     )
 
 
+#: 3B küre, derlenmiş bir React/three.js uygulamasıdır ve `static/moon/`
+#: altından sunulur. Streamlit `enableStaticServing` ile bu klasörü
+#: `/app/static/` yoluna açar, yani ayrı bir sunucu süreci gerekmez.
+GLOBE_DIR = Path(__file__).resolve().parent / "static" / "moon"
+GLOBE_URL = "/app/static/moon/index.html"
+GLOBE_HEIGHT = 760
+
+
+def render_verdict_band(
+    spec_a: SiteSpec,
+    metrics_a: SiteMetrics,
+    spec_b: SiteSpec,
+    metrics_b: SiteMetrics,
+) -> None:
+    """Karşılaştırmanın tek cümlelik sonucunu en üstte göster.
+
+    Metin veriden türetilir, sabit yazılmaz: hangi bölgenin ortak görünürlük
+    verdiği her koşuda yeniden hesaplanır. Böylece pencere veya bölge
+    değiştiğinde cümle kendiliğinden doğru kalır.
+    """
+    pairs = [(spec_a, metrics_a), (spec_b, metrics_b)]
+    best_spec, best = max(pairs, key=lambda item: item[1].joint_hours)
+    other_spec, other = min(pairs, key=lambda item: item[1].joint_hours)
+
+    if best.joint_hours <= 0:
+        headline = (
+            "Seçilen pencerede <strong>hiçbir aday</strong> Güneş ve Dünya'yı "
+            "aynı anda görmüyor."
+        )
+    elif other.joint_hours <= 0:
+        headline = (
+            f"Doğrudan Dünya bağlantısı yalnızca <strong>{best_spec.label}</strong> "
+            f"bölgesinde var: <strong>{best.joint_hours:.1f} saat</strong> ortak "
+            f"görünürlük. {other_spec.label} bu pencerede hiç vermiyor."
+        )
+    else:
+        headline = (
+            f"<strong>{best_spec.label}</strong> ortak görünürlükte önde: "
+            f"<strong>{best.joint_hours:.1f} saat</strong>, "
+            f"{other_spec.label} {other.joint_hours:.1f} saat."
+        )
+
+    blocked = " is-blocked" if other.joint_hours <= 0 else ""
+    st.markdown(
+        f"""
+        <div class="ls-verdict">
+          <div>
+            <span class="ls-verdict-kicker">Karşılaştırma sonucu</span>
+            <p class="ls-verdict-text">{headline}</p>
+          </div>
+          <div class="ls-verdict-stats">
+            <div class="ls-verdict-stat">
+              <span class="ls-verdict-label">{best_spec.site_id} ortak</span>
+              <span class="ls-verdict-value">{best.joint_hours:.1f} sa</span>
+            </div>
+            <div class="ls-verdict-stat">
+              <span class="ls-verdict-label">{other_spec.site_id} ortak</span>
+              <span class="ls-verdict-value{blocked}">{other.joint_hours:.1f} sa</span>
+            </div>
+          </div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_globe_tab() -> None:
+    """Moon Trek dokulu 3B Ay küresini göm.
+
+    Küre ile bu arayüz **aynı analizi** gösterir: her ikisi de JPL Horizons
+    OBSERVER efemerisini (DE441, `coord@301`, AIRLESS) ve aynı iki aday
+    bölgeyi kullanır; örnekleme 5 dakika, geçiş bandı 0.1 derece, gözlemci
+    yüksekliği 2 metre. Sayılar bu yüzden birbirini tutar.
+    """
+    if not (GLOBE_DIR / "index.html").exists():
+        st.warning(
+            "3B küre varlıkları bulunamadı (`static/moon/`). Depo eksiksiz "
+            "klonlanmadıysa bu sekme boş kalır; diğer sekmeler etkilenmez.",
+            icon="⚠️",
+        )
+        return
+
+    st.caption(
+        "Taban harita: **NASA Moon Trek / LRO WAC** mozaiği. Kabartma ve normal "
+        "haritaları **LRO LOLA** yükseklik modelinden türetilmiştir. Küre, bu "
+        "arayüzle aynı efemeris ve aynı aday bölgeleri kullanır "
+        "(JPL Horizons · DE441 · `coord@301` · AIRLESS)."
+    )
+    components.iframe(GLOBE_URL, height=GLOBE_HEIGHT, scrolling=False)
+    st.caption(
+        "Fare ile döndür, tekerlekle yakınlaş. Küre ayrı bir pencere gibi "
+        "çalışır; kenar çubuğundaki seçimler bu görünümü değiştirmez."
+    )
+
+
 def render_data_tab(
     frame_a: pd.DataFrame,
     frame_b: pd.DataFrame,
@@ -1969,6 +2130,10 @@ def main() -> None:
     actual_source = probe.attrs.get("data_source", source_mode)
 
     render_header(actual_source, engine_active, fallback_reason)
+    # Karar bandı en üstte dursun diye yer tutucu açılır; içeriği
+    # metrikler hesaplandıktan sonra doldurulur. Jüri ilk saniyede
+    # sonucu görmeli, metrik kartlarını aşağı kaydırmak zorunda kalmamalı.
+    verdict_slot = st.container()
 
     if fallback_reason:
         st.warning(
@@ -2024,6 +2189,11 @@ def main() -> None:
     metrics_a = compute_metrics(frame_a, step_minutes)
     metrics_b = compute_metrics(frame_b, step_minutes)
 
+    with verdict_slot:
+        render_verdict_band(
+            catalog[selected_a], metrics_a, catalog[selected_b], metrics_b
+        )
+
     if actual_source == SOURCE_REAL and frame_a.attrs.get("window_truncated"):
         st.warning(
             "Seçilen görev süresi gerçek çıktının sonunu aşıyor; grafikler "
@@ -2067,14 +2237,18 @@ def main() -> None:
         "<div class='ls-step'>3 · Karşılaştırma ve ufuk grafikleri</div>",
         unsafe_allow_html=True,
     )
-    horizon_tab, timeline_tab, map_tab, data_tab = st.tabs(
+    globe_tab, horizon_tab, timeline_tab, map_tab, data_tab = st.tabs(
         [
+            "3B Ay küresi",
             "Ufuk görünümü",
             "Zaman çizelgesi",
             "Güney Kutbu Haritası (2D)",
             "Veri ve kaynak",
         ]
     )
+
+    with globe_tab:
+        render_globe_tab()
 
     with horizon_tab:
         st.caption(

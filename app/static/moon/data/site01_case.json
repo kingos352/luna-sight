@@ -1,0 +1,96 @@
+{
+  "site_id": "Site01",
+  "site_name": "Connecting ridge",
+  "operation_window": {
+    "start_utc": "2026-11-18T16:55:00Z",
+    "end_utc": "2026-11-19T04:55:00Z",
+    "duration_hours": 12.0,
+    "sample_step_minutes": 5.0,
+    "total_samples": 145
+  },
+  "trigger_sample": {
+    "timestamp_utc": "2026-11-18T16:55:00Z",
+    "description": "Critical UTC time sample where Earth elevation minus terrain horizon falls within transition band in Clone 1, turning 12h decision from feasible to uncertain"
+  },
+  "modeling_parameters": {
+    "transition_band_deg": 0.1,
+    "transition_band_type": "modeling_setting (not standalone measurement uncertainty)",
+    "observer_height_m": 2.0,
+    "scan_radius_m": 4000.0
+  },
+  "missing_data_rule": "Missing values represented as null",
+  "models": {
+    "Site01_nominal": {
+      "earth": {
+        "azimuth_deg": 130.730898,
+        "altitude_deg": 1.074733,
+        "terrain_horizon_deg": 0.970511,
+        "margin_deg": 0.104222,
+        "sample_status": "visible",
+        "occluder_dist_m": 80.0,
+        "occluder_coords": {
+          "x_m": -11009.042,
+          "y_m": -11920.513,
+          "z_m": 1948.1064
+        }
+      },
+      "sun": {
+        "azimuth_deg": 206.822286,
+        "altitude_deg": 1.069834,
+        "terrain_horizon_deg": -0.796403,
+        "margin_deg": 1.866237,
+        "sample_status": "visible"
+      },
+      "joint_sample_status": "visible",
+      "twelve_hour_operation_decision": "feasible"
+    },
+    "Site01_clone1": {
+      "earth": {
+        "azimuth_deg": 130.730898,
+        "altitude_deg": 1.074733,
+        "terrain_horizon_deg": 0.991045,
+        "margin_deg": 0.083688,
+        "sample_status": "uncertain",
+        "occluder_dist_m": 80.0,
+        "occluder_coords": {
+          "x_m": -11009.042,
+          "y_m": -11920.513,
+          "z_m": 1948.2072
+        }
+      },
+      "sun": {
+        "azimuth_deg": 206.822286,
+        "altitude_deg": 1.069834,
+        "terrain_horizon_deg": -0.819216,
+        "margin_deg": 1.88905,
+        "sample_status": "visible"
+      },
+      "joint_sample_status": "uncertain",
+      "twelve_hour_operation_decision": "uncertain"
+    },
+    "Site01_clone2": {
+      "earth": {
+        "azimuth_deg": 130.730898,
+        "altitude_deg": 1.074733,
+        "terrain_horizon_deg": 0.946256,
+        "margin_deg": 0.128477,
+        "sample_status": "visible",
+        "occluder_dist_m": 90.0,
+        "occluder_coords": {
+          "x_m": -11010.172,
+          "y_m": -11910.577,
+          "z_m": 1948.2582
+        }
+      },
+      "sun": {
+        "azimuth_deg": 206.822286,
+        "altitude_deg": 1.069834,
+        "terrain_horizon_deg": -0.801324,
+        "margin_deg": 1.871158,
+        "sample_status": "visible"
+      },
+      "joint_sample_status": "visible",
+      "twelve_hour_operation_decision": "feasible"
+    }
+  }
+}
