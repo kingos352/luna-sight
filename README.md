@@ -20,7 +20,7 @@
 </div>
 
 <p align="center">
-  <img src="docs/assets/luna_sight_hero.png" width="100%" alt="LUNA SIGHT GMAT Mission Control Workstation" style="border-radius: 8px; border: 1px solid #29374A;" />
+  <img src="docs/assets/luna_sight_hero.png" width="100%" alt="LUNA SIGHT GMAT Mission Control Workstation" />
 </p>
 
 ---
@@ -68,7 +68,7 @@ Proje, NASA Space Apps vizyonuyla geliştirilmiş olup; Artemis programının in
 *Gözü yoran aşırı kontrast ve yapay gürültülerden arındırılmış, mat regolit fiziksel dağılımına sahip 4K LRO WAC mozaiği.*
 
 <p align="center">
-  <img src="docs/assets/moontrek_texture_lighting.png" width="90%" alt="NASA Moon Trek 4K Lighting" style="border-radius: 6px; border: 1px solid #29374A;" />
+  <img src="docs/assets/moontrek_texture_lighting.png" width="90%" alt="NASA Moon Trek 4K Lighting" />
 </p>
 
 ---
@@ -77,7 +77,7 @@ Proje, NASA Space Apps vizyonuyla geliştirilmiş olup; Artemis programının in
 *Kraterlerin ortasını örten hantal rozetler yerine, küresel yüzeye oturan ince sınır hatları ve çeper çağrıları.*
 
 <p align="center">
-  <img src="docs/assets/crater_rim_contours.png" width="90%" alt="Crater Rim Contours" style="border-radius: 6px; border: 1px solid #29374A;" />
+  <img src="docs/assets/crater_rim_contours.png" width="90%" alt="Crater Rim Contours" />
 </p>
 
 ---
@@ -86,7 +86,7 @@ Proje, NASA Space Apps vizyonuyla geliştirilmiş olup; Artemis programının in
 *İstendiğinde tek tıkla tüm pinler, rozetler ve çizgiler gizlenerek saf topoğrafya incelenebilir.*
 
 <p align="center">
-  <img src="docs/assets/moon_pristine_clean_verified.png" width="90%" alt="Pristine Clean Moon" style="border-radius: 6px; border: 1px solid #29374A;" />
+  <img src="docs/assets/moon_pristine_clean_verified.png" width="90%" alt="Pristine Clean Moon" />
 </p>
 
 ---
@@ -95,7 +95,7 @@ Proje, NASA Space Apps vizyonuyla geliştirilmiş olup; Artemis programının in
 *Metin karmaşasından uzak, sadece geometrik krater sınırları ve iniş koridorlarının incelenmesi.*
 
 <p align="center">
-  <img src="docs/assets/crater_rims_only.png" width="90%" alt="Crater Rims Only" style="border-radius: 6px; border: 1px solid #29374A;" />
+  <img src="docs/assets/crater_rims_only.png" width="90%" alt="Crater Rims Only" />
 </p>
 
 </div>
