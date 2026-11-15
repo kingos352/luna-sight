@@ -96,7 +96,7 @@ def test_horizon_profile_comes_from_k2(clean_caches):
 
 @pytest.mark.skipif(not app.REAL_AVAILABLE, reason="gerçek K3 çıktısı yok")
 def test_longest_joint_window_matches_k3_summary(clean_caches):
-    frame = app.load_site_series("shackleton", "2026-11-15T00:00:00+00:00", 7, 60, app.SOURCE_REAL)
+    frame = app.load_site_series("Site01", "2026-11-15T00:00:00+00:00", 7, 60, app.SOURCE_REAL)
     metrics = app.compute_metrics(frame, 60)
 
     summary = json.loads(
@@ -201,8 +201,14 @@ def test_site_catalog_and_risk_tab_consistency(clean_caches):
     assert not at.exception
     # Karar bandı mevcut olmalı
     assert any("ls-verdict" in m.value for m in at.markdown)
-    # Metriklerde nan% görünmemeli ve DEM yoksa yanlış başarı mesajı basılmamalı
+    # Metriklerde nan% görünmemeli; DEM başarı mesajı gerçekten yüklü DEM ile tutarlı olmalı
     metric_vals = [str(m.value) for m in at.metric]
     assert all("nan%" not in v.lower() and "nan°" not in v.lower() for v in metric_vals)
+
+    risk = app.analyze_all_sites_risk()
+    dem_loaded = any(metrics.dem_available for metrics in risk.values())
     success_msgs = " ".join(s.value for s in at.success)
-    assert "Gerçek LOLA DEM yüklendi" not in success_msgs
+    if dem_loaded:
+        assert "Gerçek LOLA DEM yüklendi" in success_msgs
+    else:
+        assert "Gerçek LOLA DEM yüklendi" not in success_msgs
