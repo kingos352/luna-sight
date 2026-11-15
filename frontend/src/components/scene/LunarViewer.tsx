@@ -202,7 +202,7 @@ export const LunarViewer: React.FC = () => {
               <span>{illuminationMode === 'moontrek' ? 'Moon Trek' : 'Güneş'}</span>
             </button>
 
-            {/* Etiketler (LOD Filter) */}
+            {/* Etiketler ve Krater Hatları */}
             <div className="flex items-center bg-gmat-bg/80 rounded-lg border border-gmat-border px-2 py-1 gap-1.5">
               <Layers className="w-3.5 h-3.5 text-gmat-accent shrink-0" />
               <select
@@ -210,9 +210,10 @@ export const LunarViewer: React.FC = () => {
                 onChange={(e) => setLabelDisplayMode(e.target.value as any)}
                 className="bg-transparent text-[11px] text-gmat-text font-mono outline-none cursor-pointer pr-1"
               >
-                <option value="lod">Etiket: Kademeli (LOD)</option>
-                <option value="all">Etiket: Tümü</option>
-                <option value="off">Etiket: Gizle</option>
+                <option value="lod">🏷️ Hatlar & İsimler (LOD)</option>
+                <option value="all">🏷️ Tüm Hatlar & İsimler</option>
+                <option value="rims_only">📐 Sadece Krater Hatları</option>
+                <option value="off">🚫 Etiketleri Gizle (Temiz Ay)</option>
               </select>
             </div>
 

@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build && node scripts/prune-assets.mjs",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "build:web": "tsc -b && vite build --outDir dist --emptyOutDir && node scripts/copy-static-assets.mjs"
   },
   "dependencies": {
     "@react-three/drei": "^9.122.0",
@@ -28,5 +29,8 @@
     "tailwindcss": "^3.4.17",
     "typescript": "~5.7.3",
     "vite": "^6.2.0"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }

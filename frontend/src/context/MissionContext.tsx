@@ -113,8 +113,8 @@ interface MissionContextType {
   setIsParametersDrawerOpen: (open: boolean) => void;
 
   // South Pole Progressive Feature LOD & Sector Exploration
-  labelDisplayMode: 'lod' | 'all' | 'off';
-  setLabelDisplayMode: (mode: 'lod' | 'all' | 'off') => void;
+  labelDisplayMode: 'lod' | 'all' | 'rims_only' | 'off';
+  setLabelDisplayMode: (mode: 'lod' | 'all' | 'rims_only' | 'off') => void;
   featureFilterType: 'all' | 'crater' | 'plain' | 'peak';
   setFeatureFilterType: (filter: 'all' | 'crater' | 'plain' | 'peak') => void;
   selectedSector: string;
@@ -229,7 +229,7 @@ export const MissionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const [isComparisonModalOpen, setIsComparisonModalOpen] = useState<boolean>(false);
   const [isParametersDrawerOpen, setIsParametersDrawerOpen] = useState<boolean>(false);
 
-  const [labelDisplayMode, setLabelDisplayMode] = useState<'lod' | 'all' | 'off'>('lod');
+  const [labelDisplayMode, setLabelDisplayMode] = useState<'lod' | 'all' | 'rims_only' | 'off'>('lod');
   const [featureFilterType, setFeatureFilterType] = useState<'all' | 'crater' | 'plain' | 'peak'>('all');
   const [selectedSector, setSelectedSector] = useState<string>('all');
 

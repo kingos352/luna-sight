@@ -42,6 +42,7 @@ const SiteMarker: React.FC<{
   pinGeometry: THREE.BufferGeometry;
   activeMaterial: THREE.Material;
   inactiveMaterial: THREE.Material;
+  labelDisplayMode?: 'lod' | 'all' | 'rims_only' | 'off';
   onSelect: (site: SiteId) => void;
 }> = React.memo(({
   siteKey,
@@ -55,10 +56,17 @@ const SiteMarker: React.FC<{
   pinGeometry,
   activeMaterial,
   inactiveMaterial,
+  labelDisplayMode = 'lod',
   onSelect
 }) => {
   const groupRef = useRef<THREE.Group>(null);
   const htmlRef = useRef<HTMLDivElement>(null);
+
+  if (labelDisplayMode === 'off') {
+    return null;
+  }
+
+  const showHtml = labelDisplayMode !== 'rims_only';
 
   useFrame(({ camera }) => {
     const camX = camera.position.x - pinHead.x;
@@ -74,7 +82,7 @@ const SiteMarker: React.FC<{
       groupRef.current.visible = isFacing;
     }
     if (htmlRef.current) {
-      const targetDisplay = isFacing ? 'flex' : 'none';
+      const targetDisplay = (isFacing && showHtml) ? 'flex' : 'none';
       if (htmlRef.current.style.display !== targetDisplay) {
         htmlRef.current.style.display = targetDisplay;
       }
@@ -106,29 +114,31 @@ const SiteMarker: React.FC<{
         onPointerOut={() => { document.body.style.cursor = 'default'; }}
       />
 
-      <Html
-        position={pinHead.clone().add(normal.clone().multiplyScalar(0.16))}
-        center
-        distanceFactor={9}
-        zIndexRange={[10, 0]}
-      >
-        <div
-          ref={htmlRef}
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelect(siteKey);
-          }}
-          className={`px-2 py-0.5 rounded-full text-[9px] font-mono whitespace-nowrap cursor-pointer transition-all border shadow-lg flex items-center gap-1.5 ${
-            isSelected
-              ? 'bg-sky-950/95 text-sky-200 border-sky-400 font-bold shadow-sky-900/60 ring-1 ring-sky-400/50'
-              : 'bg-space-950/90 text-slate-300 border-slate-700/80 hover:border-sky-500/60'
-          }`}
+      {showHtml && (
+        <Html
+          position={pinHead.clone().add(normal.clone().multiplyScalar(0.16))}
+          center
+          distanceFactor={9}
+          zIndexRange={[10, 0]}
         >
-          <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-sky-400 animate-pulse' : 'bg-slate-400'}`} />
-          <span>{title}</span>
-          <span className={`text-[7.5px] px-1 py-0.2 rounded font-bold ${badgeBg}`}>{badge}</span>
-        </div>
-      </Html>
+          <div
+            ref={htmlRef}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(siteKey);
+            }}
+            className={`px-2 py-0.5 rounded-full text-[9px] font-mono whitespace-nowrap cursor-pointer transition-all border shadow-lg flex items-center gap-1.5 ${
+              isSelected
+                ? 'bg-sky-950/95 text-sky-200 border-sky-400 font-bold shadow-sky-900/60 ring-1 ring-sky-400/50'
+                : 'bg-space-950/90 text-slate-300 border-slate-700/80 hover:border-sky-500/60'
+            }`}
+          >
+            <span className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-sky-400 animate-pulse' : 'bg-slate-400'}`} />
+            <span>{title}</span>
+            <span className={`text-[7.5px] px-1 py-0.2 rounded font-bold ${badgeBg}`}>{badge}</span>
+          </div>
+        </Html>
+      )}
     </group>
   );
 });
@@ -138,65 +148,107 @@ const SiteMarker: React.FC<{
  * Raycast yapmadan, doğrudan küresel yüzey normali ile kamera yön vektörünün iç çarpımı (dot product) hesaplanır.
  * Bu yöntem CPU üzerinde 480 milyon raycast testini sıfırlar ve 60 FPS akıcılık sağlar.
  */
-const FeatureMarker: React.FC<{
+function createCraterRimGeometry(
+  latDeg: number,
+  lonEastDeg: number,
+  diameterKm: number,
+  globeRadius: number,
+  segments: number = 48
+): THREE.BufferGeometry {
+  const MOON_RADIUS_KM = 1737.4;
+  const angularRadiusRad = (diameterKm / 2) / MOON_RADIUS_KM;
+  const centerVec = latLonToVector3(latDeg, lonEastDeg, globeRadius);
+  const normal = centerVec.clone().normalize();
+
+  const up = Math.abs(normal.y) < 0.99 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
+  const u = new THREE.Vector3().crossVectors(normal, up).normalize();
+  const v = new THREE.Vector3().crossVectors(normal, u).normalize();
+
+  const cosR = Math.cos(angularRadiusRad);
+  const sinR = Math.sin(angularRadiusRad);
+
+  const points: THREE.Vector3[] = [];
+  const surfaceRadius = globeRadius + 0.007; // Z-fighting engellemek için hafif yükselti payı
+
+  for (let i = 0; i <= segments; i++) {
+    const theta = (i / segments) * Math.PI * 2;
+    const ptDir = new THREE.Vector3()
+      .addScaledVector(normal, cosR)
+      .addScaledVector(u, sinR * Math.cos(theta))
+      .addScaledVector(v, sinR * Math.sin(theta))
+      .normalize();
+
+    points.push(ptDir.multiplyScalar(surfaceRadius));
+  }
+
+  return new THREE.BufferGeometry().setFromPoints(points);
+}
+
+/**
+ * NASA & IAU Standartlarında Krater/Parsel Sınır Hattı ve Zarif Havacılık Etiketi.
+ */
+const CraterRimFeature: React.FC<{
   feature: CraterFeature;
-  posHead: THREE.Vector3;
+  rimGeometry: THREE.BufferGeometry;
+  centerVec: THREE.Vector3;
+  labelPos: THREE.Vector3;
   normal: THREE.Vector3;
   isSelected: boolean;
   featureTier: number;
   currentZoomTier: 1 | 2 | 3;
-  labelDisplayMode: 'lod' | 'all' | 'off';
+  labelDisplayMode: 'lod' | 'all' | 'rims_only' | 'off';
   color: string;
-  badgeBg: string;
-  badgeBorder: string;
-  typeBadge: string;
-  pinGeometry: THREE.BufferGeometry;
-  pinMaterial: THREE.Material;
   onSelect: (feature: CraterFeature) => void;
 }> = React.memo(({
   feature,
-  posHead,
+  rimGeometry,
+  centerVec,
+  labelPos,
   normal,
   isSelected,
   featureTier,
   currentZoomTier,
   labelDisplayMode,
   color,
-  badgeBg,
-  badgeBorder,
-  typeBadge,
-  pinGeometry,
-  pinMaterial,
   onSelect
 }) => {
   const groupRef = useRef<THREE.Group>(null);
   const htmlRef = useRef<HTMLDivElement>(null);
 
+  if (labelDisplayMode === 'off') {
+    return null;
+  }
+
   // Kademeli LOD Görünürlüğü
   const isVisibleByZoom =
     labelDisplayMode === 'all' ||
     isSelected ||
-    (labelDisplayMode === 'lod' && featureTier <= currentZoomTier);
+    (labelDisplayMode === 'rims_only' ? featureTier <= currentZoomTier + 1 : featureTier <= currentZoomTier);
 
-  const shouldRenderLabel = isVisibleByZoom && labelDisplayMode !== 'off';
+  const showHtmlLabel = isVisibleByZoom && labelDisplayMode !== 'rims_only';
 
   useFrame(({ camera }) => {
-    const camX = camera.position.x - posHead.x;
-    const camY = camera.position.y - posHead.y;
-    const camZ = camera.position.z - posHead.z;
+    if (!isVisibleByZoom) {
+      if (groupRef.current && groupRef.current.visible) groupRef.current.visible = false;
+      return;
+    }
+
+    const camX = camera.position.x - centerVec.x;
+    const camY = camera.position.y - centerVec.y;
+    const camZ = camera.position.z - centerVec.z;
     const lenSq = camX * camX + camY * camY + camZ * camZ;
     if (lenSq < 0.0001) return;
     const invLen = 1 / Math.sqrt(lenSq);
     const dot = (normal.x * camX + normal.y * camY + normal.z * camZ) * invLen;
 
-    const isFacing = dot > 0.06;
+    const isFacing = dot > 0.04;
 
     if (groupRef.current && groupRef.current.visible !== isFacing) {
       groupRef.current.visible = isFacing;
     }
 
     if (htmlRef.current) {
-      const show = isFacing && shouldRenderLabel;
+      const show = isFacing && showHtmlLabel;
       const targetDisplay = show ? 'flex' : 'none';
       if (htmlRef.current.style.display !== targetDisplay) {
         htmlRef.current.style.display = targetDisplay;
@@ -204,54 +256,89 @@ const FeatureMarker: React.FC<{
     }
   });
 
-  const scale = isSelected ? 0.055 : (featureTier === 1 ? 0.042 : 0.032);
+  if (!isVisibleByZoom) return null;
 
   return (
-    <group ref={groupRef} position={posHead}>
-      {/* Hafif Paylaşımlı Küresel İşaretçi */}
-      <mesh
-        geometry={pinGeometry}
-        material={pinMaterial}
-        scale={scale}
+    <group ref={groupRef}>
+      {/* 1. Krater / Parsel Sınır Çizgisi (Ay yüzeyine oturan dairesel kontur hattı) */}
+      <lineLoop
+        geometry={rimGeometry}
         onClick={(e) => {
           e.stopPropagation();
           onSelect(feature);
         }}
         onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
         onPointerOut={() => { document.body.style.cursor = 'default'; }}
-      />
-
-      {/* Geometrik Ufuk Testi ile Raycastsiz Yüksek Performanslı Etiket */}
-      <Html
-        position={normal.clone().multiplyScalar(0.12)}
-        center
-        distanceFactor={8.5}
-        zIndexRange={[5, 0]}
       >
-        <div
-          ref={htmlRef}
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelect(feature);
-          }}
-          style={{ display: shouldRenderLabel ? 'flex' : 'none' }}
-          className={`px-2 py-0.5 rounded-full text-[9px] font-mono whitespace-nowrap cursor-pointer transition-all border shadow-md items-center gap-1.5 ${badgeBg} ${badgeBorder}`}
+        <lineBasicMaterial
+          color={isSelected ? '#38bdf8' : color}
+          transparent
+          opacity={isSelected ? 1.0 : (featureTier === 1 ? 0.75 : 0.5)}
+          linewidth={isSelected ? 3 : 1}
+        />
+      </lineLoop>
+
+      {/* 2. Krater Tabanına Tıklama Alanı (Hassas seçim alanı) */}
+      <mesh
+        position={centerVec.clone().add(normal.clone().multiplyScalar(0.008))}
+        rotation={[-Math.PI / 2, 0, 0]}
+        onClick={(e) => {
+          e.stopPropagation();
+          onSelect(feature);
+        }}
+        onPointerOver={() => { document.body.style.cursor = 'pointer'; }}
+        onPointerOut={() => { document.body.style.cursor = 'default'; }}
+      >
+        <circleGeometry args={[Math.min(0.12, (feature.diameterKm || 10) * 0.003), 16]} />
+        <meshBasicMaterial
+          color={isSelected ? '#38bdf8' : color}
+          transparent
+          opacity={isSelected ? 0.25 : 0.001}
+          side={THREE.DoubleSide}
+        />
+      </mesh>
+
+      {/* 3. Seçildiğinde beliren hedefleme retikülü */}
+      {isSelected && (
+        <mesh position={centerVec.clone().add(normal.clone().multiplyScalar(0.012))}>
+          <ringGeometry args={[0.015, 0.035, 32]} />
+          <meshBasicMaterial color="#38bdf8" transparent opacity={0.9} side={THREE.DoubleSide} />
+        </mesh>
+      )}
+
+      {/* 4. Minimalist, gözü yormayan şık havacılık tipografisi */}
+      {showHtmlLabel && (
+        <Html
+          position={labelPos}
+          center
+          distanceFactor={9.5}
+          zIndexRange={[5, 0]}
         >
-          <span
-            className={`w-1.5 h-1.5 rounded-full shrink-0 ${isSelected ? 'animate-ping' : ''}`}
-            style={{ backgroundColor: color }}
-          />
-          <span className="font-semibold">{feature.name}</span>
-          {feature.diameterKm && (
-            <span className="text-[8px] text-slate-400 font-sans">
-              {feature.diameterKm} km
-            </span>
-          )}
-          <span className="text-[7.5px] px-1 py-0.2 rounded bg-slate-900/80 font-bold opacity-80 uppercase">
-            {typeBadge}
-          </span>
-        </div>
-      </Html>
+          <div
+            ref={htmlRef}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(feature);
+            }}
+            className={`px-1.5 py-0.5 rounded text-[8.5px] font-mono whitespace-nowrap cursor-pointer transition-all border flex items-center gap-1 select-none backdrop-blur-xs ${
+              isSelected
+                ? 'bg-sky-950/90 text-sky-200 border-sky-400 font-bold shadow-lg shadow-sky-950/80 ring-1 ring-sky-400/50 scale-105'
+                : 'bg-space-950/70 text-slate-300 border-slate-700/60 hover:border-amber-400 hover:text-white'
+            }`}
+          >
+            <span
+              className="w-1 h-1 rounded-full shrink-0"
+              style={{ backgroundColor: isSelected ? '#38bdf8' : color }}
+            />
+            <span className="tracking-tight">{feature.name}</span>
+            {feature.diameterKm && (
+              <span className="text-[7.5px] text-slate-400 font-sans">
+                Ø{feature.diameterKm} km
+              </span>
+            )}
+          </div>
+        </Html>
+      )}
     </group>
   );
 });
@@ -282,13 +369,35 @@ export const LunarGlobe: React.FC = () => {
 
   const radius = 5; // Sahne küre yarıçapı
 
-  // Tüm Güney Kutbu krater ve düzlük konumları (radius = 5.0)
-  const featurePositions = useMemo(() => {
+  // Tüm Güney Kutbu krater ve parsel sınır geometrileri (radius = 5.0)
+  const craterFeatures = useMemo(() => {
+    const MOON_RADIUS_KM = 1737.4;
     return CRATER_CATALOG.map((feature) => {
-      const vec = latLonToVector3(feature.lat, feature.lonEast, radius);
-      const normal = vec.clone().normalize();
-      const posHead = vec.clone().add(normal.clone().multiplyScalar(0.08));
-      return { feature, vec, posHead, normal };
+      const centerVec = latLonToVector3(feature.lat, feature.lonEast, radius);
+      const normal = centerVec.clone().normalize();
+      const diameter = feature.diameterKm || (feature.type === 'site' ? 12 : 8);
+      const rimGeometry = createCraterRimGeometry(feature.lat, feature.lonEast, diameter, radius, 48);
+
+      // Label position on upper rim
+      const angularRadiusRad = (diameter / 2) / MOON_RADIUS_KM;
+      const up = Math.abs(normal.y) < 0.99 ? new THREE.Vector3(0, 1, 0) : new THREE.Vector3(1, 0, 0);
+      const u = new THREE.Vector3().crossVectors(normal, up).normalize();
+      const cosR = Math.cos(angularRadiusRad);
+      const sinR = Math.sin(angularRadiusRad);
+      const rimTopDir = new THREE.Vector3()
+        .addScaledVector(normal, cosR)
+        .addScaledVector(u, sinR)
+        .normalize();
+      const labelPos = rimTopDir.multiplyScalar(radius + 0.025);
+
+      return {
+        feature,
+        centerVec,
+        normal,
+        rimGeometry,
+        labelPos,
+        diameter
+      };
     });
   }, [radius]);
 
@@ -429,123 +538,105 @@ export const LunarGlobe: React.FC = () => {
         />
       </mesh>
 
-      {/* Güney Kutup Referans Çemberi (-90° Enlem) - Yatay XZ Düzleminde */}
-      <mesh position={[0, -radius - 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[0.06, 0.22, 64]} />
-        <meshBasicMaterial color="#38bdf8" side={THREE.DoubleSide} transparent opacity={0.8} />
-      </mesh>
+      {/* Etiketler Gizle (off) seçildiğinde haritadaki TÜM çizgiler, pinler ve etiketler %100 gizlenir */}
+      {labelDisplayMode !== 'off' && (
+        <>
+          {/* Güney Kutup Referans Çemberi (-90° Enlem) - Yatay XZ Düzleminde */}
+          <mesh position={[0, -radius - 0.015, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[0.06, 0.22, 64]} />
+            <meshBasicMaterial color="#38bdf8" side={THREE.DoubleSide} transparent opacity={0.8} />
+          </mesh>
 
-      {/* 80°S Enlem Referans Çemberi (Ay'ın Güney Kutbu Sınır Çemberi) */}
-      <mesh position={[0, -radius * Math.sin((80 * Math.PI) / 180), 0]} rotation={[-Math.PI / 2, 0, 0]}>
-        <ringGeometry args={[radius * Math.cos((80 * Math.PI) / 180) - 0.02, radius * Math.cos((80 * Math.PI) / 180) + 0.02, 64]} />
-        <meshBasicMaterial color="#38bdf8" side={THREE.DoubleSide} transparent opacity={0.3} />
-      </mesh>
+          {/* 80°S Enlem Referans Çemberi (Ay'ın Güney Kutbu Sınır Çemberi) */}
+          <mesh position={[0, -radius * Math.sin((80 * Math.PI) / 180), 0]} rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[radius * Math.cos((80 * Math.PI) / 180) - 0.02, radius * Math.cos((80 * Math.PI) / 180) + 0.02, 64]} />
+            <meshBasicMaterial color="#38bdf8" side={THREE.DoubleSide} transparent opacity={0.3} />
+          </mesh>
 
-      {/* Site01 (Connecting Ridge) Ana Görev Pini */}
-      <SiteMarker
-        siteKey="Site01"
-        title="Site01: Connecting Ridge"
-        badge="54s ORTAK"
-        badgeBg="bg-sky-900/60 text-sky-300"
-        vec={site01Vec}
-        pinHead={site01PinHead}
-        normal={site01Normal}
-        isSelected={siteId === 'Site01'}
-        pinGeometry={pinGeometry}
-        activeMaterial={materials.missionActive}
-        inactiveMaterial={materials.missionInactive}
-        onSelect={setSiteId}
-      />
-
-      {/* Site04 (Shackleton Rim) Ana Görev Pini */}
-      <SiteMarker
-        siteKey="Site04"
-        title="Site04: Shackleton Rim"
-        badge="KESİNTİ"
-        badgeBg="bg-red-950/60 text-red-300"
-        vec={site04Vec}
-        pinHead={site04PinHead}
-        normal={site04Normal}
-        isSelected={siteId === 'Site04'}
-        pinGeometry={pinGeometry}
-        activeMaterial={materials.missionActive}
-        inactiveMaterial={materials.missionInactive}
-        onSelect={setSiteId}
-      />
-
-      {/* Güney Kutbu Tüm Krater, Düzlük, Sırt ve Platolar (Kademeli LOD İşaretçileri) */}
-      {featurePositions.map(({ feature, posHead, normal }) => {
-        // Site01 ve Site04 yukarıda zaten özel pin olarak çizildi
-        if (feature.id === 'feature-connecting-ridge' || feature.id === 'feature-shackleton-rim') {
-          return null;
-        }
-
-        const isSelected = selectedCrater?.id === feature.id;
-
-        // 1. Sektör filtresi
-        if (selectedSector !== 'all' && feature.sector !== selectedSector) {
-          return null;
-        }
-
-        // 2. Özellik türü filtresi
-        if (featureFilterType === 'crater' && feature.type !== 'crater') return null;
-        if (featureFilterType === 'plain' && feature.type !== 'plain' && feature.type !== 'plateau') return null;
-        if (featureFilterType === 'peak' && feature.type !== 'peak' && feature.type !== 'ridge') return null;
-
-        const featureTier = feature.tier || 1;
-
-        // Türüne göre renk ve stil belirleme
-        let color = '#f59e0b';
-        let badgeBorder = 'border-amber-500/50';
-        let badgeBg = 'bg-slate-950/90 text-amber-300';
-        let typeBadge = 'KRATER';
-        let pinMaterial = isSelected ? materials.craterSelected : materials.crater;
-
-        if (feature.type === 'plain' || feature.type === 'plateau') {
-          color = '#22c55e';
-          badgeBorder = 'border-emerald-500/50';
-          badgeBg = 'bg-slate-950/90 text-emerald-300';
-          typeBadge = feature.type === 'plateau' ? 'PLATO' : 'DÜZLÜK';
-          pinMaterial = isSelected ? materials.plainSelected : materials.plain;
-        } else if (feature.type === 'peak' || feature.type === 'ridge') {
-          color = '#38bdf8';
-          badgeBorder = 'border-sky-500/50';
-          badgeBg = 'bg-slate-950/90 text-sky-300';
-          typeBadge = feature.type === 'peak' ? 'ZİRVE' : 'SIRT';
-          pinMaterial = isSelected ? materials.peakSelected : materials.peak;
-        } else if (feature.type === 'site') {
-          color = '#c084fc';
-          badgeBorder = 'border-purple-500/50';
-          badgeBg = 'bg-slate-950/90 text-purple-200';
-          typeBadge = 'KUTUP';
-          pinMaterial = isSelected ? materials.siteSelected : materials.site;
-        }
-
-        if (isSelected) {
-          badgeBorder = 'border-amber-400 ring-2 ring-amber-400/60 shadow-amber-900/60';
-          badgeBg = 'bg-amber-950/95 text-amber-200 font-bold';
-        }
-
-        return (
-          <FeatureMarker
-            key={feature.id}
-            feature={feature}
-            posHead={posHead}
-            normal={normal}
-            isSelected={isSelected}
-            featureTier={featureTier}
-            currentZoomTier={currentZoomTier}
-            labelDisplayMode={labelDisplayMode}
-            color={color}
-            badgeBg={badgeBg}
-            badgeBorder={badgeBorder}
-            typeBadge={typeBadge}
+          {/* Site01 (Connecting Ridge) Ana Görev Pini */}
+          <SiteMarker
+            siteKey="Site01"
+            title="Site01: Connecting Ridge"
+            badge="54s ORTAK"
+            badgeBg="bg-sky-900/60 text-sky-300"
+            vec={site01Vec}
+            pinHead={site01PinHead}
+            normal={site01Normal}
+            isSelected={siteId === 'Site01'}
             pinGeometry={pinGeometry}
-            pinMaterial={pinMaterial}
-            onSelect={setSelectedCrater}
+            activeMaterial={materials.missionActive}
+            inactiveMaterial={materials.missionInactive}
+            labelDisplayMode={labelDisplayMode}
+            onSelect={setSiteId}
           />
-        );
-      })}
+
+          {/* Site04 (Shackleton Rim) Ana Görev Pini */}
+          <SiteMarker
+            siteKey="Site04"
+            title="Site04: Shackleton Rim"
+            badge="KESİNTİ"
+            badgeBg="bg-red-950/60 text-red-300"
+            vec={site04Vec}
+            pinHead={site04PinHead}
+            normal={site04Normal}
+            isSelected={siteId === 'Site04'}
+            pinGeometry={pinGeometry}
+            activeMaterial={materials.missionActive}
+            inactiveMaterial={materials.missionInactive}
+            labelDisplayMode={labelDisplayMode}
+            onSelect={setSiteId}
+          />
+
+          {/* Güney Kutbu Tüm Krater ve Parsel Sınır Hatları (NASA & IAU Dairesel Konturlar) */}
+          {craterFeatures.map(({ feature, centerVec, normal, rimGeometry, labelPos }) => {
+            // Site01 ve Site04 yukarıda zaten özel pin olarak çizildi
+            if (feature.id === 'feature-connecting-ridge' || feature.id === 'feature-shackleton-rim') {
+              return null;
+            }
+
+            const isSelected = selectedCrater?.id === feature.id;
+
+            // 1. Sektör filtresi
+            if (selectedSector !== 'all' && feature.sector !== selectedSector) {
+              return null;
+            }
+
+            // 2. Özellik türü filtresi
+            if (featureFilterType === 'crater' && feature.type !== 'crater') return null;
+            if (featureFilterType === 'plain' && feature.type !== 'plain' && feature.type !== 'plateau') return null;
+            if (featureFilterType === 'peak' && feature.type !== 'peak' && feature.type !== 'ridge') return null;
+
+            const featureTier = feature.tier || 1;
+
+            // Türüne göre hat rengi
+            let color = '#f59e0b'; // Kraterler: Altın/Kehribar
+            if (feature.type === 'plain' || feature.type === 'plateau') {
+              color = '#22c55e'; // Düzlük ve İniş Parselleri: Zümrüt Yeşili
+            } else if (feature.type === 'peak' || feature.type === 'ridge') {
+              color = '#38bdf8'; // Sırt ve Zirveler: Gök Mavisi
+            } else if (feature.type === 'site') {
+              color = '#c084fc';
+            }
+
+            return (
+              <CraterRimFeature
+                key={feature.id}
+                feature={feature}
+                rimGeometry={rimGeometry}
+                centerVec={centerVec}
+                labelPos={labelPos}
+                normal={normal}
+                isSelected={isSelected}
+                featureTier={featureTier}
+                currentZoomTier={currentZoomTier}
+                labelDisplayMode={labelDisplayMode}
+                color={color}
+                onSelect={setSelectedCrater}
+              />
+            );
+          })}
+        </>
+      )}
     </group>
   );
 };
