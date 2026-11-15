@@ -1,0 +1,38 @@
+name: Frontend checks
+
+# 3B küre bileşeni derlenmiş paket olarak depoya giriyor; kaynağı
+# `frontend/` altında. Python kapıları bu kaynağı hiç görmediği için
+# bozuk bir .tsx fark edilmeden birleşebiliyordu. Bu iş o boşluğu kapatır.
+#
+# Yol süzgeci bilinçli olarak YOK: dal koruması bu kontrolü zorunlu
+# yaptığında, süzgeç yüzünden hiç raporlamayan bir iş PR'ları süresiz
+# bekletir (docs/GOVERNANCE.md bölüm 10).
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  typecheck:
+    name: TypeScript tip denetimi
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      # `npm ci` kilit dosyasına birebir uyar; sürüm kayması olmaz.
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      # Yalnız tip denetimi. `npm run build` paketi
+      # `app/components/lunar/` içine yazar; CI depo ağacını değiştirmemeli.
+      - name: Typecheck
+        working-directory: frontend
+        run: npx tsc -p tsconfig.json --noEmit

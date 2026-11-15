@@ -1,0 +1,20 @@
+# Vercel yalnızca bağımsız web arayüzünü derler. Aşağıdakiler dağıtıma
+# girmez; bazıları büyük (DEM karoları ~78 MB), bazıları sunucu tarafı.
+.venv/
+data/cache/
+outputs/
+docs/
+artifacts/
+tests/
+governance/
+src/
+scripts/k1_*
+scripts/k2_*
+scripts/k3_*
+scripts/k5_*
+scripts/check_governance.py
+app/app.py
+app/components/
+.streamlit/
+__pycache__/
+*.pyc

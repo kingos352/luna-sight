@@ -228,5 +228,11 @@ Diğer ayarlar:
   atlamak değildir**: dört kontrol yeşil olmadan hiçbir dal birleştirilmez,
   bu kural otorite için de geçerlidir.
 
+Koşan ama **henüz zorunlu olmayan** kapı: `Frontend checks / TypeScript tip
+denetimi` (ADR-501). `frontend/` kaynağı derlenir hale geldiğinde zorunlu
+listeye alınır ve yukarıdaki tablo güncellenir. O ana kadar kırmızı olması
+birleştirmeyi engellemez — bu bilinçli bir geçiş durumudur, kapının
+atlanması değildir.
+
 Zorunlu kontrol listesi değişirse bu bölüm ve `docs/DECISIONS.md` aynı PR'da
 güncellenir.

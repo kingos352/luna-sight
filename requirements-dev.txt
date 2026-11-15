@@ -15,6 +15,3 @@ pytest-recording==0.14.1
 # Kasetle üretilemeyen hata yolları: HTTP 5xx, zaman aşımı, kesik $$SOE
 # bloğu. quality_flag = partial / missing mantığının testi için.
 responses==0.26.3
-
-# .env.example içindeki LUNA_SIGHT_* değerlerini yerelde okumak için.
-python-dotenv==1.2.4

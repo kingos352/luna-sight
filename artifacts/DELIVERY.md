@@ -12,10 +12,10 @@ bilinmeyen bir boşluk, bilinen bir boşluktan daha pahalıdır.
 | Alan | Değer |
 |---|---|
 | Dal | `fix/k1-k5-full-sync` (`main` adayı) |
-| Temel Commit | `3a37d78` + `v3.0.0` K1–K5 tam senkronizasyon, 5 kapatılan boşluk ve 5 uçuş fiziği modülü |
+| Temel Commit | `3a37d78` + `origin/main` (`3ec7011`) birleşimi + `v3.0.0` K1–K5 tam senkronizasyon, 5 kapatılan boşluk ve 5 uçuş fiziği modülü |
 | Zaman | 2026-11-15 |
 | Python | 3.12 (`.python-version`) |
-| Giriş noktası | `app/app.py` (Streamlit — 6 sekme, 12 Artemis III aday bölgesi) |
+| Giriş noktası | `app/app.py` (Streamlit — 6 sekme, 12 Artemis III aday bölgesi, `LunarSight AI` çift yönlü bileşeni) |
 
 Beş rolün tamamı bu sürümde: K1 efemeris, K2 arazi ve 3B/eğim riski, K3
 görünürlük motoru, K4 arayüz, K5 entegrasyon/yönetişim/demo.
@@ -27,9 +27,9 @@ Hepsi `fix/k1-k5-full-sync` çalışma alanında güncel durumla koşturuldu.
 | Kontrol | Komut | Sonuç |
 |---|---|---|
 | Bağımlılık ağacı | `.venv\Scripts\python.exe -m pip check` | `No broken requirements found.` |
-| Biçimlendirme | `.venv\Scripts\ruff.exe format --check .` | `86 files already formatted` |
+| Biçimlendirme | `.venv\Scripts\ruff.exe format --check .` | `101 files already formatted` |
 | Kod denetimi | `.venv\Scripts\ruff.exe check .` | `All checks passed!` |
-| Testler | `.venv\Scripts\python.exe -m pytest -q --record-mode=none` | **248 passed** |
+| Testler | `.venv\Scripts\python.exe -m pytest -q --record-mode=none` | **302 passed** |
 | Kanonik sözleşme | `.venv\Scripts\python.exe scripts/check_governance.py` | `Sonuc: gecti. 0 uyari.` |
 | Uygulama ve uçuş fiziği testleri | `tests/test_app_smoke.py`, `tests/test_flight_physics.py`, `tests/test_surface_3d.py` (`pytest` içinde) | Geçti (canlı `/_stcore/health` bu koşuda ayrıca başlatılmadı; önceki `f6b361c` sürümünde `200 ok`) |
 
@@ -99,10 +99,10 @@ olarak okunmalıdır (`docs/REAL_RUN.md` §5):
 | Efemeris | JPL Horizons `OBSERVER` API | API `1.2`, **DE441** | `source_id=jpl-horizons`, satır başına `parameters` (JSON) |
 | Arazi (yüksek çöz.) | NASA GSFC PGDA, LRO/LOLA LDEM + LDEC | Barker vd. 2021, 5 m/piksel | `source_id=pgda-lola-5mpp` |
 | Bölgesel arazi | LDEM_60S_240MPP_ADJ | Barker vd. 2021, 240 m/piksel (`MOON_ME`, `DE421`) | `source_id=pgda-lola-240mpp` (`*_summary_20000m.json` `dem` alanı) |
-| 3B küre dokuları | NASA Moon Trek / LRO WAC + LOLA | WAC mozaik 2K/4K, LOLA normal/bump | `app/static/moon/textures/` |
+| 3B küre dokuları | NASA Moon Trek / LROC QuickMap / LOLA | WAC mozaik 2K/4K, LOLA normal/bump/topografya | `app/static/moon/textures/` |
 
-`data/manifest.csv` **13 veri satırı** (başlıkla 14 satır) taşıyor: 5 LOLA DEM
-satırı, 4 JPL Horizons ham yanıt satırı, 4 Moon Trek doku satırı. Ham NASA
+`data/manifest.csv` **14 veri satırı** (başlıkla 15 satır) taşıyor: 5 LOLA DEM
+satırı, 4 JPL Horizons ham yanıt satırı, 5 Moon Trek / QuickMap doku satırı. Ham NASA
 GeoTIFF ve Horizons önbellek dosyaları Git'e eklenmez (`data/cache/`,
 `.gitignore`).
 
@@ -110,19 +110,19 @@ GeoTIFF ve Horizons önbellek dosyaları Git'e eklenmez (`data/cache/`,
 
 | Varlık | Yer | Durum |
 |---|---|---|
-| Çalışan uygulama | `app/app.py`, `fix/k1-k5-full-sync` | **hazır** — 6 sekme, 12 Artemis III adayı, Moon Trek `?siteA=...&siteB=...` URL senkronu, Gateway NRHO / Penumbra / ITU-R P.526 / A* / `3σ` BHI |
-| Bilimsel modüller | `src/luna_sight/{ephemeris,terrain,visibility}` | **hazır** — 3B rölyef (`surface_3d.py`), 3 kademeli eğim riski (`risk.py`), `horizon.py` (`merge_hybrid_profiles`), `hazard.py`, `pathfinder.py`, `gateway.py`, `penumbra.py`, `comms.py` |
+| Çalışan uygulama | `app/app.py`, `fix/k1-k5-full-sync` | **hazır** — 6 sekme, 12 Artemis III adayı, Moon Trek `?siteA=...&siteB=...` URL senkronu + `LunarSight AI` çift yönlü bileşeni (`app/components/lunar/`), Gateway NRHO / Penumbra / ITU-R P.526 / A* / `3σ` BHI |
+| Bilimsel ve AI modülleri | `src/luna_sight/{ephemeris,terrain,visibility,ai}` | **hazır** — 3B rölyef (`surface_3d.py`), 3 kademeli eğim riski (`risk.py`), `horizon.py` (`merge_hybrid_profiles`), `hazard.py`, `pathfinder.py`, `gateway.py`, `penumbra.py`, `comms.py` + `ai/` (`origin/main` `3ec7011` birleşimi) |
 | Görünürlük çıktıları | `outputs/k3/SiteXX_{visibility.csv,windows.json,summary.json}` | **hazır** (12 bölge × 3 = 36 dosya + `sensitivity.csv`; 12 bölgenin tamamı `CANDIDATE_SITES` ile `0.0°` hizalı ve Git'e hazır) |
 | Ufuk ve eğim profilleri | `outputs/k2/` | **hazır** — 12 bölge, 45 dosya (`regional_20000m_comparison.json`, `*_summary_20000m.json` ve 12 adet çevrimdışı `Site*_slope_summary.json` dahil) |
 | Duyarlılık taraması | `outputs/k3/sensitivity.csv` (144 satır = 16 profil × 3 marj × 3 gövde) | **hazır** (`scripts/k3_sensitivity.py --series-dir`, gerçek `jpl-horizons` `DE441`) |
 | Ürün kayıtları | `docs/K1_EPHEMERIS.md`, `K2_HORIZON.md`, `K3_VISIBILITY.md`, `REAL_RUN.md` | **hazır** (`K1_EPHEMERIS.md` 12 bölge özetiyle güncellendi) |
-| Master proje raporu | `docs/MASTER_PROJECT_REPORT_TR.md`, `docs/LUNA_SIGHT_MASTER_PROJE_RAPORU.pdf` | **hazır** — Sürüm `3.0.0` (`200568` bayt) |
+| Master proje raporu | `docs/MASTER_PROJECT_REPORT_TR.md`, `docs/LUNA_SIGHT_MASTER_PROJE_RAPORU.pdf` | **hazır** — Sürüm `3.0.0` (`200768` bayt) |
 | Entegrasyon sözleşmesi | `docs/GOVERNANCE.md`, `governance/registry.json` | **hazır** |
 | Demo senaryosu | `docs/DEMO_SCRIPT.md` | **hazır**, 12 bölge + `.en.srt` + `228 passed` sürümünden güncellendi |
 | Demo videosu | `build/luna_sight_demo_120s_v2.mp4` | **yerelde mevcut değil / Drive veya yerel derleme** — >20 MB CI sınırı nedeniyle Git dışındadır (`build/` `.gitignore` altındadır); `k5_record_demo.py` ile yeniden üretilebilir |
 | Altyazı dosyası | `artifacts/luna_sight_demo_120s_v2.en.srt` | **hazır** — 17 girdi, LF satır sonlu SHA-256 manifestte güncellendi |
 | Anlatım kaynağı | `docs/demo_narration_en.json` | **hazır** — ses, gömülü altyazı ve `.srt` tek kaynaktan |
-| Sunum destesi | `artifacts/luna_sight_sunum.pdf` (`scripts/generate_presentation_pdf.py`) | **hazır** — 12 slayt (`297mm × 167mm` 16:9 yatay), `158062` bayt, Türkçe vektörel PDF |
+| Sunum destesi | `artifacts/luna_sight_sunum.pdf` (`scripts/generate_presentation_pdf.py`) | **hazır** — 12 slayt (`297mm × 167mm` 16:9 yatay), `158059` bayt, Türkçe vektörel PDF |
 
 ### Demo videosu nasıl üretildi
 

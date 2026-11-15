@@ -2,7 +2,7 @@
 ## Büyük Proje Raporu (Master Project Report)
 **Hazırlayan:** Ajan 6 — Baş Editör, İletişim Mimarı & Stratejik İnovasyon Danışmanı (K1–K5 Senkronizasyon Konsorsiyumu)  
 **Tarih:** 15 Kasım 2026 | **Görev:** Artemis III İniş Alanı Karar Destek Sistemi  
-**Sürüm:** 3.0.0 (K1–K5 Tam Senkronizasyon · 5 Teknik Boşluk Kapatıldı + 5 Uçuş Fiziği Modülü · 12 NASA Artemis III Bölgesi · 248/248 Test Yeşil)
+**Sürüm:** 3.0.0 (K1–K5 Tam Senkronizasyon · 5 Teknik Boşluk Kapatıldı + 5 Uçuş Fiziği Modülü · 12 NASA Artemis III Bölgesi · 302/302 Test Yeşil)
 
 ---
 
@@ -31,7 +31,7 @@
    - 4.1. Temel Altyapı Temizliği ve Ortam İzolasyonu (`9847f17`)
    - 4.2. Çoklu PR Birleşimi ve 3B/Risk Entegrasyonunda Çözülen 6 Çapraz Birim Hatası (`3a37d78`)
    - 4.3. 6 Ajanlı K1–K5 12-Bölge Tam Senkronizasyon ve Kurtarma Operasyonu (`fix/k1-k5-full-sync`)
-   - 4.4. Nihai Test, Lint ve Yönetişim Hükmü: 248/248 Yeşil
+   - 4.4. Nihai Test, Lint ve Yönetişim Hükmü: 302/302 Yeşil
 5. [TEKNİK SINIRLAR, TAMAMLANAN İYİLEŞTİRMELER VE GELECEK VİZYONU](#5-teknik-sınırlar-tamamlanan-i̇yileştirmeler-ve-gelecek-vizyonu)
    - 5.1. Kapatılan 5 Teknik Boşluk ve Doğrulanan Çözümler (`v3.0.0`)
    - 5.2. Üretime Alınan 5 İleri Uzay Mühendisliği ve Uçuş Fiziği Modülü
@@ -117,7 +117,7 @@ flowchart TD
         K2["🏔️ K2: Ay Topoğrafyası (12 Bölge · Hibrit Ufuk + 3B + A* + BHI Risk)"]
         K3["⚡ K3: Görünürlük & Uçuş Fiziği (Gateway NRHO · Penumbra · ITU-R P.526)"]
         K4["🚀 K4: Kokpit & Taktik UI (12 Bölge · Moon Trek URLSync + SUHAIL)"]
-        K5["🛡️ K5: Yönetişim & Teslim (248/248 Pytest · 86/86 Format · 12 Slayt PDF)"]
+        K5["🛡️ K5: Yönetişim & Teslim (302/302 Pytest · 101/101 Format · 12 Slayt PDF)"]
 
         K1 -->|Zaman Serisi: Azimut / Yükseklik| K3
         K2 -->|360° Engel Profili: h(θ)| K3
@@ -274,7 +274,7 @@ K4 birimi (`app/app.py`, ~2.767 satır), arkadaki tüm astrofizik, lazer harita 
    - **`3B Ay küresi`** sekmesindeki kapalı açılır panelde Plotly 3B yüzeyi (13 IAU krateri, 5 kamera önayarı, güneş ışığı ve kabartma kontrolleri) sunulur.
    - **`Arazi Riski`** sekmesi (`render_risk_tab(selected_a, selected_b)`), seçili A ve B adaylarının krater/eğim kartlarını en üstte yan yana gösterir; 12 bölgenin tamamını ise tek bir kapalı özet tablosu (`expanded=False`) içinde sunarak ekranı 12 tekrarlı uyarıyla boğmaz.
 5. **Polar Ufuk Radarı, Batarya (`% SoC`) Simülatörü ve Çevrimdışı Güvenli Mod:**  
-   - **`Ufuk görünümü`**, **`Zaman çizelgesi`** (gösterim amaçlı `% SoC` batarya eğrisi, `0.533°` Güneş diski penumbra modeli ve açık `BATTERY_ASSUMPTIONS` beyanı) ve **`Veri ve kaynak`** (18 kolonlu kanonik sözleşme + eksikte çökmeden `test_fixture` moduna geçen güvenli geri dönüş) sekmeleri **18/18 `test_app_smoke.py`** + **16/16 `test_surface_3d.py`** + **11/11 `test_flight_physics.py`** testiyle doğrulanmıştır.
+   - **`Ufuk görünümü`**, **`Zaman çizelgesi`** (gösterim amaçlı `% SoC` batarya eğrisi, `0.533°` Güneş diski penumbra modeli ve açık `BATTERY_ASSUMPTIONS` beyanı) ve **`Veri ve kaynak`** (18 kolonlu kanonik sözleşme + eksikte çökmeden `test_fixture` moduna geçen güvenli geri dönüş) sekmeleri **20/20 `test_app_smoke.py`** + **16/16 `test_surface_3d.py`** + **11/11 `test_flight_physics.py`** + **48 AI testi** (`origin/main` `3ec7011` `LunarSight AI` bileşen birleşimi dahil) ile doğrulanmıştır.
 
 ---
 
@@ -293,9 +293,9 @@ Uzay uçuşlarında yolda tamirci çağıramazsınız. K5 birimi (**Görev Orkes
    - `scripts/k5_synthesize_narration.py` (`docs/demo_narration_en.json` → Windows SAPI + `ffprobe` süre ölçümü),
    - `scripts/k5_build_video.py` (`1920x1080`, `30 fps`, H.264+AAC + 180 px alt altyazı şeridi + LF satır sonlu `artifacts/luna_sight_demo_120s_v2.en.srt`).
 4. **Kriptografik SHA-256 Veri Sicili (`data/manifest.csv` & `artifacts/manifest.csv`):**  
-   `data/manifest.csv` içindeki **13 veri satırı** (5 LOLA DEM, 4 JPL Horizons ham yanıt, 4 Moon Trek 3B küre dokusu) ile `artifacts/manifest.csv` ve `artifacts/DELIVERY.md` tüm 12 Artemis III bölgesi ve diskten yeniden hesaplanan SHA-256 özetleriyle güncellenmiştir.
-5. **Ağsız ve Deterministik 248 Testlik Geçerlik Kapısı:**  
-   Tüm test paketi (`pytest --record-mode=none`) canlı internet erişimi olmaksızın **248/248 geçer** ve `ruff format --check .` (**86/86 dosya**) + `ruff check .` (**0 hata**) tam uyumludur.
+   `data/manifest.csv` içindeki **14 veri satırı** (5 LOLA DEM, 4 JPL Horizons ham yanıt, 5 Moon Trek / QuickMap 3B küre dokusu) ile `artifacts/manifest.csv` ve `artifacts/DELIVERY.md` tüm 12 Artemis III bölgesi ve diskten yeniden hesaplanan SHA-256 özetleriyle güncellenmiştir.
+5. **Ağsız ve Deterministik 302 Testlik Geçerlik Kapısı:**  
+   Tüm test paketi (`pytest --record-mode=none`) canlı internet erişimi olmaksızın **302/302 geçer** ve `ruff format --check .` (**101/101 dosya**) + `ruff check .` (**0 hata**) tam uyumludur.
 
 ---
 
@@ -401,7 +401,7 @@ LUNA SIGHT'ın teslim öncesi sürecinde yalnızca tek bir düzeltme turuyla yet
 flowchart LR
     subgraph Ajan7_Birligi["6 Ajanlı K1-K5 Tam Senkronizasyon & Kalite Güvence Hattı"]
         T1["🔍 1. Temel & 3B/Risk (9847f17 + 3a37d78)"] --> T2["🔧 2. 12-Bölge K1-K5 Kurtarma & Senkronizasyon"]
-        T2 --> T3["🧪 3. 248/248 Pytest · 86/86 Ruff · 0 Lint"]
+        T2 --> T3["🧪 3. 302/302 Pytest · 101/101 Ruff · 0 Lint"]
         T3 --> T4["🛡️ 4. check_governance (0 Uyarı) & v3.0.0 PDF + Sunum"]
     end
 ```
@@ -430,20 +430,20 @@ flowchart LR
    12 `*_summary_20000m.json` dosyasına `"coordinate"` ve `"dem"` (`pgda-lola-240mpp`, `MOON_ME`) alanları eklendi; `risk.py` içindeki `format_side_by_side_comparison()` 12-bölge sözlüğünü kabul edip seçili A/B'yi kıyaslayacak şekilde yeniden yazıldı; krater kataloğu sayısı `14` yerine gerçek `13 krater` olarak düzeltildi; `terrain/__init__.py` içindeki yinelenen `__all__` sembolleri temizlendi.
 3. **K3 Görünürlük Kurtarma (`scripts/k3_visibility_report.py`, `outputs/k3/`):**  
    Daha önce `feat/k2-artemis3-candidate-sites` (`15b2935`) dalında `k3_visibility_report.py` betiğinin `--series` verilmeden çalıştırılmasıyla `outputs/k3/` içine sızan `synthetic-scenario-v1` (`test_fixture`) ezilmesi tamamen geri alındı ve tarihsel `OUT-02` uyarıları sıfırlandı. **`Site01` ve `Site04`'ün kanonik 4000 m / 5 m/px JPL Horizons DE441 çıktıları birebir korundu** (`git diff` boş); `load_site_coordinate()` içine `*_summary_20000m.json` yedeği ve `.as_posix()` yol düzeltmesi eklenerek 10 yeni bölgenin tamamı gerçek DE441 + 20 km profillerle yeniden üretildi (**102/102 K3 testi yeşil**).
-4. **K4 Kokpit (`app/app.py`, `tests/test_app_smoke.py`):**  
-   `_discover_real_sites()` tüm **12 Artemis III bölgesini** tanıyacak biçimde genişletildi; `NUMERIC_COLUMNS` listesine marj sütunları eklendi ve `_evaluate_with_engine()` içindeki sözleşme dışı `"+K3"` eki kaldırıldı; `verdict_slot` konteyneri kaldırılıp `notranslate` uygulanarak React DOM `removeChild` riski kapatıldı; `render_risk_tab(selected_a, selected_b)` kullanıcının seçtiği A/B çiftine bağlanıp 12 bölgeyi tek kapalı özet tablosuna aldı; `render_sidebar_controls()` 6'lı dönüş tipi düzeltildi; 3 yeni duman testi eklendi.
+4. **K4 Kokpit (`app/app.py`, `app/components/lunar/`, `src/luna_sight/ai/`, `tests/test_app_smoke.py`):**  
+   `_discover_real_sites()` tüm **12 Artemis III bölgesini** tanıyacak biçimde genişletildi; `NUMERIC_COLUMNS` listesine marj sütunları eklendi ve `_evaluate_with_engine()` içindeki sözleşme dışı `"+K3"` eki kaldırıldı; `verdict_slot` konteyneri kaldırılıp `notranslate` uygulanarak React DOM `removeChild` riski kapatıldı; `render_risk_tab(selected_a, selected_b)` kullanıcının seçtiği A/B çiftine bağlanıp 12 bölgeyi tek kapalı özet tablosuna aldı; `render_sidebar_controls()` 6'lı dönüş tipi düzeltildi; `origin/main` (`3ec7011`) birleşimiyle `LunarSight AI` çift yönlü bileşeni (`declare_component("lunar_sight")`), `src/luna_sight/ai/`, `frontend/` ve `quickmap_lola_topo_4k` kenar çubuğu/6-sekme bütünlüğünü gizleyen tam-ekran CSS olmadan entegre edildi (`20/20` `test_app_smoke.py` + `48` AI testi).
 5. **K5 Yönetişim & Demo (`scripts/`, `docs/DEMO_SCRIPT.md`, `artifacts/{DELIVERY.md,manifest.csv}`):**  
-   `k5_build_video.py` ve `k5_synthesize_narration.py` biçimlendirilerek depo geneli format uyumu yakalandı; `k5_record_demo.py` içindeki `center_element()` görünür (`offsetWidth > 0 && offsetHeight > 0`) Plotly grafiğini seçecek biçimde düzeltildi; `scripts/generate_presentation_pdf.py` ile 12 slaytlık `artifacts/luna_sight_sunum.pdf` üretildi; `DELIVERY.md`, `DEMO_SCRIPT.md` ve `artifacts/manifest.csv` 12 bölge, **13 veri satırlı `data/manifest.csv`**, `248 passed` ve diskten taze hesaplanan SHA-256 hash'leriyle senkronize edildi.
+   `k5_build_video.py` ve `k5_synthesize_narration.py` biçimlendirilerek depo geneli format uyumu yakalandı; `k5_record_demo.py` içindeki `center_element()` görünür (`offsetWidth > 0 && offsetHeight > 0`) Plotly grafiğini seçecek biçimde düzeltildi; `scripts/generate_presentation_pdf.py` ile 12 slaytlık `artifacts/luna_sight_sunum.pdf` üretildi; `DELIVERY.md`, `DEMO_SCRIPT.md` ve `artifacts/manifest.csv` 12 bölge, **14 veri satırlı `data/manifest.csv`**, `302 passed` ve diskten taze hesaplanan SHA-256 hash'leriyle senkronize edildi.
 
-### 4.4. Nihai Test, Lint ve Yönetişim Hükmü: 248/248 Yeşil
+### 4.4. Nihai Test, Lint ve Yönetişim Hükmü: 302/302 Yeşil
 
 Tüm düzenlemelerin ardından koşulan doğrulama kapılarının tamamı sıfır hata vermiştir:
 
 | Kalite Kapısı | Koşulan Komut | Gözlenen Sonuç |
 | :--- | :--- | :--- |
-| **Tam Test Paketi (Ağsız)** | `.venv\Scripts\python.exe -m pytest -q --record-mode=none` | **`248 passed in 11.56s`** (%100 Yeşil, 0 hata) |
+| **Tam Test Paketi (Ağsız)** | `.venv\Scripts\python.exe -m pytest -q --record-mode=none` | **`302 passed`** (%100 Yeşil, 0 hata) |
 | **Statik Kod Denetimi** | `.venv\Scripts\ruff.exe check .` | **`All checks passed!`** (`0` lint hatası) |
-| **Kod Biçimlendirme** | `.venv\Scripts\ruff.exe format --check .` | **`86 files already formatted`** (`0` fark) |
+| **Kod Biçimlendirme** | `.venv\Scripts\ruff.exe format --check .` | **`101 files already formatted`** (`0` fark) |
 | **Kanonik Yönetişim Sözleşmesi** | `.venv\Scripts\python.exe scripts/check_governance.py` | **`Sonuc: gecti. 0 uyari.`** (`failures: []`, `warnings: []`) |
 
 ---
@@ -463,7 +463,7 @@ Tüm düzenlemelerin ardından koşulan doğrulama kapılarının tamamı sıfı
 4. **`scripts/k3_sensitivity.py` Çoklu Bölge `--series-dir` Desteği ve `144` Satırlık Gerçek DE441 Taraması:**  
    `scripts/k3_sensitivity.py` betiğine `--series-dir`, `discover_series_file`, `load_series_grouped` ve `series_for_site` eklendi; `outputs/k3/sensitivity.csv` tüm 12 bölgedeki **16 K2 ufuk profili × 3 marj × 3 gövde = `144` veri satırı** ile canlı/önbellekli `jpl-horizons` `DE441` serilerinden yeniden üretildi (`check_governance.py` `0 uyari`).
 5. **12 Slaytlık Türkçe Jüri Sunum Destesi (`artifacts/luna_sight_sunum.pdf` & `scripts/generate_presentation_pdf.py`):**  
-   ReportLab + Windows `Arial`/`Consolas` Türkçe karakter desteği ile **12 slaytlık (`297mm × 167mm` 16:9 yatay)** `artifacts/luna_sight_sunum.pdf` (`158.062` bayt) otomatik üretilip 12 PNG render üzerinden piksel düzeyinde doğrulandı ve `artifacts/manifest.csv` içinde `MEVCUT` / SHA-256 doğrulamalı hale getirildi (sıfır `EKSIK` satır).
+   ReportLab + Windows `Arial`/`Consolas` Türkçe karakter desteği ile **12 slaytlık (`297mm × 167mm` 16:9 yatay)** `artifacts/luna_sight_sunum.pdf` (`158.059` bayt) otomatik üretilip 12 PNG render üzerinden piksel düzeyinde doğrulandı ve `artifacts/manifest.csv` içinde `MEVCUT` / SHA-256 doğrulamalı hale getirildi (sıfır `EKSIK` satır).
 
 ### 5.2. Üretime Alınan 5 İleri Uzay Mühendisliği ve Uçuş Fiziği Modülü
 
@@ -479,7 +479,7 @@ Tüm düzenlemelerin ardından koşulan doğrulama kapılarının tamamı sıfı
                    • 12 Artemis III Bölgesi · Gateway NRHO (%97.7) · A* PSR Koridoru
                    • 0.533° Penumbra Güç · ITU-R P.526 Link · 3σ BHI İniş Riski
                    • %100 NASA JPL DE441 & LOLA · Kriptografik SHA-256 İzlenebilirliği
-                   • 248/248 Otomatik Test & 0 Uyarı Sözleşme Güvenilirliği
+                   • 302/302 Otomatik Test & 0 Uyarı Sözleşme Güvenilirliği
 ```
 
 Danışman mimaride önerilen 5 ileri uçuş fiziği modülünün tamamı `governance/registry.json` ve birim test (`tests/test_flight_physics.py`, `tests/test_surface_3d.py`) standartlarına uyarlanarak `src/luna_sight/` çekirdeğine ve `app/app.py` kokpitine doğrudan entegre edilmiştir:
@@ -503,7 +503,7 @@ Bundan elli yıl önce Apollo mühendisleri Ay'a cesaret ve sürgülü hesap cet
 
 Böylesi acımasız bir sınır boyunda güven, temennilerle değil; **milimetrik matematik, kırılmaz yazılım yönetişimi ve insan zihnini özgürleştiren berrak arayüzlerle** inşa edilir.
 
-**LUNA SIGHT v3.0.0; K1'in 12 bölgeli `DE441` göksel saati, K2'nin precomputed LOLA eğim özetleri + A\* koridor + `3σ` BHI tehlike analizi, K3'ün saniye-altı görünürlük + Gateway NRHO + Penumbra + ITU-R P.526 link bütçesi, K4'ün dinamik Moon Trek URL senkronlu taktik kokpiti ve K5'in `248/248` testli kalite kalkanı + 12 slaytlık sunum destesiyle kanıtlamıştır ki:**  
+**LUNA SIGHT v3.0.0; K1'in 12 bölgeli `DE441` göksel saati, K2'nin precomputed LOLA eğim özetleri + A\* koridor + `3σ` BHI tehlike analizi, K3'ün saniye-altı görünürlük + Gateway NRHO + Penumbra + ITU-R P.526 link bütçesi, K4'ün dinamik Moon Trek URL senkronlu taktik kokpiti (`LunarSight AI` bileşeni dahil) ve K5'in `302/302` testli kalite kalkanı + 12 slaytlık sunum destesiyle kanıtlamıştır ki:**  
 **Yüksek çözünürlüklü 5 m/px referans analizinde Connecting Ridge (Site01), insanlığın Ay'a güvenle ayak basacağı ve Dünya ile doğrudan telsiz bağını kuracağı altın kapıdır; Gateway 9:2 NRHO rölesi Shackleton Kenarı'nı (`Site04`) haberleşmede %97.72 oranında kurtarsa da `3σ` iniş elipsi ve A\* koridor analizinde `Site04` (%5.73 güvenli ayak izi) tehlikeli kalmaya devam etmekte, bölgesel taramada ise `de Gerlache rim 2` (`Site05`), `Amundsen rim` (`Site12`), `Malapert massif` (`Site08`) ve düz yüzeyiyle `Mons Mouton` (`Site13`) öne çıkmaktadır.**
 
 ---

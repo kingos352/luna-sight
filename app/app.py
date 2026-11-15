@@ -2107,10 +2107,11 @@ def render_source_cards(spec_a: SiteSpec, spec_b: SiteSpec, frame_a: pd.DataFram
     )
 
 
-#: 3B küre, derlenmiş bir React/three.js uygulamasıdır ve `static/moon/`
-#: altından sunulur. Streamlit `enableStaticServing` ile bu klasörü
-#: `/app/static/` yoluna açar, yani ayrı bir sunucu süreci gerekmez.
-GLOBE_DIR = Path(__file__).resolve().parent / "static" / "moon"
+#: 3B küre, `frontend/` kaynaklarından (`components/lunar/`) ve statik Moon Trek
+#: paketinden (`static/moon/`) sunulabilir. Streamlit component protokolü
+#: LunarSight AI isteklerini aynı oturumdaki Python sunucusuna taşır.
+GLOBE_DIR = Path(__file__).resolve().parent / "components" / "lunar"
+STATIC_MOON_DIR = Path(__file__).resolve().parent / "static" / "moon"
 GLOBE_URL = "/app/static/moon/index.html"
 GLOBE_HEIGHT = 760
 
@@ -2187,10 +2188,10 @@ def render_globe_tab(
     hemen alttaki Plotly 3B modeli 12 bölgenin herhangi bir A/B çiftini dinamik
     olarak çizer.
     """
-    if not (GLOBE_DIR / "index.html").exists():
+    if not (GLOBE_DIR / "index.html").exists() and not (STATIC_MOON_DIR / "index.html").exists():
         st.warning(
-            "3B küre varlıkları bulunamadı (`static/moon/`). Depo eksiksiz "
-            "klonlanmadıysa bu sekme boş kalır; diğer sekmeler etkilenmez.",
+            "3B küre varlıkları bulunamadı (`components/lunar/` veya `static/moon/`). "
+            "Depo eksiksiz klonlanmadıysa bu sekme boş kalır; diğer sekmeler etkilenmez.",
             icon="⚠️",
         )
         return None
@@ -2203,15 +2204,22 @@ def render_globe_tab(
     globe_url = f"{GLOBE_URL}?{'&'.join(params)}" if params else GLOBE_URL
 
     st.caption(
-        "Taban harita: **NASA Moon Trek / LRO WAC** mozaiği. Kabartma ve normal "
-        "haritaları **LRO LOLA** yükseklik modelinden türetilmiştir. "
-        "`windows.json`, `horizons.json` ve `survey_targets.geojson` veri katmanları "
-        "12 Artemis III aday bölgesinin tamamını taşır ve seçilen A/B çifti için "
-        "`?siteA=...&siteB=...` köprü parametreleri iletilir. Ön-derlenmiş Moon Trek "
-        "WebGL yüzeyi `Site01`/`Site04` yüksek çözünürlüklü referans çiftine "
-        "odaklanırken, hemen alttaki Plotly 3B topografik modeli seçilen 12 bölgenin "
-        "herhangi bir A/B çiftini dinamik olarak takip eder."
+        "Taban harita: **NASA Moon Trek / LRO WAC** doğal fotomozaik ve **QuickMap / LOLA** "
+        "renkli topoğrafya haritası. `windows.json`, `horizons.json` ve `survey_targets.geojson` "
+        "veri katmanları 12 Artemis III aday bölgesinin tamamını taşır; seçilen A/B çifti için "
+        "`?siteA=...&siteB=...` köprü parametreleri iletilir. "
+        "(JPL Horizons · DE441 · `coord@301` · AIRLESS)."
     )
+    if (GLOBE_DIR / "index.html").exists():
+        try:
+            from streamlit.components.v1 import declare_component
+
+            from luna_sight.ai.component import render_lunar_component
+
+            lunar_component = declare_component("lunar_sight", path=str(GLOBE_DIR))
+            render_lunar_component(lunar_component)
+        except Exception:
+            pass
     components.iframe(globe_url, height=GLOBE_HEIGHT, scrolling=False)
     st.caption(
         "Fare ile döndür, tekerlekle yakınlaş. Ön-derlenmiş WebGL küresi ayrı bir "

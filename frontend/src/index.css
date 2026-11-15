@@ -1,0 +1,52 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gmat-bg text-gmat-text font-sans antialiased overflow-hidden select-none;
+    color-scheme: dark;
+  }
+}
+
+/* NASA GMAT Precision Aerospace Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #080D16;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #182235;
+  border: 1px solid #29374A;
+  border-radius: 2px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #29374A;
+}
+
+/* Subtle glowing pulse animations for active telemetry */
+@keyframes telemetry-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.65; transform: scale(1.08); }
+}
+.animate-telemetry {
+  animation: telemetry-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Three.js Drei HTML elements layering isolation */
+#luna-sight-webgl-container {
+  isolation: isolate;
+}
+#luna-sight-webgl-container > div:not(:has(canvas)) {
+  pointer-events: none !important;
+}
+
+/* Grid background pattern for scientific workspace feel */
+.bg-gmat-grid {
+  background-size: 24px 24px;
+  background-image: 
+    linear-gradient(to right, rgba(41, 55, 74, 0.15) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(41, 55, 74, 0.15) 1px, transparent 1px);
+}
