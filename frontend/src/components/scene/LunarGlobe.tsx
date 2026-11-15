@@ -124,7 +124,7 @@ export const LunarGlobe: React.FC = () => {
     <group ref={globeRef}>
       {/* 3B Ay Küresi: Tam Oturan Dikişsiz NASA Moon Trek PBR Materyali */}
       <mesh receiveShadow castShadow>
-        <sphereGeometry args={[radius, 128, 128]} />
+        <sphereGeometry args={[radius, 256, 256]} />
         <meshStandardMaterial
           map={layerMode === 'wac' ? moonTexture : (topoTexture || moonTexture)}
           normalMap={normalTexture || undefined}

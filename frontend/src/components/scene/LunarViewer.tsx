@@ -30,6 +30,7 @@ export const LunarViewer: React.FC = () => {
         <div id="luna-sight-webgl-container" className="w-full h-full">
           <Canvas
             shadows
+            dpr={[1, 2]}
             camera={{ fov: 45, near: 0.1, far: 2000, position: [0, -9, 8] }}
             gl={{
               antialias: true,
