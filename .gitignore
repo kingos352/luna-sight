@@ -49,3 +49,5 @@ node_modules/
 # Local work files
 work/
 
+
+.vercel
