@@ -1,6 +1,20 @@
 // LUNA SIGHT - Veri Tipleri & Sözleşmesi
 
-export type SiteId = 'Site01' | 'Site04';
+export type SiteId =
+  | 'Site01'
+  | 'Site04'
+  | 'MALAPERT_MASSIF'
+  | 'CONNECTING_RIDGE_EXT'
+  | 'LEIBNITZ_BETA'
+  | 'DE_GERLACHE_RIM_1'
+  | 'DE_GERLACHE_RIM_2'
+  | 'AMUNDSEN_RIM'
+  | 'NOBILE_RIM_2'
+  | 'DE_GERLACHE_KOCHER'
+  | 'HAWORTH'
+  | 'FAUSTINI_RIM'
+  | 'CABEUS_RIDGE'
+  | 'SVERDRUP_RIM';
 
 export type HorizonScenario = '0deg' | '2000m' | '4000m';
 
@@ -9,6 +23,96 @@ export type VisibilityState = 'visible' | 'blocked' | 'uncertain';
 export type CameraViewMode = 'globe' | 'terrain' | 'surface_pov';
 
 export type MapLayerMode = 'wac' | 'topo';
+
+// NASA GMAT Workstation Layout Presets
+export type WorkspacePreset = 'exploration' | 'scientific' | 'ai' | 'presentation';
+
+// Mission Console Tabs
+export type ConsoleTab = 'log' | 'analysis' | 'comparison' | 'simulation' | 'telemetry' | 'queue' | 'data' | 'ai';
+
+// Inspector Tabs
+export type InspectorTab = 'telemetry' | 'comparison' | 'simulation' | 'terrain' | 'crater' | 'ai';
+
+// Camera Presets
+export type CameraPreset =
+  | 'south_pole'
+  | 'site01'
+  | 'site04'
+  | 'equatorial'
+  | 'surface_pov'
+  | 'free'
+  | 'shoemaker'
+  | 'malapert'
+  | 'amundsen';
+
+// SUHAIL Mission Parameters (Image 2)
+export interface SuhailParameters {
+  sourceMode: 'real' | 'synthetic';
+  missionDays: number;
+  samplingInterval: '1h' | '5m';
+  startUtc: string;
+  minSunReq: number;
+  maxBlackoutTol: number;
+}
+
+// Lunar South Pole Feature Type & Hierarchy
+export type FeatureType = 'crater' | 'plain' | 'ridge' | 'plateau' | 'peak' | 'site';
+export type FeatureTier = 1 | 2 | 3; // 1: Major Landmark, 2: Regional, 3: Local Sector
+
+// Lunar South Pole Feature Catalog Entry
+export interface CraterFeature {
+  id: string;
+  name: string;
+  type?: FeatureType;
+  tier?: FeatureTier;
+  sector?: string;
+  lat: number;
+  lonEast: number;
+  diameterKm?: number;
+  depthM?: number;
+  rimHeightM?: number;
+  elevationM?: number;
+  hazardRisk: 'Low' | 'Moderate' | 'High' | 'Severe';
+  permanentlyShadowed: boolean;
+  scientificInterest: string;
+}
+
+// Distance Measurement Tool
+export interface MeasurementPoint {
+  lat: number;
+  lonEast: number;
+  elevationM?: number;
+}
+
+export interface MeasurementState {
+  active: boolean;
+  pointA: MeasurementPoint | null;
+  pointB: MeasurementPoint | null;
+  distanceKm: number | null;
+}
+
+// System Log Entry
+export interface SystemLogEntry {
+  id: string;
+  timestamp: string;
+  level: 'INFO' | 'WARN' | 'ERROR' | 'TELEMETRY' | 'SUCCESS';
+  category: 'K1-EPHEMERIS' | 'K2-TERRAIN' | 'K3-VISIBILITY' | 'AI-VLM' | 'SYSTEM' | 'PIPELINE';
+  message: string;
+}
+
+// Analysis Pipeline Step
+export type PipelineStepId = 'dataset' | 'roi' | 'terrain' | 'visibility' | 'ai' | 'report';
+
+export interface PipelineStep {
+  id: PipelineStepId;
+  name: string;
+  description: string;
+  status: 'idle' | 'running' | 'completed' | 'error';
+  progress: number;
+  detail?: string;
+  outputSummary?: string;
+  durationMs?: number;
+}
 
 export interface SiteInfo {
   id: SiteId;
@@ -187,4 +291,82 @@ export interface ModelSampleResult {
   };
   joint_sample_status: VisibilityState;
   twelve_hour_operation_decision: 'feasible' | 'uncertain' | 'not_feasible';
+}
+
+// GMAT Workstation Extensions
+export type GmatInspectorTab = 'terrain' | 'visibility' | 'craters' | 'ai';
+
+export interface ResourceNode {
+  id: string;
+  label: string;
+  category: 'LUNAR DATA' | 'ANALYSIS MODULES' | 'MISSION RESOURCES' | 'OUTPUT';
+  type: 'dataset' | 'module' | 'site' | 'crater' | 'layer' | 'output';
+  active: boolean;
+  visible: boolean;
+  badge?: string;
+  badgeColor?: 'sky' | 'green' | 'amber' | 'purple' | 'slate';
+  metadata?: Record<string, string | number>;
+}
+
+// Flight Physics & Simulation Models (Eray'ın Çalışması Entegrasyonu)
+export interface FlightSimulationData {
+  site_id: string;
+  site_name: string;
+  coordinates: {
+    latitude_deg: number;
+    longitude_deg_east: number;
+    elevation_m: number;
+  };
+  suitability_score: number;
+  operational_role: string;
+  landing_simulation: {
+    status: string;
+    status_label_tr: string;
+    duration_s: number;
+    landing_error_m: number;
+    touchdown_vz_ms: number;
+    touchdown_vxy_ms: number;
+    tilt_deg: number;
+    fuel_remaining_kg: number;
+    fuel_remaining_pct: number;
+    overall_score: number;
+    trajectory_sample: Array<{
+      t: number;
+      alt_m: number;
+      vz_ms: number;
+      vxy_ms: number;
+      fuel_kg: number;
+      thrust_n: number;
+      pitch_deg: number;
+    }>;
+  };
+  boulder_hazard: {
+    slope_deg: number;
+    crater_dist_m: number;
+    footprint_area_m2: number;
+    critical_diameter_m: number;
+    gamma: number;
+    expected_hazardous_boulders: number;
+    collision_probability: number;
+    bhi_score: number;
+    hazard_class: string;
+    risk_level: string;
+  };
+  gateway_relay: {
+    coverage_pct: number;
+    total_visible_hours: number;
+    longest_pass_hours: number;
+    gateway_orbit: string;
+  };
+  penumbra_power: {
+    visible_disk_percent: number;
+    effective_flux_wm2: number;
+    generated_power_watts: number;
+    eclipse_state: string;
+  };
+  knife_edge_diffraction: {
+    diffraction_loss_db: number;
+    emergency_margin_db: number;
+    link_status: string;
+  };
 }
