@@ -112,8 +112,23 @@ hata durumlarını, model listesi kontrolünü, DEM kapsam/projeksiyonunu,
 hillshade ölçeğini, şema normalizasyonunu ve bilimsel değerlerin korunmasını
 denetler. Bunlar modelin bilimsel doğruluğunu veya iniş güvenliğini kanıtlamaz.
 
-Son Python kontrolü: 261 test geçti; Ruff temiz. React TypeScript + Vite
-derlemesi başarılı. Gerçek Edge tarayıcısında Playwright ile mevcut
+Son ölçüm (2026-11-15T11:21Z, `feat/nvidia-cosmos-ai`): 261 test geçti.
+Ruff, commit edilmiş ağaçta ve bu PR'ın dokunduğu dosyalarda temiz.
+
+Aşağıdaki iki beyan ölçüm anında **doğru değildi**, düzeltildi:
+
+- Ruff, commit edilmemiş çalışma ağacında temiz **değil**: 212 hata var.
+  Neredeyse tamamı henüz commit edilmemiş `src/luna_sight/flight_physics/`
+  ve `src/luna_sight/terrain/sites.py` içinde.
+- React TypeScript derlemesi **şu an başarısız**:
+  `frontend/src/components/scene/LunarGlobe.tsx` 554-559 satırlarında
+  kapanış bloğu iki kere yazılmış, `tsc` sözdizimi hatası veriyor.
+  `npm run build` (`tsc -b && vite build`) bu hâlde tamamlanmaz.
+
+Bu yüzden aşağıdaki tarayıcı doğrulamaları, kırılmadan **önceki** bir
+ağaç durumuna aittir; şu anki ağaçta yeniden koşturulmadı.
+
+Gerçek Edge tarayıcısında Playwright ile mevcut
 LunarSight AI penceresinin DEM hazırlama, 3B sahne yakalama, dosya yükleme
 ve Site04'e geçiş akışları doğrulandı. Ekran görüntüleri `data/cache/`
 altında tutulur. Canlı test ayrıca `LUNA_LIVE_AI=1 npx playwright test`

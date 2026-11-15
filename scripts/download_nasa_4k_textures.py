@@ -14,6 +14,7 @@ import sys
 import time
 import urllib.request
 from pathlib import Path
+
 from PIL import Image
 
 LEVEL = 3
@@ -89,7 +90,11 @@ def main():
 
     # 2. NASA Moon Trek LOLA Topography Color Hillshade 4K
     topo_tpl = "https://trek.nasa.gov/tiles/Moon/EQ/LRO_LOLA_ClrShade_Global_128ppd_v04/1.0.0/default/default028mm/{level}/{row}/{col}.png"
-    download_layer("NASA Moon Trek LOLA Topography Color Hillshade 4K", topo_tpl, "moon_quickmap_topo_4k.jpg")
+    download_layer(
+        "NASA Moon Trek LOLA Topography Color Hillshade 4K",
+        topo_tpl,
+        "moon_quickmap_topo_4k.jpg",
+    )
 
     print(f"\nAll true 4K textures downloaded and stitched in {time.time() - t0:.1f}s!")
 
