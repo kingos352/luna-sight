@@ -1,0 +1,129 @@
+{
+  "timestamp_generated_utc": "2026-11-14T16:15:00Z",
+  "mission_requirement": {
+    "window_duration_hours": 12.0,
+    "sample_step_minutes": 5.0,
+    "observer_height_m": 2.0,
+    "transition_band_deg": 0.1,
+    "transition_band_type": "modeling_setting (not standalone measurement uncertainty)",
+    "primary_site": "Site04",
+    "secondary_site": "Site01",
+    "initial_utc_range": [
+      "2026-11-14T00:00:00Z",
+      "2026-11-21T00:00:00Z"
+    ]
+  },
+  "broader_scan_summary": [
+    {
+      "range_label": "Late Nov 2026 Libration Peak",
+      "start_utc": "2026-11-21 00:00",
+      "stop_utc": "2026-11-28 00:00",
+      "samples_count": 2017,
+      "max_earth_alt_deg": 6.0248,
+      "min_earth_horizon_deg": 3.8317,
+      "max_earth_margin_deg": -0.6463,
+      "earth_visible_samples": 0
+    },
+    {
+      "range_label": "Late Jan 2026 Libration Peak",
+      "start_utc": "2026-01-25 00:00",
+      "stop_utc": "2026-02-01 00:00",
+      "samples_count": 2017,
+      "max_earth_alt_deg": 6.2172,
+      "min_earth_horizon_deg": 4.0019,
+      "max_earth_margin_deg": 0.1943,
+      "earth_visible_samples": 500
+    },
+    {
+      "range_label": "Late Feb 2026 Libration Peak",
+      "start_utc": "2026-02-21 00:00",
+      "stop_utc": "2026-02-28 00:00",
+      "samples_count": 2017,
+      "max_earth_alt_deg": 6.2973,
+      "min_earth_horizon_deg": 4.3159,
+      "max_earth_margin_deg": 0.5088,
+      "earth_visible_samples": 930
+    }
+  ],
+  "data_products": [
+    {
+      "file_name": "Site01_final_adj_5mpp_0001_err.tif",
+      "size_bytes": 40987165,
+      "sha256": "242de9e3da624a276864cc4fa7c499e96981c95fd27583565e68e92434faf05b",
+      "provider": "NASA GSFC PGDA (LOLA Data Node)",
+      "reference": "Barker et al. 2021 (PSS 203:105119)",
+      "source_url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Site01_final_adj_5mpp_0001_err.tif"
+    },
+    {
+      "file_name": "Site01_final_adj_5mpp_0002_err.tif",
+      "size_bytes": 40987165,
+      "sha256": "97b2c05633e308c72eddfc5a337089836d80b5edb7469321976973f7eeb7dcad",
+      "provider": "NASA GSFC PGDA (LOLA Data Node)",
+      "reference": "Barker et al. 2021 (PSS 203:105119)",
+      "source_url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Site01_final_adj_5mpp_0002_err.tif"
+    },
+    {
+      "file_name": "Site01_final_adj_5mpp_surf.tif",
+      "size_bytes": 40980810,
+      "sha256": "3ba7b97cb00a2bcf21189c3aeb535f65afc21207154ab9f0d43c5bdc1f7e747e",
+      "provider": "NASA GSFC PGDA (LOLA Data Node)",
+      "reference": "Barker et al. 2021 (PSS 203:105119)",
+      "source_url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Site01_final_adj_5mpp_surf.tif"
+    },
+    {
+      "file_name": "Site01_final_adj_5mpp_toterr.tif",
+      "size_bytes": 40980810,
+      "sha256": "cf2cf52f52d2aa51e60d058010d10b0ebfb1d3e920f5a2b9a46eb6c51054ab1c",
+      "provider": "NASA GSFC PGDA (LOLA Data Node)",
+      "reference": "Barker et al. 2021 (PSS 203:105119)",
+      "source_url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site01/Site01_final_adj_5mpp_toterr.tif"
+    },
+    {
+      "file_name": "Site04_final_adj_5mpp_0001_err.tif",
+      "size_bytes": 40987161,
+      "sha256": "8d6efbddbfde8aa98a4a2454b6f79636ce307138360f3b38b6243cb76a585963",
+      "provider": "NASA GSFC PGDA (LOLA Data Node)",
+      "reference": "Barker et al. 2021 (PSS 203:105119)",
+      "source_url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site04/Site04_final_adj_5mpp_0001_err.tif"
+    },
+    {
+      "file_name": "Site04_final_adj_5mpp_0002_err.tif",
+      "size_bytes": 40987159,
+      "sha256": "a3b58f9000a75c7ed0156ee8222a8bcd66112748fbe8d89fc2de7e248d41bf0f",
+      "provider": "NASA GSFC PGDA (LOLA Data Node)",
+      "reference": "Barker et al. 2021 (PSS 203:105119)",
+      "source_url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site04/Site04_final_adj_5mpp_0002_err.tif"
+    },
+    {
+      "file_name": "Site04_final_adj_5mpp_ldec.tif",
+      "size_bytes": 40980740,
+      "sha256": "fcc8c2219ae2368d5b2a1f6aec05fcf96cf725f3035ac8d80efc312a4ff29227",
+      "provider": "NASA GSFC PGDA (LOLA Data Node)",
+      "reference": "Barker et al. 2021 (PSS 203:105119)",
+      "source_url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site04/Site04_final_adj_5mpp_ldec.tif"
+    },
+    {
+      "file_name": "Site04_final_adj_5mpp_surf.tif",
+      "size_bytes": 40980806,
+      "sha256": "38ff70dbdf2f066c2cfa94a646c3a59d653ce7f6b4528b15fc1b43ee397ce758",
+      "provider": "NASA GSFC PGDA (LOLA Data Node)",
+      "reference": "Barker et al. 2021 (PSS 203:105119)",
+      "source_url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site04/Site04_final_adj_5mpp_surf.tif"
+    },
+    {
+      "file_name": "Site04_final_adj_5mpp_toterr.tif",
+      "size_bytes": 40980808,
+      "sha256": "416c4baa3b64def0182bb3379a1a9228482efd8ce32a39309ea8de5d0330fbe6",
+      "provider": "NASA GSFC PGDA (LOLA Data Node)",
+      "reference": "Barker et al. 2021 (PSS 203:105119)",
+      "source_url": "https://pgda.gsfc.nasa.gov/data/LOLA_5mpp/Site04/Site04_final_adj_5mpp_toterr.tif"
+    }
+  ],
+  "ephemeris_source": {
+    "provider": "NASA/JPL Horizons API",
+    "ephemeris_type": "OBSERVER",
+    "ephemeris_model": "DE441",
+    "observer_frame": "coord@301 (Lunar surface geodetic)",
+    "apparent": "AIRLESS"
+  }
+}

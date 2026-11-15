@@ -96,9 +96,7 @@ def test_horizon_profile_comes_from_k2(clean_caches):
 
 @pytest.mark.skipif(not app.REAL_AVAILABLE, reason="gerçek K3 çıktısı yok")
 def test_longest_joint_window_matches_k3_summary(clean_caches):
-    frame = app.load_site_series(
-        "Site01", "2026-11-15T00:00:00+00:00", 7, 60, app.SOURCE_REAL
-    )
+    frame = app.load_site_series("Site01", "2026-11-15T00:00:00+00:00", 7, 60, app.SOURCE_REAL)
     metrics = app.compute_metrics(frame, 60)
 
     summary = json.loads(
@@ -131,9 +129,7 @@ def test_missing_real_file_falls_back_to_synthetic(clean_caches, monkeypatch, tm
     app.load_real_site_data.clear()
     app.load_site_series.clear()
 
-    frame = app.load_site_series(
-        "Site01", "2026-11-15T00:00:00+00:00", 1, 60, app.SOURCE_REAL
-    )
+    frame = app.load_site_series("Site01", "2026-11-15T00:00:00+00:00", 1, 60, app.SOURCE_REAL)
 
     assert not frame.empty
     assert frame.attrs["data_source"] == app.SOURCE_MOCK
@@ -141,3 +137,72 @@ def test_missing_real_file_falls_back_to_synthetic(clean_caches, monkeypatch, tm
     assert "bulunamadı" in frame.attrs["fallback_reason"]
     assert set(frame["quality_flag"]) == {"test_fixture"}
     assert set(app.DATA_CONTRACT_COLUMNS).issubset(frame.columns)
+
+
+def test_lunar_surface_distance_and_south_pole_map():
+    site_a = app.SiteSpec("Site01", "Connecting ridge", -89.463163, -137.489553)
+    site_b = app.SiteSpec("Site04", "Shackleton rim", -89.766811, -171.869898)
+
+    dist = app.lunar_surface_distance_km(
+        site_a.latitude_deg,
+        site_a.longitude_deg_east,
+        site_b.latitude_deg,
+        site_b.longitude_deg_east,
+    )
+    # Bölgeler arası beklenen büyük daire mesafesi ~10-12 km
+    assert 9.0 <= dist <= 13.0
+
+    fig = app.build_south_pole_map(site_a, site_b)
+    assert fig is not None
+    assert len(fig.data) == 4
+    trace_names = [t.name for t in fig.data]
+    assert any("Güney Kutbu" in name for name in trace_names)
+    assert any("Bölge A" in name for name in trace_names)
+    assert any("Bölge B" in name for name in trace_names)
+
+
+def test_flight_briefing_card_generation():
+    site = app.SiteSpec("Site01", "Connecting ridge", -89.463163, -137.489553)
+    now = app.dt.datetime(2026, 11, 15, 0, 0, tzinfo=app.dt.UTC)
+    metrics = app.SiteMetrics(
+        total_hours=168.0,
+        sun_hours=100.0,
+        earth_hours=80.0,
+        joint_hours=75.0,
+        longest_earth_window=40.0,
+        longest_joint_window=30.0,
+        longest_earth_blackout=12.0,
+        optimal_landing_time="2026-11-16 04:00 UTC",
+        sun_share=0.85,
+        earth_share=0.50,
+        joint_uncertain_share=0.02,
+        terrain_blocked_share=0.1,
+        horizon_mean=1.5,
+        horizon_max=3.2,
+        horizon_max_az=120.0,
+    )
+
+    card = app.generate_flight_briefing_card(
+        site, metrics, now, days=7, min_sun_req=70, max_blackout_tol=24
+    )
+    assert "ARTEMIS-LS-Site01" in card
+    assert "SUHAIL STANDARDI" in card
+    assert "GO (UÇUŞA UYGUN)" in card
+    assert "🟢 GO" in card
+    assert "2026-11-16 04:00 UTC" in card
+
+
+@pytest.mark.skipif(not app.REAL_AVAILABLE, reason="gerçek K3 çıktısı yok")
+def test_site_catalog_and_risk_tab_consistency(clean_caches):
+    """de_gerlache boylam tutarlılığı ve Arazi Riski sekmesi DEM durumu doğrulanır."""
+    assert app.SITES["de_gerlache"].longitude_deg_east == pytest.approx(-87.10)
+
+    at = _run_app()
+    assert not at.exception
+    # Karar bandı mevcut olmalı
+    assert any("ls-verdict" in m.value for m in at.markdown)
+    # Metriklerde nan% görünmemeli ve DEM yoksa yanlış başarı mesajı basılmamalı
+    metric_vals = [str(m.value) for m in at.metric]
+    assert all("nan%" not in v.lower() and "nan°" not in v.lower() for v in metric_vals)
+    success_msgs = " ".join(s.value for s in at.success)
+    assert "Gerçek LOLA DEM yüklendi" not in success_msgs

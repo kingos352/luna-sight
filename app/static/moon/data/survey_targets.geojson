@@ -1,0 +1,252 @@
+{
+  "type": "FeatureCollection",
+  "metadata": {
+    "description": "LUNA SIGHT supplementary survey candidate target patches",
+    "target_body": "Moon",
+    "site_id": "Site01",
+    "site_name": "Connecting ridge",
+    "reference_frame": "MOON_ME (DE421)",
+    "projection": "South Polar Stereographic",
+    "datum_radius_m": 1737400.0,
+    "units": "degrees (coordinates) / meters (dimensions)",
+    "longitude_convention": "East positive (-180 to +180 deg)",
+    "warning": "DO NOT reproject directly onto Earth datum / WGS84; coordinates represent Lunar body-fixed surface."
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -137.224223,
+              -89.455677
+            ],
+            [
+              -138.260347,
+              -89.464548
+            ],
+            [
+              -137.303134,
+              -89.474318
+            ],
+            [
+              -136.264262,
+              -89.465285
+            ],
+            [
+              -137.224223,
+              -89.455677
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Target_MethodA_CriticalRidge",
+        "method": "method_a_ridge",
+        "seed": null,
+        "center_x_m": -11009.61,
+        "center_y_m": -11915.54,
+        "center_lon_deg_east": -137.262991,
+        "center_lat_deg": -89.464998,
+        "width_m": 400.0,
+        "height_m": 400.0,
+        "area_m2": 160000.0,
+        "target_body": "Moon",
+        "coordinate_frame": "MOON_ME (JPL DE421)",
+        "projection": "South Polar Stereographic",
+        "units": "meters (projected) / degrees (geographic)",
+        "longitude_direction": "East positive (-180 to +180)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -132.806765,
+              -89.451609
+            ],
+            [
+              -133.760025,
+              -89.461212
+            ],
+            [
+              -132.72955,
+              -89.470249
+            ],
+            [
+              -131.77896,
+              -89.460485
+            ],
+            [
+              -132.806765,
+              -89.451609
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Target_MethodB_MaxUncertainty",
+        "method": "method_b_uncertainty",
+        "seed": null,
+        "center_x_m": -12000.0,
+        "center_y_m": -11100.0,
+        "center_lon_deg_east": -132.768825,
+        "center_lat_deg": -89.460929,
+        "width_m": 400.0,
+        "height_m": 400.0,
+        "area_m2": 160000.0,
+        "target_body": "Moon",
+        "coordinate_frame": "MOON_ME (JPL DE421)",
+        "projection": "South Polar Stereographic",
+        "units": "meters (projected) / degrees (geographic)",
+        "longitude_direction": "East positive (-180 to +180)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -145.160386,
+              -89.481332
+            ],
+            [
+              -146.373824,
+              -89.488753
+            ],
+            [
+              -145.53725,
+              -89.499683
+            ],
+            [
+              -144.310242,
+              -89.492102
+            ],
+            [
+              -145.160386,
+              -89.481332
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Target_MethodC_Random_seed42",
+        "method": "method_c_random",
+        "seed": 42,
+        "center_x_m": -8785.03,
+        "center_y_m": -12708.71,
+        "center_lon_deg_east": -145.345425,
+        "center_lat_deg": -89.49051,
+        "width_m": 400.0,
+        "height_m": 400.0,
+        "area_m2": 160000.0,
+        "target_body": "Moon",
+        "coordinate_frame": "MOON_ME (JPL DE421)",
+        "projection": "South Polar Stereographic",
+        "units": "meters (projected) / degrees (geographic)",
+        "longitude_direction": "East positive (-180 to +180)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -134.379389,
+              -89.369451
+            ],
+            [
+              -135.230374,
+              -89.37881
+            ],
+            [
+              -134.360468,
+              -89.388104
+            ],
+            [
+              -133.51005,
+              -89.378605
+            ],
+            [
+              -134.379389,
+              -89.369451
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Target_MethodC_Random_seed101",
+        "method": "method_c_random",
+        "seed": 101,
+        "center_x_m": -13465.92,
+        "center_y_m": -13173.04,
+        "center_lon_deg_east": -134.37007,
+        "center_lat_deg": -89.378778,
+        "width_m": 400.0,
+        "height_m": 400.0,
+        "area_m2": 160000.0,
+        "target_body": "Moon",
+        "coordinate_frame": "MOON_ME (JPL DE421)",
+        "projection": "South Polar Stereographic",
+        "units": "meters (projected) / degrees (geographic)",
+        "longitude_direction": "East positive (-180 to +180)"
+      }
+    },
+    {
+      "type": "Feature",
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -141.007973,
+              -89.364992
+            ],
+            [
+              -141.945208,
+              -89.373208
+            ],
+            [
+              -141.18945,
+              -89.383541
+            ],
+            [
+              -140.246836,
+              -89.37519
+            ],
+            [
+              -141.007973,
+              -89.364992
+            ]
+          ]
+        ]
+      },
+      "properties": {
+        "name": "Target_MethodC_Random_seed2024",
+        "method": "method_c_random",
+        "seed": 2024,
+        "center_x_m": -11915.96,
+        "center_y_m": -14766.22,
+        "center_lon_deg_east": -141.097366,
+        "center_lat_deg": -89.374268,
+        "width_m": 400.0,
+        "height_m": 400.0,
+        "area_m2": 160000.0,
+        "target_body": "Moon",
+        "coordinate_frame": "MOON_ME (JPL DE421)",
+        "projection": "South Polar Stereographic",
+        "units": "meters (projected) / degrees (geographic)",
+        "longitude_direction": "East positive (-180 to +180)"
+      }
+    }
+  ]
+}

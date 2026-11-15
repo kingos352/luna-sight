@@ -242,8 +242,9 @@ karşılayan sağlayıcı `luna_sight.ephemeris.HorizonsEphemeris`:
 from luna_sight.ephemeris import HorizonsEphemeris
 from luna_sight.visibility import build_site_series
 
-frame = build_site_series("Site01", "2026-11-14 00:00", days=7, step_minutes=5,
-                          ephemeris=HorizonsEphemeris())
+frame = build_site_series(
+    "Site01", "2026-11-14 00:00", days=7, step_minutes=5, ephemeris=HorizonsEphemeris()
+)
 ```
 
 Sorgu adımı istenen ızgaradan çıkarılır; düzensiz ızgara ve dakika altı adım

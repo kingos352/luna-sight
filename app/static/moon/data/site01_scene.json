@@ -1,0 +1,241 @@
+{
+  "metadata": {
+    "coordinate_frame": "MOON_ME (JPL DE421)",
+    "target_body": "Moon",
+    "projection": "South Polar Stereographic",
+    "datum_radius_m": 1737400.0,
+    "projection_origin": {
+      "center_lon_deg": 0.0,
+      "center_lat_deg": -90.0
+    },
+    "axis_directions": {
+      "x": "Easting (towards +90 deg East longitude)",
+      "y": "Northing (towards 0 deg Prime Meridian)",
+      "z": "Radial elevation above 1737400.0 m lunar reference sphere"
+    },
+    "units": {
+      "projected_coordinates": "meters",
+      "geographic_coordinates": "degrees",
+      "angles": "degrees",
+      "elevation": "meters"
+    },
+    "longitude_convention": "East positive (-180 to +180 deg)",
+    "warning": "Lunar body-fixed coordinates. DO NOT reproject onto Earth WGS84 datum."
+  },
+  "observer": {
+    "site_id": "Site01",
+    "site_name": "Connecting ridge",
+    "coordinates_projected_m": {
+      "x_m": -11000.0,
+      "y_m": -12000.0
+    },
+    "coordinates_geographic_deg": {
+      "lon_deg_east": -137.489553,
+      "lat_deg": -89.463163
+    },
+    "surface_elevation_by_dem_m": {
+      "Site01_nominal": 1944.7671,
+      "Site01_clone1": 1944.8363,
+      "Site01_clone2": 1944.7977
+    },
+    "camera_vertical_offset_m": 2.0,
+    "camera_elevation_by_dem_m": {
+      "Site01_nominal": 1946.7671,
+      "Site01_clone1": 1946.8363,
+      "Site01_clone2": 1946.7977
+    }
+  },
+  "horizon_determining_terrain_points": {
+    "Site01_nominal": {
+      "query_azimuth_deg": 130.730898,
+      "interpolated_horizon_elevation_deg": 0.970511,
+      "interpolation_source": {
+        "azimuth_sampling_interval_deg": 1.0,
+        "interpolation_method": "circular_linear_azimuth_interpolation",
+        "neighbor_samples": [
+          {
+            "azimuth_sample_deg": 130.0,
+            "interpolation_weight": 0.269102,
+            "horizon_elevation_deg": 1.001431,
+            "occluder_distance_m": 80.0,
+            "coordinates": {
+              "x_m": -11010.428,
+              "y_m": -11920.683,
+              "z_m": 1948.1655
+            }
+          },
+          {
+            "azimuth_sample_deg": 131.0,
+            "interpolation_weight": 0.730898,
+            "horizon_elevation_deg": 0.959127,
+            "occluder_distance_m": 80.0,
+            "coordinates": {
+              "x_m": -11009.042,
+              "y_m": -11920.513,
+              "z_m": 1948.1064
+            }
+          }
+        ]
+      },
+      "representative_obstacle_point": {
+        "is_exact_single_cell": false,
+        "position_status": "approximate_nearest_azimuth_sample",
+        "azimuth_sample_deg": 131.0,
+        "occluder_distance_m": 80.0,
+        "coordinates": {
+          "x_m": -11009.042,
+          "y_m": -11920.513,
+          "z_m": 1948.1064
+        },
+        "note": "Horizon angle is continuous between 130 deg and 131 deg rays. The physical occluder cell at 131 deg (weight 0.731) is provided as the nearest discrete ridge obstruction point to avoid fabricating an artificial single-cell obstacle."
+      }
+    },
+    "Site01_clone1": {
+      "query_azimuth_deg": 130.730898,
+      "interpolated_horizon_elevation_deg": 0.991045,
+      "interpolation_source": {
+        "azimuth_sampling_interval_deg": 1.0,
+        "interpolation_method": "circular_linear_azimuth_interpolation",
+        "neighbor_samples": [
+          {
+            "azimuth_sample_deg": 130.0,
+            "interpolation_weight": 0.269102,
+            "horizon_elevation_deg": 1.016404,
+            "occluder_distance_m": 110.0,
+            "coordinates": {
+              "x_m": -11014.338,
+              "y_m": -11890.938,
+              "z_m": 1948.7879
+            }
+          },
+          {
+            "azimuth_sample_deg": 131.0,
+            "interpolation_weight": 0.730898,
+            "horizon_elevation_deg": 0.981709,
+            "occluder_distance_m": 80.0,
+            "coordinates": {
+              "x_m": -11009.042,
+              "y_m": -11920.513,
+              "z_m": 1948.2072
+            }
+          }
+        ]
+      },
+      "representative_obstacle_point": {
+        "is_exact_single_cell": false,
+        "position_status": "approximate_nearest_azimuth_sample",
+        "azimuth_sample_deg": 131.0,
+        "occluder_distance_m": 80.0,
+        "coordinates": {
+          "x_m": -11009.042,
+          "y_m": -11920.513,
+          "z_m": 1948.2072
+        },
+        "note": "Horizon angle is continuous between 130 deg and 131 deg rays. The physical occluder cell at 131 deg (weight 0.731) is provided as the nearest discrete ridge obstruction point to avoid fabricating an artificial single-cell obstacle."
+      }
+    },
+    "Site01_clone2": {
+      "query_azimuth_deg": 130.730898,
+      "interpolated_horizon_elevation_deg": 0.946256,
+      "interpolation_source": {
+        "azimuth_sampling_interval_deg": 1.0,
+        "interpolation_method": "circular_linear_azimuth_interpolation",
+        "neighbor_samples": [
+          {
+            "azimuth_sample_deg": 130.0,
+            "interpolation_weight": 0.269102,
+            "horizon_elevation_deg": 0.991255,
+            "occluder_distance_m": 80.0,
+            "coordinates": {
+              "x_m": -11010.428,
+              "y_m": -11920.683,
+              "z_m": 1948.1819
+            }
+          },
+          {
+            "azimuth_sample_deg": 131.0,
+            "interpolation_weight": 0.730898,
+            "horizon_elevation_deg": 0.929688,
+            "occluder_distance_m": 90.0,
+            "coordinates": {
+              "x_m": -11010.172,
+              "y_m": -11910.577,
+              "z_m": 1948.2582
+            }
+          }
+        ]
+      },
+      "representative_obstacle_point": {
+        "is_exact_single_cell": false,
+        "position_status": "approximate_nearest_azimuth_sample",
+        "azimuth_sample_deg": 131.0,
+        "occluder_distance_m": 90.0,
+        "coordinates": {
+          "x_m": -11010.172,
+          "y_m": -11910.577,
+          "z_m": 1948.2582
+        },
+        "note": "Horizon angle is continuous between 130 deg and 131 deg rays. The physical occluder cell at 131 deg (weight 0.731) is provided as the nearest discrete ridge obstruction point to avoid fabricating an artificial single-cell obstacle."
+      }
+    }
+  },
+  "proposed_survey_patch": {
+    "name": "Target_MethodA_CriticalRidge",
+    "method": "method_a_ridge",
+    "description": "Targeted topographic survey patch covering the operational decision ridge (Method A)",
+    "idealized_elevation_note": "In Stage 2 benchmarking, this patch is populated with idealized ground-truth reference elevations from the evaluation DEM to test the theoretical upper bound of localized resurveying.",
+    "center_projected_m": {
+      "x_m": -11009.61,
+      "y_m": -11915.54
+    },
+    "center_geographic_deg": {
+      "lon_deg_east": -137.262991,
+      "lat_deg": -89.464998
+    },
+    "dimensions": {
+      "width_m": 400.0,
+      "height_m": 400.0,
+      "area_m2": 160000.0
+    },
+    "projected_corners_m": [
+      {
+        "x_m": -11209.61,
+        "y_m": -12115.54
+      },
+      {
+        "x_m": -10809.61,
+        "y_m": -12115.54
+      },
+      {
+        "x_m": -10809.61,
+        "y_m": -11715.54
+      },
+      {
+        "x_m": -11209.61,
+        "y_m": -11715.54
+      }
+    ],
+    "geographic_corners_deg": [
+      [
+        -137.224223,
+        -89.455677
+      ],
+      [
+        -138.260347,
+        -89.464548
+      ],
+      [
+        -137.303134,
+        -89.474318
+      ],
+      [
+        -136.264262,
+        -89.465285
+      ],
+      [
+        -137.224223,
+        -89.455677
+      ]
+    ]
+  }
+}

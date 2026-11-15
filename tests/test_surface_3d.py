@@ -9,12 +9,22 @@ from pathlib import Path
 
 import numpy as np
 import plotly.graph_objects as go
+import pytest
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC_DIR = ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
+from luna_sight.terrain.dem import DemGrid  # noqa: E402
+from luna_sight.terrain.risk import (  # noqa: E402
+    analyze_all_sites_risk,
+    analyze_site_risk,
+    compute_crater_metrics,
+    compute_slope_stats,
+    format_side_by_side_comparison,
+)
+from luna_sight.terrain.sites import CANDIDATE_SITES  # noqa: E402
 from luna_sight.terrain.surface_3d import (  # noqa: E402
     IAU_CRATERS,
     R_MOON_KM,
@@ -200,3 +210,45 @@ def test_build_polar_relief_figure():
     assert isinstance(fig, go.Figure)
     assert len(fig.data) >= 1
     assert isinstance(fig.data[0], go.Surface)
+
+
+def test_compute_slope_stats_synthetic_dem():
+    """Sentetik DEM ızgarasında dairesel bölge eğim hesabı IndexError vermemelidir."""
+    pixel_size = 50.0
+    rows, cols = 40, 40
+    # x = -1000..+1000 m aralığında sabit %10 eğimli düzlem -> ~5.7106 derece
+    xs = -1000.0 + (np.arange(cols) + 0.5) * pixel_size
+    heights = np.tile(0.1 * xs, (rows, 1))
+    # Daire içine 1 adet geçersiz (NaN) piksel ekleyerek valid maskesi doğrulansın
+    heights[20, 20] = np.nan
+
+    dem = DemGrid(
+        heights_m=heights,
+        transform=(pixel_size, 0.0, -1000.0, 0.0, 50.0, -1000.0),
+    )
+    stats = compute_slope_stats(dem, center_x_m=0.0, center_y_m=0.0, radius_m=500.0)
+
+    expected_deg = math.degrees(math.atan(0.1))
+    assert stats.mean_deg == pytest.approx(expected_deg, abs=0.05)
+    assert stats.median_deg == pytest.approx(expected_deg, abs=0.05)
+    assert stats.fraction_above_5deg == pytest.approx(1.0)
+    assert stats.fraction_above_10deg == pytest.approx(0.0)
+    assert 0.85 < stats.valid_fraction < 1.0
+
+
+def test_risk_analysis_and_comparison_no_nan_strings():
+    """Krater metrikleri, site riski ve karşılaştırma tablosu 'nan°'/'nan%' üretmemelidir."""
+    crater_metrics = compute_crater_metrics(-89.463163, -137.489553, radius_m=50000.0)
+    assert crater_metrics.nearest_crater_name != ""
+    assert crater_metrics.nearest_crater_distance_m >= 0.0
+
+    site_risk = analyze_site_risk(CANDIDATE_SITES["Site01"], analysis_radius_m=5000.0)
+    assert site_risk.site_id == "Site01"
+    assert site_risk.analysis_radius_m == pytest.approx(5000.0)
+
+    all_risk = analyze_all_sites_risk()
+    assert set(all_risk) == {"Site01", "Site04"}
+
+    comparison = format_side_by_side_comparison(all_risk)
+    assert "nan°" not in comparison
+    assert "nan%" not in comparison

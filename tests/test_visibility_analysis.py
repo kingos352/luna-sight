@@ -23,9 +23,7 @@ from luna_sight.visibility.states import (
 
 START = datetime(2026, 11, 15, tzinfo=UTC)
 FLAT = HorizonProfileLookup([0.0, 180.0], [0.0, 0.0])
-PATCHY = HorizonProfileLookup(
-    [0.0, 180.0, 359.0], [float("nan"), 0.0, 0.0]
-)
+PATCHY = HorizonProfileLookup([0.0, 180.0, 359.0], [float("nan"), 0.0, 0.0])
 
 
 def make_sample(
@@ -96,12 +94,8 @@ def test_all_blocked_and_all_uncertain():
 def test_wider_margin_converts_visible_to_uncertain():
     """Marj, bant içindeki örnekleri belirsiz yapar; sonuç marja duyarlıdır."""
     samples = hourly(0.05)
-    narrow = breakdown(
-        evaluate(samples, VisibilityConfig(margin_deg=0.01)), BODY_JOINT
-    )
-    wide = breakdown(
-        evaluate(samples, VisibilityConfig(margin_deg=0.10)), BODY_JOINT
-    )
+    narrow = breakdown(evaluate(samples, VisibilityConfig(margin_deg=0.01)), BODY_JOINT)
+    wide = breakdown(evaluate(samples, VisibilityConfig(margin_deg=0.10)), BODY_JOINT)
     assert narrow.state_fractions[VISIBLE] == pytest.approx(1.0)
     assert wide.state_fractions[UNCERTAIN] == pytest.approx(1.0)
 
@@ -143,11 +137,7 @@ def test_sensitivity_rows_cover_three_bodies():
         assert row["site_id"] == "Site01"
         assert row["radius_m"] == 2000
         assert row["margin_deg"] == 0.05
-        total = (
-            row["visible_fraction"]
-            + row["blocked_fraction"]
-            + row["uncertain_fraction"]
-        )
+        total = row["visible_fraction"] + row["blocked_fraction"] + row["uncertain_fraction"]
         assert total == pytest.approx(1.0)
 
 
@@ -172,7 +162,5 @@ def test_margin_shift_reports_delta_in_fraction():
     assert delta["visible_fraction_delta"] == pytest.approx(0.15)
     assert delta["longest_visible_hours_delta"] == pytest.approx(2.5)
 
-    unknown = margin_shift(
-        {"visible_fraction": None, "longest_visible_hours": None}, candidate
-    )
+    unknown = margin_shift({"visible_fraction": None, "longest_visible_hours": None}, candidate)
     assert unknown["visible_fraction_delta"] is None

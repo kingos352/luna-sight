@@ -13,15 +13,13 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 import numpy as np
 
-from luna_sight.terrain.dem import DemGrid, DemMetadata, load_lola_dem
-from luna_sight.terrain.horizon import compute_horizon, HorizonConfig
+from luna_sight.terrain.dem import DemGrid, load_lola_dem
+from luna_sight.terrain.polar import R_MOON_M
 from luna_sight.terrain.sites import CANDIDATE_SITES, CandidateSite
 from luna_sight.terrain.surface_3d import IAU_CRATERS
-from luna_sight.terrain.polar import xy_to_lonlat, R_MOON_M
 
 # ─── Sabitler ───
 
@@ -30,7 +28,7 @@ RISK_SOURCE_REPRESENTATIVE = "representative_model"
 RISK_SOURCE_MISSING = "missing"
 
 DEFAULT_ANALYSIS_RADIUS_M = 5000.0  # 5 km analiz yarıçapı
-DEFAULT_SLOPE_WINDOW_M = 100.0    # Eğim penceresi (100 m)
+DEFAULT_SLOPE_WINDOW_M = 100.0  # Eğim penceresi (100 m)
 
 # ─── Veri Sınıfları ───
 
@@ -124,7 +122,9 @@ class SiteRiskMetrics:
 
 def _find_dem_paths(site_id: str) -> tuple[Path | None, Path | None, Path | None]:
     """Site için DEM, LDEC ve toterr dosya yollarını bulur."""
-    cache_root = Path("data/cache/lola")
+    repo_cache = Path(__file__).resolve().parents[3] / "data" / "cache" / "lola"
+    cwd_cache = Path("data/cache/lola")
+    cache_root = repo_cache if repo_cache.exists() else cwd_cache
     surf = cache_root / f"{site_id}_final_adj_5mpp_surf.tif"
     ldec = cache_root / f"{site_id}_final_adj_5mpp_ldec.tif"
     toterr = cache_root / f"{site_id}_final_adj_5mpp_toterr.tif"
@@ -179,19 +179,20 @@ def _compute_slope_map(dem: DemGrid) -> tuple[np.ndarray, np.ndarray]:
 
 def _sample_circular_region(
     array: np.ndarray,
+    valid: np.ndarray,
     dem: DemGrid,
     center_x_m: float,
     center_y_m: float,
     radius_m: float,
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[np.ndarray, int]:
     """DEM ızgarasında belirli bir merkez ve yarıçapta dairesel bölgeyi keser.
 
-    Dönen: (values, mask) - bölgedeki değerler ve geçerlilik maskesi
+    Dönen: (valid_values, total_pixels_in_circle)
     """
-    # Piksel merkezlerine indeks
-    col_c, row_c = dem.to_center_indices(center_x_m, center_y_m)
-    col_c = float(col_c)
-    row_c = float(row_c)
+    # `to_center_indices` 0-tabanlı piksel merkez indekslerini döndürür (-0.5 uygulanmış).
+    col_c_raw, row_c_raw = dem.to_center_indices(center_x_m, center_y_m)
+    col_c = float(np.asarray(col_c_raw).item())
+    row_c = float(np.asarray(row_c_raw).item())
 
     pixel_size = dem.pixel_size_m
     radius_px = int(np.ceil(radius_m / pixel_size)) + 1
@@ -203,18 +204,23 @@ def _sample_circular_region(
     c_max = min(cols, int(np.ceil(col_c + radius_px)) + 1)
 
     if r_min >= r_max or c_min >= c_max:
-        return np.array([]), np.array([])
+        return np.array([], dtype=float), 0
 
-    sub = array[r_min:r_max, c_min:c_max]
+    sub_arr = array[r_min:r_max, c_min:c_max]
+    sub_val = valid[r_min:r_max, c_min:c_max]
 
-    # Dairesel maske
-    yy, xx = np.ogrid[:sub.shape[0], :sub.shape[1]]
-    cy = (row_c - r_min) - 0.5
-    cx = (col_c - c_min) - 0.5
+    yy, xx = np.ogrid[: sub_arr.shape[0], : sub_arr.shape[1]]
+    cy = row_c - r_min
+    cx = col_c - c_min
     dist_px = np.hypot(yy - cy, xx - cx)
-    circle_mask = dist_px <= (radius_m / dem.pixel_size_m)
+    circle_mask = dist_px <= (radius_m / pixel_size)
 
-    return sub[circle_mask], circle_mask
+    total_pixels = int(np.count_nonzero(circle_mask))
+    if total_pixels == 0:
+        return np.array([], dtype=float), 0
+
+    vals = sub_arr[circle_mask & sub_val]
+    return vals, total_pixels
 
 
 def compute_slope_stats(
@@ -225,32 +231,25 @@ def compute_slope_stats(
 ) -> SlopeStats:
     """Analiz bölgesi içindeki eğim istatistiklerini hesaplar."""
     slope_deg, valid = _compute_slope_map(dem)
-    slopes, mask = _sample_circular_region(slope_deg, dem, center_x_m, center_y_m, radius_m)
+    vals, total_pixels = _sample_circular_region(
+        slope_deg, valid, dem, center_x_m, center_y_m, radius_m
+    )
 
-    combined_mask = mask & valid[valid.shape[0] - (valid.shape[0] - mask.shape[0]):, :][:mask.shape[0], :mask.shape[1]] if mask.size > 0 else np.array([], dtype=bool)
-
-    if mask.size == 0 or not np.any(mask):
+    if total_pixels == 0 or vals.size == 0:
         return SlopeStats(
-            mean_deg=np.nan, max_deg=np.nan, median_deg=np.nan,
-            std_deg=np.nan, p95_deg=np.nan,
-            fraction_above_5deg=0.0, fraction_above_10deg=0.0,
-            fraction_above_15deg=0.0, fraction_above_20deg=0.0,
+            mean_deg=np.nan,
+            max_deg=np.nan,
+            median_deg=np.nan,
+            std_deg=np.nan,
+            p95_deg=np.nan,
+            fraction_above_5deg=0.0,
+            fraction_above_10deg=0.0,
+            fraction_above_15deg=0.0,
+            fraction_above_20deg=0.0,
             valid_fraction=0.0,
         )
 
-    vals = slopes[mask]
-    if vals.size == 0:
-        return SlopeStats(
-            mean_deg=np.nan, max_deg=np.nan, median_deg=np.nan,
-            std_deg=np.nan, p95_deg=np.nan,
-            fraction_above_5deg=0.0, fraction_above_10deg=0.0,
-            fraction_above_15deg=0.0, fraction_above_20deg=0.0,
-            valid_fraction=0.0,
-        )
-
-    total_pixels = mask.size
-    valid_pixels = np.count_nonzero(mask)
-    valid_frac = valid_pixels / total_pixels if total_pixels > 0 else 0.0
+    valid_frac = float(vals.size / total_pixels)
 
     return SlopeStats(
         mean_deg=float(np.mean(vals)),
@@ -272,7 +271,7 @@ def _crater_distance_km(lat1: float, lon1: float, lat2: float, lon2: float) -> f
     lat2_r, lon2_r = np.radians(lat2), np.radians(lon2)
     dlat = lat2_r - lat1_r
     dlon = lon2_r - lon1_r
-    a = np.sin(dlat/2)**2 + np.cos(lat1_r)*np.cos(lat2_r)*np.sin(dlon/2)**2
+    a = np.sin(dlat / 2) ** 2 + np.cos(lat1_r) * np.cos(lat2_r) * np.sin(dlon / 2) ** 2
     c = 2 * np.arcsin(np.sqrt(a))
     return float(R_MOON_M * c / 1000.0)
 
@@ -286,7 +285,7 @@ def compute_crater_metrics(
     radius_km = radius_m / 1000.0
     area_km2 = np.pi * radius_km**2
 
-    nearest_dist = float('inf')
+    nearest_dist = float("inf")
     nearest_name = ""
     nearest_diam = 0.0
     count_in_radius = 0
@@ -317,43 +316,42 @@ def analyze_site_risk(
     analysis_radius_m: float = DEFAULT_ANALYSIS_RADIUS_M,
 ) -> SiteRiskMetrics:
     """Tek bir site için tam arazi riski analizi."""
-    # DEM yükleme denemesi
     dem = _load_site_dem(site)
 
     dem_metadata = None
     dem_available = False
-    dem_source = RISK_SOURCE_MISSING
-
     if dem is not None:
         dem_available = True
         dem_source = RISK_SOURCE_REAL
         if dem.metadata:
             dem_metadata = dem.metadata.as_dict()
+        slope_stats = compute_slope_stats(dem, site.x_m, site.y_m, analysis_radius_m)
     else:
-        # Gerçek DEM yok - temsili model uyarısı
         dem_source = RISK_SOURCE_REPRESENTATIVE
-
-    # Eğim analizi (sadece gerçek DEM varsa)
-    if dem_available and dem is not None:
-        slope_stats = compute_slope_stats(dem, site.x_m, site.y_m, DEFAULT_ANALYSIS_RADIUS_M)
-    else:
         slope_stats = SlopeStats(
-            mean_deg=np.nan, max_deg=np.nan, median_deg=np.nan,
-            std_deg=np.nan, p95_deg=np.nan,
-            fraction_above_5deg=np.nan, fraction_above_10deg=np.nan,
-            fraction_above_15deg=np.nan, fraction_above_20deg=np.nan,
+            mean_deg=np.nan,
+            max_deg=np.nan,
+            median_deg=np.nan,
+            std_deg=np.nan,
+            p95_deg=np.nan,
+            fraction_above_5deg=np.nan,
+            fraction_above_10deg=np.nan,
+            fraction_above_15deg=np.nan,
+            fraction_above_20deg=np.nan,
             valid_fraction=0.0,
         )
 
     # Krater metrikleri (IAU kataloğu her zaman kullanılabilir)
-    crater_metrics = compute_crater_metrics(site.latitude_deg, site.longitude_deg_east)
+    crater_metrics = compute_crater_metrics(
+        site.latitude_deg, site.longitude_deg_east, analysis_radius_m
+    )
 
     return SiteRiskMetrics(
         site_id=site.site_id,
         site_name=site.site_name,
         latitude_deg=site.latitude_deg,
         longitude_deg_east=site.longitude_deg_east,
-        analysis_radius_m=DEFAULT_ANALYSIS_RADIUS_M,
+        analysis_radius_m=analysis_radius_m,
         slope=slope_stats,
         crater=crater_metrics,
         dem_source=dem_source,
@@ -366,10 +364,18 @@ def analyze_all_sites_risk(
     analysis_radius_m: float = DEFAULT_ANALYSIS_RADIUS_M,
 ) -> dict[str, SiteRiskMetrics]:
     """Tüm aday siteler için arazi riski analizi."""
-    results = {}
-    for site_id, site in CANDIDATE_SITES.items():
-        results[site_id] = analyze_site_risk(site, analysis_radius_m)
-    return results
+    return {
+        site_id: analyze_site_risk(site, analysis_radius_m)
+        for site_id, site in CANDIDATE_SITES.items()
+    }
+
+
+def _fmt_deg(val: float) -> str:
+    return "— (DEM bekleniyor)" if np.isnan(val) else f"{val:.2f}°"
+
+
+def _fmt_pct(val: float) -> str:
+    return "— (DEM bekleniyor)" if np.isnan(val) else f"{val:.1%}"
 
 
 def format_side_by_side_comparison(metrics: dict[str, SiteRiskMetrics]) -> str:
@@ -380,60 +386,107 @@ def format_side_by_side_comparison(metrics: dict[str, SiteRiskMetrics]) -> str:
     items = list(metrics.values())
     a, b = items[0], items[1]
 
+    a_coord = f"{a.latitude_deg:.4f}°/{a.longitude_deg_east:+.4f}°"
+    b_coord = f"{b.latitude_deg:.4f}°/{b.longitude_deg_east:+.4f}°"
+    a_rad = f"{a.analysis_radius_m / 1000:.1f} km"
+    b_rad = f"{b.analysis_radius_m / 1000:.1f} km"
+    a_dem = "Evet" if a.dem_available else "Hayır"
+    b_dem = "Evet" if b.dem_available else "Hayır"
+    a_dist = f"{a.crater.nearest_crater_distance_m / 1000:.1f} km"
+    b_dist = f"{b.crater.nearest_crater_distance_m / 1000:.1f} km"
+    a_diam = f"{a.crater.nearest_crater_diameter_km:.1f} km"
+    b_diam = f"{b.crater.nearest_crater_diameter_km:.1f} km"
+
     lines = [
         "=" * 80,
         "LUNAR SIGHT — ARAZİ RİSKİ KARŞILAŞTIRMASI",
         "=" * 80,
         "",
-        f"{'Metrik':<35} {a.site_id:<20} {b.site_id:<20}",
+        f"{'Metrik':<35} {a.site_id:<22} {b.site_id:<22}",
         "-" * 80,
-        f"{'Site Adı':<35} {a.site_name:<20} {b.site_name:<20}",
-        f"{'Koordinatlar':<35} {a.latitude_deg:.4f}°/{a.longitude_deg_east:+.4f}°  {b.latitude_deg:.4f}°/{b.longitude_deg_east:+.4f}°",
-        f"{'Analiz Yarıçapı':<35} {a.analysis_radius_m/1000:.1f} km  {b.analysis_radius_m/1000:.1f} km",
-        f"{'DEM Kaynağı':<35} {a.dem_source}  {b.dem_source}",
-        f"{'DEM Mevcut':<35} {'Evet' if a.dem_available else 'Hayır'}  {'Evet' if b.dem_available else 'Hayır'}",
+        f"{'Site Adı':<35} {a.site_name:<22} {b.site_name:<22}",
+        f"{'Koordinatlar':<35} {a_coord:<22} {b_coord:<22}",
+        f"{'Analiz Yarıçapı':<35} {a_rad:<22} {b_rad:<22}",
+        f"{'DEM Kaynağı':<35} {a.dem_source:<22} {b.dem_source:<22}",
+        f"{'DEM Mevcut':<35} {a_dem:<22} {b_dem:<22}",
         "",
         "EĞİM (derece)",
-        f"{'  Ortalama':<33} {a.slope.mean_deg:.2f}°  {b.slope.mean_deg:.2f}°",
-        f"{'  Maksimum':<33} {a.slope.max_deg:.2f}°  {b.slope.max_deg:.2f}°",
-        f"{'  Medyan':<33} {a.slope.median_deg:.2f}°  {b.slope.median_deg:.2f}°",
-        f"{'  Std Sapma':<33} {a.slope.std_deg:.2f}°  {b.slope.std_deg:.2f}°",
-        f"{'  P95':<33} {a.slope.p95_deg:.2f}°  {b.slope.p95_deg:.2f}°",
-        f"{'  >5° oranı':<33} {a.slope.fraction_above_5deg:.1%}  {b.slope.fraction_above_5deg:.1%}",
-        f"{'  >10° oranı':<33} {a.slope.fraction_above_10deg:.1%}  {b.slope.fraction_above_10deg:.1%}",
-        f"{'  >15° oranı':<33} {a.slope.fraction_above_15deg:.1%}  {b.slope.fraction_above_15deg:.1%}",
-        f"{'  >20° oranı':<33} {a.slope.fraction_above_20deg:.1%}  {b.slope.fraction_above_20deg:.1%}",
-        f"{'  Geçerli piksel %':<33} {a.slope.valid_fraction:.1%}  {b.slope.valid_fraction:.1%}",
+        f"{'  Ortalama':<33} {_fmt_deg(a.slope.mean_deg):<22} {_fmt_deg(b.slope.mean_deg):<22}",
+        f"{'  Maksimum':<33} {_fmt_deg(a.slope.max_deg):<22} {_fmt_deg(b.slope.max_deg):<22}",
+        f"{'  Medyan':<33} {_fmt_deg(a.slope.median_deg):<22} {_fmt_deg(b.slope.median_deg):<22}",
+        f"{'  Std Sapma':<33} {_fmt_deg(a.slope.std_deg):<22} {_fmt_deg(b.slope.std_deg):<22}",
+        f"{'  P95':<33} {_fmt_deg(a.slope.p95_deg):<22} {_fmt_deg(b.slope.p95_deg):<22}",
+        (
+            f"{'  >5° oranı':<33} "
+            f"{_fmt_pct(a.slope.fraction_above_5deg):<22} "
+            f"{_fmt_pct(b.slope.fraction_above_5deg):<22}"
+        ),
+        (
+            f"{'  >10° oranı':<33} "
+            f"{_fmt_pct(a.slope.fraction_above_10deg):<22} "
+            f"{_fmt_pct(b.slope.fraction_above_10deg):<22}"
+        ),
+        (
+            f"{'  >15° oranı':<33} "
+            f"{_fmt_pct(a.slope.fraction_above_15deg):<22} "
+            f"{_fmt_pct(b.slope.fraction_above_15deg):<22}"
+        ),
+        (
+            f"{'  >20° oranı':<33} "
+            f"{_fmt_pct(a.slope.fraction_above_20deg):<22} "
+            f"{_fmt_pct(b.slope.fraction_above_20deg):<22}"
+        ),
+        (
+            f"{'  Geçerli piksel %':<33} "
+            f"{_fmt_pct(a.slope.valid_fraction):<22} "
+            f"{_fmt_pct(b.slope.valid_fraction):<22}"
+        ),
         "",
         "KRATER METRİKLERİ",
-        f"{'  Yoğunluk (adet/km²)':<33} {a.crater.density_per_km2:.3f}  {b.crater.density_per_km2:.3f}",
-        f"{'  En yakın krater':<33} {a.crater.nearest_crater_name}  {b.crater.nearest_crater_name}",
-        f"{'  En yakın mesafe':<33} {a.crater.nearest_crater_distance_m/1000:.1f} km  {b.crater.nearest_crater_distance_m/1000:.1f} km",
-        f"{'  En yakın çap':<33} {a.crater.nearest_crater_diameter_km:.1f} km  {b.crater.nearest_crater_diameter_km:.1f} km",
-        f"{'  Analiz alanındaki adet':<33} {a.crater.craters_in_radius_count}  {b.crater.craters_in_radius_count}",
-        f"{'  Kataloğu':<33} {a.crater.crater_catalog_used}  {b.crater.crater_catalog_used}",
+        (
+            f"{'  Yoğunluk (adet/km²)':<33} "
+            f"{a.crater.density_per_km2:<22.3f} "
+            f"{b.crater.density_per_km2:<22.3f}"
+        ),
+        (
+            f"{'  En yakın krater':<33} "
+            f"{a.crater.nearest_crater_name:<22} "
+            f"{b.crater.nearest_crater_name:<22}"
+        ),
+        f"{'  En yakın mesafe':<33} {a_dist:<22} {b_dist:<22}",
+        f"{'  En yakın çap':<33} {a_diam:<22} {b_diam:<22}",
+        (
+            f"{'  Analiz alanındaki adet':<33} "
+            f"{a.crater.craters_in_radius_count:<22} "
+            f"{b.crater.craters_in_radius_count:<22}"
+        ),
+        (
+            f"{'  Kataloğu':<33} "
+            f"{a.crater.crater_catalog_used:<22} "
+            f"{b.crater.crater_catalog_used:<22}"
+        ),
         "",
         "NOTLAR:",
         "- Eğim: 5 m/piksel LOLA DEM'den merkezi farklar ile (central differences)",
         "- Eğim eşikleri: 5°/10°/15°/20° sadece ham ölçüm; güvenli/güvensiz kararı verilmez",
         "- Krater yoğunluğu: IAU onaylı kataloğu (14 krater) kullanılarak",
-        "- DEM 'missing' ise eğim NaN; gerçek DEM indirilene kadar analiz bekler",
+        "- DEM yoksa eğim hesaplanmaz; gerçek DEM indirilene kadar krater metrikleri sunulur",
         "",
     ]
     return "\n".join(lines)
 
 
 __all__ = [
-    "SlopeStats",
-    "CraterMetrics",
-    "SiteRiskMetrics",
+    "DEFAULT_ANALYSIS_RADIUS_M",
+    "RISK_SOURCE_MISSING",
     "RISK_SOURCE_REAL",
     "RISK_SOURCE_REPRESENTATIVE",
-    "RISK_SOURCE_MISSING",
-    "DEFAULT_ANALYSIS_RADIUS_M",
-    "compute_slope_stats",
-    "compute_crater_metrics",
-    "analyze_site_risk",
+    "CraterMetrics",
+    "SiteRiskMetrics",
+    "SlopeStats",
     "analyze_all_sites_risk",
+    "analyze_site_risk",
+    "compute_crater_metrics",
+    "compute_slope_stats",
     "format_side_by_side_comparison",
 ]

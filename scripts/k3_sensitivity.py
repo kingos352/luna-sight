@@ -37,9 +37,7 @@ from luna_sight.visibility import (  # noqa: E402
 from luna_sight.visibility.series import Sample  # noqa: E402
 from luna_sight.visibility.synthetic import synthetic_series  # noqa: E402
 
-PROFILE_PATTERN = re.compile(
-    r"^(?P<site>[A-Za-z0-9_-]+)_horizon_(?P<radius>\d+)m\.csv$"
-)
+PROFILE_PATTERN = re.compile(r"^(?P<site>[A-Za-z0-9_-]+)_horizon_(?P<radius>\d+)m\.csv$")
 DEFAULT_MARGINS = "0.05,0.10,0.20"
 
 
@@ -86,9 +84,7 @@ def series_for_site(samples: list[Sample], site_id: str) -> list[Sample]:
         return samples
     selected = [sample for sample in samples if sample.site_id == site_id]
     if not selected:
-        raise ValueError(
-            f"Seride {site_id} yok (bulunan: {', '.join(sorted(present))})."
-        )
+        raise ValueError(f"Seride {site_id} yok (bulunan: {', '.join(sorted(present))}).")
     return selected
 
 
@@ -118,9 +114,7 @@ def main() -> int:
 
     margins = parse_margins(args.margins)
     profile_paths = (
-        [ROOT / item for item in args.profiles]
-        if args.profiles
-        else discover_profiles()
+        [ROOT / item for item in args.profiles] if args.profiles else discover_profiles()
     )
     if not profile_paths:
         print("HATA: outputs/k2 altında ufuk profili bulunamadı.")
@@ -148,9 +142,9 @@ def main() -> int:
         else:
             if site_id not in series_cache:
                 series_cache[site_id] = synthetic_series(
-                    start_utc=datetime.fromisoformat(
-                        args.start.replace("Z", "+00:00")
-                    ).astimezone(UTC),
+                    start_utc=datetime.fromisoformat(args.start.replace("Z", "+00:00")).astimezone(
+                        UTC
+                    ),
                     hours=args.hours,
                     step_minutes=args.step_minutes,
                     site_id=site_id,
@@ -173,8 +167,10 @@ def main() -> int:
     out_path = ROOT / args.out
     write_csv(out_path, rows)
 
-    print(f"\n{'bölge':<8} {'yarıçap':>8} {'marj':>6} "
-          f"{'ortak görünür %':>16} {'en uzun (sa)':>13} {'belirsiz %':>11}")
+    print(
+        f"\n{'bölge':<8} {'yarıçap':>8} {'marj':>6} "
+        f"{'ortak görünür %':>16} {'en uzun (sa)':>13} {'belirsiz %':>11}"
+    )
     for row in rows:
         if row["body"] != "joint":
             continue

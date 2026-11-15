@@ -20,26 +20,26 @@ from luna_sight.terrain.polar import (
     lonlat_to_xy,
     xy_to_lonlat,
 )
+from luna_sight.terrain.risk import (
+    DEFAULT_ANALYSIS_RADIUS_M,
+    RISK_SOURCE_MISSING,
+    RISK_SOURCE_REAL,
+    RISK_SOURCE_REPRESENTATIVE,
+    CraterMetrics,
+    SiteRiskMetrics,
+    SlopeStats,
+    analyze_all_sites_risk,
+    analyze_site_risk,
+    compute_crater_metrics,
+    compute_slope_stats,
+    format_side_by_side_comparison,
+)
 from luna_sight.terrain.sites import CANDIDATE_SITES, CandidateSite, get_candidate_site
 from luna_sight.terrain.surface_3d import (
     R_MOON_KM,
     build_lunar_globe_figure,
     build_polar_relief_figure,
     compute_lunar_elevation,
-)
-from luna_sight.terrain.risk import (
-    CraterMetrics,
-    DEFAULT_ANALYSIS_RADIUS_M,
-    RISK_SOURCE_MISSING,
-    RISK_SOURCE_REAL,
-    RISK_SOURCE_REPRESENTATIVE,
-    SlopeStats,
-    SiteRiskMetrics,
-    analyze_all_sites_risk,
-    analyze_site_risk,
-    compute_crater_metrics,
-    compute_slope_stats,
-    format_side_by_side_comparison,
 )
 
 __all__ = [

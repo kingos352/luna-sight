@@ -117,8 +117,7 @@ def test_run_many_rejects_empty_site_list():
 def test_load_horizon_profile_handles_bom_and_nan_gap(tmp_path):
     path = tmp_path / "profile.csv"
     path.write_text(
-        "\ufeffazimuth_deg,horizon_deg,gap_fraction\n"
-        "0,0,0\n90,nan,1\n180,0,0\n270,-10,0\n",
+        "\ufeffazimuth_deg,horizon_deg,gap_fraction\n0,0,0\n90,nan,1\n180,0,0\n270,-10,0\n",
         encoding="utf-8",
     )
     profile = load_horizon_profile(path)
@@ -133,8 +132,7 @@ def test_load_horizon_profile_handles_bom_and_nan_gap(tmp_path):
 def test_missing_horizon_gap_becomes_uncertain(tmp_path):
     path = tmp_path / "profile.csv"
     path.write_text(
-        "azimuth_deg,horizon_deg\n"
-        "0,0\n90,nan\n180,0\n270,0\n",
+        "azimuth_deg,horizon_deg\n0,0\n90,nan\n180,0\n270,0\n",
         encoding="utf-8",
     )
     runner = VisibilityRunner(
