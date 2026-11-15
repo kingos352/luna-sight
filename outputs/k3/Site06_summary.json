@@ -1,0 +1,71 @@
+{
+  "site_id": "Site06",
+  "coordinate": {
+    "latitude_deg": -85.800001,
+    "longitude_deg_east": -116.3
+  },
+  "profile": "outputs\\k2\\Site06_horizon_20000m.csv",
+  "profile_summary": {
+    "points": 360,
+    "valid_points": 360,
+    "valid_fraction": 1.0,
+    "horizon_min_deg": -8.8778,
+    "horizon_max_deg": 4.2649
+  },
+  "config": {
+    "margin_deg": 0.1,
+    "refine_boundaries": true,
+    "quality_flag_missing": "missing"
+  },
+  "series": {
+    "source": "synthetic-scenario-v1",
+    "synthetic_test_fixture": true,
+    "samples": 2017,
+    "start_utc": "2026-11-15T00:00:00+00:00",
+    "end_utc": "2026-11-22T00:00:00+00:00",
+    "span_hours": 168.0,
+    "quality_flag": "test_fixture"
+  },
+  "bodies": {
+    "sun": {
+      "window_count": 5,
+      "total_hours": 168.0,
+      "state_hours": {
+        "visible": 64.541,
+        "blocked": 102.1323,
+        "uncertain": 1.3267
+      },
+      "visible_fraction": 0.384173,
+      "longest_visible_hours": 64.541,
+      "longest_visible_start_utc": "2026-11-15T12:32:23.946913+00:00",
+      "refined_boundaries": 5
+    },
+    "earth": {
+      "window_count": 5,
+      "total_hours": 168.0,
+      "state_hours": {
+        "visible": 64.0024,
+        "blocked": 102.4335,
+        "uncertain": 1.5641
+      },
+      "visible_fraction": 0.380967,
+      "longest_visible_hours": 50.6106,
+      "longest_visible_start_utc": "2026-11-15T00:00:00+00:00",
+      "refined_boundaries": 5
+    },
+    "joint": {
+      "window_count": 5,
+      "total_hours": 168.0,
+      "state_hours": {
+        "visible": 38.0707,
+        "blocked": 128.3714,
+        "uncertain": 1.5579
+      },
+      "visible_fraction": 0.226611,
+      "longest_visible_hours": 38.0707,
+      "longest_visible_start_utc": "2026-11-15T12:32:23.946913+00:00",
+      "refined_boundaries": 5
+    }
+  },
+  "generated_utc": "2026-11-15T06:46:39+00:00"
+}

@@ -292,11 +292,15 @@ def _discover_real_sites() -> dict[str, SiteSpec]:
             continue
 
         k2_summary = _read_json(OUTPUT_K2_DIR / f"{site_id}_summary.json")
+        if not k2_summary:
+            k2_summary = _read_json(OUTPUT_K2_DIR / f"{site_id}_summary_20000m.json")
         name = str(k2_summary.get("site_name") or site_id)
 
         horizon_csv = OUTPUT_K2_DIR / f"{site_id}_horizon_4000m.csv"
         if not horizon_csv.is_file():
             horizon_csv = OUTPUT_K2_DIR / f"{site_id}_horizon_2000m.csv"
+        if not horizon_csv.is_file():
+            horizon_csv = OUTPUT_K2_DIR / f"{site_id}_horizon_20000m.csv"
         discovered[site_id] = SiteSpec(
             site_id=site_id,
             name=name,

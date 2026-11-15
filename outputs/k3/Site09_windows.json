@@ -1,0 +1,178 @@
+{
+  "sun": [
+    {
+      "body": "sun",
+      "state": "blocked",
+      "start_utc": "2026-11-15T00:00:00+00:00",
+      "end_utc": "2026-11-17T18:07:16.736481+00:00",
+      "duration_hours": 66.1213,
+      "start_refined": false,
+      "end_refined": true,
+      "reason": "occluded"
+    },
+    {
+      "body": "sun",
+      "state": "uncertain",
+      "start_utc": "2026-11-17T18:07:16.736481+00:00",
+      "end_utc": "2026-11-17T18:38:21.963065+00:00",
+      "duration_hours": 0.5181,
+      "start_refined": true,
+      "end_refined": true,
+      "reason": "transition_band"
+    },
+    {
+      "body": "sun",
+      "state": "visible",
+      "start_utc": "2026-11-17T18:38:21.963065+00:00",
+      "end_utc": "2026-11-17T22:22:03.307467+00:00",
+      "duration_hours": 3.7282,
+      "start_refined": true,
+      "end_refined": true,
+      "reason": "clear"
+    },
+    {
+      "body": "sun",
+      "state": "uncertain",
+      "start_utc": "2026-11-17T22:22:03.307467+00:00",
+      "end_utc": "2026-11-18T00:08:15.631723+00:00",
+      "duration_hours": 1.7701,
+      "start_refined": true,
+      "end_refined": true,
+      "reason": "transition_band"
+    },
+    {
+      "body": "sun",
+      "state": "blocked",
+      "start_utc": "2026-11-18T00:08:15.631723+00:00",
+      "end_utc": "2026-11-21T04:44:35.199893+00:00",
+      "duration_hours": 76.6054,
+      "start_refined": true,
+      "end_refined": true,
+      "reason": "occluded"
+    },
+    {
+      "body": "sun",
+      "state": "uncertain",
+      "start_utc": "2026-11-21T04:44:35.199893+00:00",
+      "end_utc": "2026-11-21T07:46:43.868009+00:00",
+      "duration_hours": 3.0357,
+      "start_refined": true,
+      "end_refined": true,
+      "reason": "transition_band"
+    },
+    {
+      "body": "sun",
+      "state": "visible",
+      "start_utc": "2026-11-21T07:46:43.868009+00:00",
+      "end_utc": "2026-11-21T09:32:36.068339+00:00",
+      "duration_hours": 1.7645,
+      "start_refined": true,
+      "end_refined": true,
+      "reason": "clear"
+    },
+    {
+      "body": "sun",
+      "state": "uncertain",
+      "start_utc": "2026-11-21T09:32:36.068339+00:00",
+      "end_utc": "2026-11-21T11:23:44.115494+00:00",
+      "duration_hours": 1.8522,
+      "start_refined": true,
+      "end_refined": true,
+      "reason": "transition_band"
+    },
+    {
+      "body": "sun",
+      "state": "blocked",
+      "start_utc": "2026-11-21T11:23:44.115494+00:00",
+      "end_utc": "2026-11-22T00:00:00+00:00",
+      "duration_hours": 12.6044,
+      "start_refined": true,
+      "end_refined": false,
+      "reason": "occluded"
+    }
+  ],
+  "earth": [
+    {
+      "body": "earth",
+      "state": "blocked",
+      "start_utc": "2026-11-15T00:00:00+00:00",
+      "end_utc": "2026-11-16T17:18:41.858521+00:00",
+      "duration_hours": 41.3116,
+      "start_refined": false,
+      "end_refined": true,
+      "reason": "occluded"
+    },
+    {
+      "body": "earth",
+      "state": "uncertain",
+      "start_utc": "2026-11-16T17:18:41.858521+00:00",
+      "end_utc": "2026-11-16T19:06:51.980888+00:00",
+      "duration_hours": 1.8028,
+      "start_refined": true,
+      "end_refined": true,
+      "reason": "transition_band"
+    },
+    {
+      "body": "earth",
+      "state": "blocked",
+      "start_utc": "2026-11-16T19:06:51.980888+00:00",
+      "end_utc": "2026-11-19T17:36:45.202095+00:00",
+      "duration_hours": 70.4981,
+      "start_refined": true,
+      "end_refined": true,
+      "reason": "occluded"
+    },
+    {
+      "body": "earth",
+      "state": "uncertain",
+      "start_utc": "2026-11-19T17:36:45.202095+00:00",
+      "end_utc": "2026-11-19T18:18:55.712230+00:00",
+      "duration_hours": 0.7029,
+      "start_refined": true,
+      "end_refined": true,
+      "reason": "transition_band"
+    },
+    {
+      "body": "earth",
+      "state": "visible",
+      "start_utc": "2026-11-19T18:18:55.712230+00:00",
+      "end_utc": "2026-11-20T10:50:41.070006+00:00",
+      "duration_hours": 16.5293,
+      "start_refined": true,
+      "end_refined": true,
+      "reason": "clear"
+    },
+    {
+      "body": "earth",
+      "state": "uncertain",
+      "start_utc": "2026-11-20T10:50:41.070006+00:00",
+      "end_utc": "2026-11-20T11:32:34.154129+00:00",
+      "duration_hours": 0.6981,
+      "start_refined": true,
+      "end_refined": true,
+      "reason": "transition_band"
+    },
+    {
+      "body": "earth",
+      "state": "blocked",
+      "start_utc": "2026-11-20T11:32:34.154129+00:00",
+      "end_utc": "2026-11-22T00:00:00+00:00",
+      "duration_hours": 36.4572,
+      "start_refined": true,
+      "end_refined": false,
+      "reason": "occluded"
+    }
+  ],
+  "joint": [
+    {
+      "body": "joint",
+      "state": "blocked",
+      "start_utc": "2026-11-15T00:00:00+00:00",
+      "end_utc": "2026-11-22T00:00:00+00:00",
+      "duration_hours": 168.0,
+      "start_refined": false,
+      "end_refined": false,
+      "reason": "occluded"
+    }
+  ]
+}
